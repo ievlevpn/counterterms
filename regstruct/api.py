@@ -10,21 +10,27 @@ from .renorm.nonlinearity import elem_diff
 
 
 def renormalize(spde) -> RenormalizedEquation:
-    sig, base, width = build_context(spde)
+    sig, base, unknowns = build_context(spde)
     trees = generate_counterterms(sig)
 
-    counterterms = []
+    per_component = {a: [] for a in range(sig.n_components)}
+    idx = 0
     for t in trees:
-        ed = elem_diff(t, base, width)
-        if ed == 0:                      # Assumption-D2 safety: drop F(τ*) = 0 trees
+        # one tree may contribute to several components; the constant k_τ is shared.
+        contribs = {}
+        for a in range(sig.n_components):
+            ed = elem_diff(t, a, base, sig)
+            if ed != 0:                       # Assumption-D2 safety: drop F_a(τ*) = 0
+                contribs[a] = ed
+        if not contribs:
             continue
-        k = sympy.Symbol(f"k_{len(counterterms)}")
-        counterterms.append(Counterterm(
-            tree=t,
-            homogeneity=t.homogeneity(sig),
-            symmetry_factor=t.symmetry_factor(),
-            elem_diff=ed,
-            constant=k,
-        ))
-    return RenormalizedEquation(spde=spde, sig=sig, base=base, width=width,
-                                counterterms=counterterms)
+        k = sympy.Symbol(f"k_{idx}")
+        idx += 1
+        S = t.symmetry_factor()
+        hom = t.homogeneity(sig)
+        for a, ed in contribs.items():
+            per_component[a].append(Counterterm(
+                tree=t, homogeneity=hom, symmetry_factor=S, elem_diff=ed, constant=k))
+
+    return RenormalizedEquation(spde=spde, sig=sig, base=base,
+                                unknowns=unknowns, per_component=per_component)

@@ -7,12 +7,39 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Planned
-- **Phase 2** — systems / vector unknowns, multiple noises, and general operator order &
-  scaling (mostly `Signature` enrichment + validation).
 - **Phase 3** — the coproducts `Δ, Δ⁺, Δ⁻`, the regularity/renormalization structures
-  (`T, T⁺, U, U⁻`), the twisted antipode `S'₋`, and the symbolic BHZ character.
+  (`T, T⁺, U, U⁻`), the twisted antipode `S'₋`, the symbolic BHZ character, rule completion,
+  and the `G⁻`/`G⁻_ad` toggle.
 - **Phase 4 (deferred seams)** — `NoiseLaw` + canonical BPHZ constant values; a multi-index
   symbol basis; da Prato–Debussche pre-pass for `β₀ ≤ −2`.
+
+## [0.2.0] — 2026-06-22
+
+**Phase 2 — generality.** Systems, multiple noises, and general operator order.
+
+### Added
+- **Systems / vector unknowns.** Components share spacetime coordinates; each child **edge
+  carries the component** of the kernel that plants it (node types stay `{●, ∘_j}`). The
+  elementary differential threads the child equation index from the edges, and renormalization
+  **constants are shared across components** (one `k_τ` per tree). A scalar problem is the
+  one-component case.
+- **Multiple noises** — one `∘_j` node type per noise.
+- **General operator order** — per-component Schauder order in the homogeneity recursion, with a
+  warning outside the proven 2nd-order parabolic regime (global scaling).
+- `SPDE(equations=[(unknown, operator, rhs), …], noises=[…])` for systems; the scalar keyword
+  form is unchanged.
+- Tests (`tests/test_phase2.py`): decoupled system ⇒ per-component gKPZ; coupled system shares
+  constants; multi-noise (8 counterterms); operator order changes homogeneities.
+
+### Changed
+- Jet variables are now component-indexed: `jet(comp, k)` (was `jet(k)`).
+- `RenormalizedEquation` exposes `.per_component`; `.counterterms` returns component 0.
+
+### Note
+- The `G⁻`/`G⁻_ad` toggle was deferred to Phase 3 (admissibility is a model notion; the full
+  free family is emitted as the safe superset).
+
+## [0.1.0] — 2026-06-21
 
 ## [0.1.0] — 2026-06-21
 

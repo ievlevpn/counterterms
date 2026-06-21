@@ -22,8 +22,8 @@ from sympy import Derivative, Function, Rational
 from regstruct import Noise, Parabolic, SPDE, Unknown, jet, kappa
 from regstruct.core.homogeneity import Homogeneity
 
-U0 = jet((0, 0))
-U1 = jet((0, 1))
+U0 = jet(0, (0, 0))   # component 0, undifferentiated
+U1 = jet(0, (0, 1))   # component 0, ∂_x
 f = Function("f")
 g = Function("g")
 

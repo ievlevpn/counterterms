@@ -22,24 +22,31 @@ including the factor-2 and `S=2` cases; KPZ lands on the table's 6 negative-homo
 
 ---
 
-## Phase 2 — generality ⬜
+## Phase 2 — generality ✅
 
 **Goal:** widen the input class with (mostly) `Signature` enrichment + validation; little new
 algorithmic structure, by design.
 
-- [ ] **Systems / vector unknowns** — multiple components, each a sector with its own planting
-      operator `I^{(a)}`. Equation/component identity rides the **edge type** `𝔗_e`, not the node
-      type. `F` becomes a tuple `(F_a)` with cross-component partials `∂_{u_j}F_i`.
-- [ ] **Multiple noises** — one `∘_j` node type per noise; base map `{●:g, ∘_j:f_j}`.
-- [ ] **General operator order & scaling** — carry `m` and `𝔰` as first-class inputs in the
-      homogeneity recursion (`|I_p τ| = |τ| + (m − |p|_𝔰)`), with scope warnings outside the
-      proven second-order parabolic regime; mixed-order systems.
-- [ ] **`G⁻` vs `G⁻_ad` toggle** — optionally impose the admissibility constraints
-      (`k(I_p τ)=0`, `k(X^n⋆τ)=0`) that drop integral/polynomial-multiple counterterms.
-- [ ] Golden tests for a coupled system and a multi-noise example.
+- [x] **Systems / vector unknowns** — multiple components sharing spacetime coords; each child
+      **edge carries the component** `𝔗_e` of the kernel that plants it (node types stay
+      `{●, ∘_j}`). The elementary differential threads the child equation index from the edges
+      (`F_a(τ*) = (Πᵢ F_{cᵢ}(τ_i*))·(D^n Πᵢ ∂_{(cᵢ,p_i)}) F_a(b*)`), and **constants are shared
+      across components** (one `k_τ` per tree, weighting each equation's vector field).
+- [x] **Multiple noises** — one `∘_j` node type per noise; base map `{●:g, ∘_j:f_{a,j}}`.
+- [x] **General operator order** — per-component Schauder order `m` carried into the homogeneity
+      recursion (`|I^{(c)}_p τ| = |τ| + (m_c − |p|_𝔰)`), with a warning outside the proven
+      second-order parabolic regime. *(Global scaling; genuinely mixed scalings stay out of scope.)*
+- [x] Tests: decoupled system reduces to per-component gKPZ; coupled system shares constants;
+      multi-noise (8 counterterms); operator order changes the homogeneities.
 
-**Acceptance:** a 2-component system and a 2-noise equation each produce the correct coupled
-counterterms; scalar/single-noise results are unchanged.
+**Acceptance (met):** a 2-component system and a 2-noise equation produce the correct coupled
+counterterms; the decoupled system reproduces the scalar gKPZ result per component; scalar
+single-noise results are unchanged (regression green).
+
+> Moved to Phase 3: the **`G⁻` vs `G⁻_ad` toggle**. Admissibility is genuinely a model
+> (K-admissibility) notion — the paper's own gKPZ example is stated for `k∈G⁻_ad` yet keeps the
+> decorated `∘1` primitive, so a naive "drop `X^n⋆σ`" filter would be wrong. We emit the full free
+> family (the safe superset) until the structures exist to characterise `G⁻_ad` precisely.
 
 ---
 
@@ -59,6 +66,8 @@ New modules: `core/hopf.py`, `trees/coproducts.py`, `structures/`.
       `RenormalizationStructure (U, U⁻, δ, δ⁻)`; the (symbolic) **BHZ character** `k^ζ = h^ζ∘S'₋`.
 - [ ] **Rule completion** (BHZ Prop 5.21) — close the structural rule under the contractions
       `Δ⁻` performs (replacing the current generate-then-filter shortcut).
+- [ ] **`G⁻` vs `G⁻_ad` toggle** (moved from Phase 2) — impose admissibility (`k(I_p τ)=0`,
+      `k(X^n⋆τ)=0` in the precise model sense) to reduce the free family to `G⁻_ad`.
 - [ ] Test invariants: coassociativity and cointeraction of the coproducts; homogeneity tables
       reproduced (e.g. the full KPZ basis count, not just the negative rows).
 

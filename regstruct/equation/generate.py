@@ -3,14 +3,14 @@
 Bounded fixpoint generation.  We grow a pool of valid trees with homogeneity
 standard-part ``< 1`` (subtrees of any negative tree have standard-part ``< 0``,
 so this bound is complete), respecting the structural rule (which child edges a
-node admits, and the cap on derivative-edge multiplicity = degree of the
-nonlinearity in that slot — what makes "g quadratic in ∂u" terminate).
+node admits — `(component, p)` with a cap on derivative-edge multiplicity = the
+nonlinearity's degree in that slot — what makes "g quadratic in ∂u" terminate).
 
-Children are selected by a **budget-pruned DFS**: child-edge atoms are sorted by
-their homogeneity contribution, so once one atom overshoots the budget all later
-ones do too (``break``).  Termination: every uncapped edge (``I_0``) contributes
-``> 0`` to the standard part when β₀ > −2, so it is bounded by the budget; every
-edge that can contribute ``≤ 0`` is a derivative edge with a finite cap.
+Children are selected by a **budget-pruned DFS**: edge atoms are sorted by their
+homogeneity contribution, so once one overshoots the budget all later ones do too
+(``break``).  Termination: an uncapped edge (a field slot, ``p = 0``) contributes
+``> 0`` to the standard part when ``β₀ > −2``, so it is bounded by the budget;
+every edge that can contribute ``≤ 0`` is a derivative slot with a finite cap.
 """
 from __future__ import annotations
 
@@ -61,22 +61,21 @@ def generate_counterterms(sig):
 
         for b in sig.node_types:
             rules = sig.allowed[b]
-            caps = {(op, p): cap for (op, p, cap) in rules}
-            atoms = [(op, p, sub,
-                      (sig.edge_gain(p) + sub.homogeneity(sig)))
-                     for (op, p, _cap) in rules for sub in current]
+            caps = {(comp, p): cap for (comp, p, cap) in rules}
+            atoms = [(comp, p, sub, (sig.edge_gain(comp, p) + sub.homogeneity(sig)))
+                     for (comp, p, _cap) in rules for sub in current]
             atoms.sort(key=lambda a: (a[3].std, a[3].kap, a[0], a[1], a[2]._sortkey()))
 
             for n in decs:
                 base_h = sig.node_homogeneity(b) + Homogeneity(sig.scaled(n))
                 if base_h.std >= _BOUND:
                     continue
-                changed |= _emit(sig, b, n, base_h, atoms, caps, add)
+                changed |= _emit(b, n, base_h, atoms, caps, add)
 
     return [t for t in pool.values() if t.homogeneity(sig).is_negative()]
 
 
-def _emit(sig, b, n, base_h, atoms, caps, add) -> bool:
+def _emit(b, n, base_h, atoms, caps, add) -> bool:
     """DFS over child multisets with homogeneity budget; returns whether pool grew."""
     grew = False
     counts: Counter = Counter()
@@ -86,15 +85,15 @@ def _emit(sig, b, n, base_h, atoms, caps, add) -> bool:
         if add(tree(b, n, chosen)):
             grew = True
         for idx in range(start, len(atoms)):
-            op, p, sub, contrib = atoms[idx]
-            if caps[(op, p)] is not None and counts[(op, p)] >= caps[(op, p)]:
+            comp, p, sub, contrib = atoms[idx]
+            if caps[(comp, p)] is not None and counts[(comp, p)] >= caps[(comp, p)]:
                 continue
             nh = h + contrib
             if nh.std >= _BOUND:          # atoms sorted ascending ⇒ rest overshoot too
                 break
-            counts[(op, p)] += 1
-            dfs(idx, chosen + [(op, p, sub)], nh)
-            counts[(op, p)] -= 1
+            counts[(comp, p)] += 1
+            dfs(idx, chosen + [(comp, p, sub)], nh)
+            counts[(comp, p)] -= 1
 
     dfs(0, [], base_h)
     return grew

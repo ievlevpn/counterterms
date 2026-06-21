@@ -13,11 +13,13 @@ negative-homogeneity decorated tree, with free renormalization constants.
 (∂_t − Δ + 1)u⁽ᵏ⁾ = f(u⁽ᵏ⁾)ζ + g(u⁽ᵏ⁾,∂u⁽ᵏ⁾) + Σ_{τ∈𝓑, |τ|<0} (k(τ)/S(τ)) F(τ*)(u⁽ᵏ⁾,∂u⁽ᵏ⁾)
 ```
 
-**Status:** **Phase 1 implemented** — `SPDE → family of renormalized equations` with free
-constants (rule → trees → S(τ) → Υ-map → assembly). Golden-tested against the gKPZ example
-(exact 5 counterterms, tex 6004–6012) plus KPZ/gPAM/scope-rejection. `uv run pytest` (7 tests).
-Phases 2 (systems/multi-noise/general operators) and 3 (coproducts, structures, BHZ character)
-not yet started. See `notes/architecture.md` §7 for phasing.
+**Status:** **Phases 1–2 implemented** — `SPDE → family of renormalized equations` with free
+constants (rule → trees → S(τ) → Υ-map → assembly), now for **systems** (component on the edge
+type; shared constants across components), **multiple noises**, and **general operator order**.
+Golden-tested: gKPZ (exact 5 counterterms, tex 6004–6012), KPZ/gPAM, decoupled/coupled systems,
+multi-noise, operator order, scope rejections. `uv run pytest` (11 tests). Phase 3 (coproducts,
+structures, twisted antipode, BHZ character, rule completion, `G⁻_ad`) not yet started. See
+`notes/architecture.md` §7 / `ROADMAP.md`.
 
 ## Layout
 
