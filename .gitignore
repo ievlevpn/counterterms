@@ -11,3 +11,7 @@ uv.lock
 
 # OS
 .DS_Store
+
+# generated exports
+output/*
+!output/.gitkeep

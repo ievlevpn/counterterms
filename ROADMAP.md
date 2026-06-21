@@ -91,9 +91,34 @@ coassociativity/cointeraction; `S'₋` reproduces known forest formulas on small
 
 ---
 
+## Output & rendering 🔨
+
+**Goal:** emit *all useful information* — the renormalized family, and **every divergent tree**
+drawn nicely — across terminal / LaTeX / Markdown / JSON. Full spec, information inventory, tree
+notation, and report layout in [`notes/output.md`](notes/output.md). Principle: reuse SymPy's
+pretty/LaTeX printers; we own only the **tree** drawer and the report assembler. No new runtime
+dep (`forest` is a `.tex` concern; ANSI colour is `isatty`-gated; `rich` only if asked).
+
+- [x] **O1 (with Phase 1, now):** `render/tree.py` — three faithful renderings of a
+      `DecoratedTree`: linear shorthand (`●·𝓘ₓ[Ξ]²`), 2D terminal drawing, LaTeX `forest`. A
+      `render/report.py` text/markdown report covering inventory items 1–15 (echoed SPDE, domain,
+      noise regularities, derived rule, the `𝓑_{<0}` table sorted by `|τ|` in the exact `ℚ+ℚκ`
+      order, the assembled family). `summary()` now shares the prettifier. The full `𝓑_<0`
+      (incl. `F(τ*)=0` non-contributors) is on `eq.all_trees`. *(D2 produces no zero-F trees in
+      current scope, so "0 dropped" — the slot is wired and labelled for when red nodes arrive.)*
+- [x] **O2:** `render/latex.py` — standalone `pdflatex`-ready document; JSON export (`to_json`,
+      the clean handoff at the symbolic boundary).
+- [ ] **O3 (with Phase 3):** wire the algebra section — pretty-print `Δτ`, `Δ⁻τ`, `S'₋τ` as
+      tree⊗tree sums (pure reuse of the O1 tree drawer) and the structure's homogeneity spectrum.
+- [ ] **O4 (with Phase 4):** the canonical-values column — replace each free `k_τ` with its BPHZ
+      value once a `NoiseLaw` exists.
+
+**Acceptance:** the gKPZ report reproduces the five trees and their homogeneity ordering; one
+assert-based `demo()` per renderer is the backbone check.
+
+---
+
 ## Cross-cutting (ongoing) ⬜
 
-- [ ] Pretty/LaTeX tree rendering grouped by homogeneity (mirror the paper's tables); promote the
-      `summary()` helper into a `render/` package.
 - [ ] Performance: memoize `F(τ*)` and `S(τ)` by canonical key once tree sets grow.
 - [ ] Packaging/CI: lockfile, lint, a CI run of `uv run pytest`.

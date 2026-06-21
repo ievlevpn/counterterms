@@ -32,5 +32,5 @@ def renormalize(spde) -> RenormalizedEquation:
             per_component[a].append(Counterterm(
                 tree=t, homogeneity=hom, symmetry_factor=S, elem_diff=ed, constant=k))
 
-    return RenormalizedEquation(spde=spde, sig=sig, base=base,
-                                unknowns=unknowns, per_component=per_component)
+    return RenormalizedEquation(spde=spde, sig=sig, base=base, unknowns=unknowns,
+                                per_component=per_component, all_trees=trees)

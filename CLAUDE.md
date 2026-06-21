@@ -17,7 +17,9 @@ negative-homogeneity decorated tree, with free renormalization constants.
 constants (rule → trees → S(τ) → Υ-map → assembly), now for **systems** (component on the edge
 type; shared constants across components), **multiple noises**, and **general operator order**.
 Golden-tested: gKPZ (exact 5 counterterms, tex 6004–6012), KPZ/gPAM, decoupled/coupled systems,
-multi-noise, operator order, scope rejections. `uv run pytest` (11 tests). Phase 3 (coproducts,
+multi-noise, operator order, scope rejections. A `render/` package emits the full report (trees
+drawn as shorthand / ascii / LaTeX-`forest`) in text/markdown/json/latex — see `notes/output.md`.
+`uv run pytest` (15 tests). Phase 3 (coproducts,
 structures, twisted antipode, BHZ character, rule completion, `G⁻_ad`) not yet started. See
 `notes/architecture.md` §7 / `ROADMAP.md`.
 
@@ -30,7 +32,7 @@ structures, twisted antipode, BHZ character, rule completion, `G⁻_ad`) not yet
 - `notes/architecture.md` — authoritative for the **module structure** (layered stack, the
   `Signature`-parametric design, interfaces, extension cookbook, phasing).
 - `regstruct/` — package (Phase 1 modules populated): `core/{homogeneity,jets,signature}`,
-  `trees/tree`, `equation/{dsl,generate}`, `renorm/{nonlinearity,equation}`, `api`. Phase-3
+  `trees/tree`, `equation/{dsl,generate}`, `renorm/{nonlinearity,equation}`, `render/{tree,report,latex}`, `api`. Phase-3
   modules (`core/{module,hopf,symbol}`, `trees/coproducts`, `structures/`) not yet created.
   `tests/` — golden + breadth tests. Full target layout: `architecture.md` §5.
 - Run: `uv run pytest`. Quick demo: `uv run python -u tests/test_golden_gkpz.py` (prints the

@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Output & rendering** (`regstruct/render/`, see `notes/output.md`). A full report of the
+  renormalized family in four formats via `eq.render(fmt)` / `eq.report()` /
+  `eq.latex_document()` / `eq.to_json()`: echoed equation(s), domain/noise, the derived rule,
+  **every** divergent tree (`𝓑_<0`, including `F(τ*)=0` non-contributors) with homogeneity,
+  `S(τ)`, constant and `F(τ*)`, and the assembled per-component family. Phase-3/4 sections
+  (coproducts, canonical values) render as honest placeholders.
+- **Tree drawings** — three faithful renderings of a `DecoratedTree`: linear shorthand
+  (`●·𝓘ₓ[Ξ]²`), a 2D terminal drawing, and a LaTeX `forest` snippet (`shorthand` / `ascii_art`
+  / `forest`). Reuses SymPy's printers for all formulas; only the tree drawer is new.
+- `RenormalizedEquation.all_trees` (the full `𝓑_<0`) and `.original_rhs(comp)`.
+
 ### Planned
 - **Phase 3** — the coproducts `Δ, Δ⁺, Δ⁻`, the regularity/renormalization structures
   (`T, T⁺, U, U⁻`), the twisted antipode `S'₋`, the symbolic BHZ character, rule completion,
