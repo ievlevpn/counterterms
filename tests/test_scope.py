@@ -37,10 +37,11 @@ def test_noise_must_appear_only_affinely():
 
 
 def test_beta0_at_most_minus_two_rejected():
-    # β₀≤−2 (Φ⁴₃, sine-Gordon, …) needs a da Prato–Debussche pre-pass.
-    u, xi = _u_xi(reg=Rational(-5, 2) - kappa)
+    # β₀≤−2 (Φ⁴₃, sine-Gordon, …) is supercritical — needs a da Prato–Debussche pre-pass.
+    u = Unknown("u", 3)
+    xi = Noise("xi", regularity=Rational(-5, 2) - kappa)
     with pytest.raises(ValueError, match="da Prato"):
-        SPDE(noises=[xi], operator=Parabolic(dim=3), unknown=Unknown("u", 3),
+        SPDE(noises=[xi], operator=Parabolic(dim=3), unknown=u,
              rhs=-u.field ** 3 + xi.symbol).renormalize()
 
 

@@ -77,7 +77,13 @@ Modules: `trees/coproducts.py`, `structures.py`, `core/hopf.py` (the basis-agnos
 - [x] **`RegularityStructure (T, T⁺)`** — γ-bounded model basis (`generate_trees`, positive
       sector included), graded by homogeneity; `Δ : T → T⁺`, `Δ⁺` on `T⁺`; tested graded +
       triangular into `T⁺`, with the divergent subspace = the counterterms. (`structures.py`)
-- [ ] **Rule completion** (BHZ Prop 5.21) — replace the generate-then-filter shortcut.
+- [x] **Subcriticality check** (BHZ §5.5, `equation/rule.py`) — the rule-based criterion (every
+      uncapped field edge strictly raises homogeneity over the most singular subtree, i.e.
+      `β₀ > −order`) replaces the hardcoded `β₀∈(−2,0)` and the termination guard, and
+      generalises to operator order. With it the saturating generator is a sound, terminating
+      enumeration of `𝓑_{<0}`.
+- [ ] **Formal rule completion** (BHZ Prop 5.21) — the smallest complete rule closed under `Δ⁻`;
+      needed only for hand-supplied/adversarial rules (the derived `(f,g)`-rules saturate correctly).
 - [ ] **`G⁻` vs `G⁻_ad` toggle** (moved from Phase 2) — reduce the free family to `G⁻_ad`.
 
 **Acceptance:** coassociativities + cointeraction (incl. singular β₀=−3/2) green as property

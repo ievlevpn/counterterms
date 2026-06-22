@@ -19,6 +19,7 @@ import sympy
 from ..core.homogeneity import Homogeneity, Scaling
 from ..core.jets import is_jet, jet, jet_parts
 from ..core.signature import Signature
+from .rule import check_subcritical
 
 kappa = sympy.Symbol("kappa", positive=True)
 
@@ -139,11 +140,11 @@ def build_context(spde: SPDE):
         ba["bullet"] = _to_jet(g, field_to_comp, coords)
         base[a] = ba
 
-    # scope checks
+    # scope checks (the β₀ lower bound is enforced rule-wise by check_subcritical below)
     for nz in noises:
-        if not (-2 < nz.std < 0):
-            raise ValueError(f"noise '{nz.name}' regularity {nz.std} out of MVP scope "
-                             "β₀∈(−2,0); β₀≤−2 needs a da Prato–Debussche pre-pass")
+        if nz.std >= 0:
+            raise ValueError(f"noise '{nz.name}' regularity {nz.std} ≥ 0 is not singular "
+                             "(this package renormalises β₀ < 0 noises)")
     for a in range(ncomp):
         for nz in noises:
             if any(is_jet(s) and any(jet_parts(s)[1]) for s in base[a][nz.name].free_symbols):
@@ -185,5 +186,6 @@ def build_context(spde: SPDE):
         node_types=node_types,
         allowed=allowed,
     )
+    check_subcritical(sig)        # rule must be subcritical, else 𝓑_{<0} is infinite
     unknowns = [eqn[0] for eqn in equations]
     return sig, base, unknowns

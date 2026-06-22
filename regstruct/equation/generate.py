@@ -59,7 +59,7 @@ def generate_trees(sig, bound=_BOUND):
     while changed:
         changed = False
         guard += 1
-        assert guard < 50, "tree generation did not terminate (subcriticality?)"
+        assert guard < 50, "tree generation did not terminate"   # subcriticality backstop
         current = list(pool.values())
 
         for b in sig.node_types:
