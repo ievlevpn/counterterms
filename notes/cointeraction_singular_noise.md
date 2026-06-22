@@ -1,12 +1,17 @@
-# The cointeraction residual for singular noise — research + diagnosis
+# The cointeraction residual for singular noise — research + diagnosis + FIX
 
-**Status: diagnosed precisely; not yet fixed.** This documents the bug, the
-authoritative resolution mechanism from the literature, a principled fix attempt
-that *failed* (and exactly why), and the concrete path to a correct fix.
+**Status: FIXED.** The cointeraction `(Id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ` now holds at β₀=−3/2
+(0 failures, ≤4-node trees) with no regression (34 passed). The root cause and the
+two-line fix are in **§8** below; §1–§7 are the (long) diagnostic journey that led
+there, kept for the record.
 
-Test: `tests/test_coproducts.py::test_cointeraction_singular` (xfail, strict).
-Everything else is green (`δ⁻` coassociativity, `Δ` comodule coassociativity, the
-**gKPZ** cointeraction, twisted antipode, structures): 33 passed, 1 xfailed.
+**The fix, in one sentence:** the `e'` Taylor recentering must be applied on the
+*full* extraction boundary `∂(A,F)` = {edges with parent in the extracted forest,
+not internal to a component} — i.e. **between-component edges too**, not only
+`φ→outside` edges. (Plus: edges below a pre-existing red node stay internal.)
+
+Test: `tests/test_coproducts.py::test_cointeraction_singular` (now a real, passing
+test). All algebraic invariants green.
 
 ---
 
@@ -167,3 +172,96 @@ does **not** feed any output the library computes: the renormalized-equation fam
 `S'₋`. So this residual is a gap in *structural self-consistency validation* for
 decorated-node-under-edge trees at β₀≤−3/2 — worth closing for a faithful RS
 library, but not a blocker for the package's computations.
+
+## 6. Rebuild-branch findings (localization) — `cointeraction-bigraded-rebuild`
+
+Systematic bisection of the failure (all on the gKPZ equation, β₀=−3/2):
+
+- **Multi-index `o` hypothesis: REJECTED.** Research (BHZ vs Chevyrev survey) shows
+  the scalar `o ∈ ℤ[β₀]` is *lossless for the cointeraction*: Chevyrev proves the
+  identical cointeraction with the scalar `o` = homogeneity of the extracted piece,
+  and our contracted-node `o` already equals that. The multi-index `o` only matters
+  for type-level reconstruction (Π^ζ), which the MVP never does.
+- **Pure-graph cointeraction (no `n`/`e`/`o`, finite): HOLDS.** So the subforest /
+  subtree / contraction combinatorics are correct.
+- **`δ⁻` coassociativity, `Δ` comodule (pure and red-containing): HOLD.**
+- **`δ⁺` (`D̄⁻`, root-disjoint) comodule coassociativity `(δ⁻⊗Id)δ⁺ =
+  (Id⊗δ⁺)δ⁺`: FAILS at β₀=−3/2** (1 of 10 T⁺ factors). This is the bug. It is the
+  only map exercised solely inside the cointeraction. The failing case is the
+  re-application of `δ⁺` to a right factor carrying **nested red nodes under the
+  blue root** (e.g. `δ⁺(blue—I₀—∘—I₀—∘)` re-applied): a `(∘^{(0,1)}, ∘, …)` term
+  arises on the `(Id⊗δ⁺)δ⁺` side with no partner on `(δ⁻⊗Id)δ⁺`.
+
+**So the remaining fix is narrow:** correct `δ⁺`'s root-disjoint re-extraction so
+its comodule coassociativity holds (likely the interaction of `root_disjoint`
+with the `red_ids ⊆ φ` requirement and the `p₋` red→𝟙₋ rule on re-extraction of
+nested-red/blue trees). Once `δ⁺` comodule is green, the cointeraction should
+follow (it is the last un-validated piece; graph + `δ⁻` + `Δ` are all verified).
+
+## 7. Rebuild progress (branch) and the irreducible remaining crux
+
+**Landed (commit 697612f, no regression — 33 passed):** force edges below a
+pre-existing red node to be *internal*. A red node is a contracted placeholder;
+on re-extraction its extracted children must merge into it, not split off as
+sibling red nodes via a between-edge. This removed a whole class of spurious `δ⁺`
+terms (the δ⁺-comodule-coassociativity failure on nested-red trees) and cut the
+β₀=−3/2 cointeraction failures to **2 trees**, both the original
+`∘—I₀—∘^{(0,1)}` recentering case.
+
+**The irreducible crux (still open).** For `∘—I₀—∘^{(0,1)}` the `e'=(0,1)`
+recentering produces, in the middle (T) leg:
+
+| path | middle red node |
+|---|---|
+| LHS `(Id⊗Δ)δ` (extract→recenter) | `●^{(0,1)}(o=−3/2−κ)` — `Δ` pushes `πe''` onto the red trunk as a **node decoration** |
+| RHS `M¹³(δ⊗δ⁺)Δ` (recenter→extract) | `●(o=−1/2−κ)` — `Δ` recenters the root first, so `δ` extracts it with `(0,1)` folded into **`o`** |
+
+Both have `|·|₊ = −1/2−κ` but are **distinct basis elements** `(𝔫=(0,1),o=−3/2−κ)`
+vs `(𝔫=0,o=−1/2−κ)`, sitting in the **same tensor leg** — so the term-sums do not
+match. Identifying them (absorb 𝔫 into o on red nodes) fixes the cointeraction but
+breaks `δ⁻` coassociativity (§3, §4b). Confirmed (research §5/§6): the scalar `o`
+is *lossless*, so the resolution is **not** the multi-index `o`; it is that these
+two genuinely-distinct elements must be **paired with different leg-1/leg-3
+partners that balance in the full sum** — i.e. there is a missing/extra term in
+one of the two composition orders, in how the recentering `X^k` of `Δ` is shared
+with the extraction `e'` of `δ` on the **same physical edge** (root→child, which
+both maps touch in the composition). Pinning that exact term-level balance is the
+remaining work.
+
+## 8. THE FIX (root cause + resolution)
+
+Two combinatorial corrections to the extraction coproduct `δ` (`delta_minus`),
+both about how a *subforest* `A` (the "between-edge" subtlety) interacts with the
+`e'` Taylor recentering. The decisive references are BHZ arXiv:1610.08468:
+`def:Deltabar` (the master `Δ_i`) and the boundary set `∂(A,F)`.
+
+**(a) The boundary `∂(A,F)` includes between-edges.** BHZ define
+`∂(A,F) = { e ∈ E_F∖E_A : e₊ ∈ N_A }` — every edge whose *parent* lies in the
+extracted forest `A` and which is *not internal to a component* of `A`. That set
+is **both** the `φ→outside` edges **and** the between-component edges (parent and
+child both in `A` but in different subtrees). The `ε_A^F` (our `e'`) recentering
+runs over all of `∂(A,F)`: `πe'` onto the parent, `e+e'` on the contracted edge.
+
+My implementation had recentered only the `φ→outside` edges (the notes in §1
+literally asserted "between-edges get no e'" — that was the bug). With between-
+edges also recentered, `δ` can recenter a node *whose child is also extracted*,
+which is exactly the term the recenter-then-extract order (`M¹³(δ⊗δ⁺)Δ`) produces
+via `Δ` and the extract-then-recenter order (`(Id⊗Δ)δ`) was missing.
+
+**(b) Edges below a pre-existing red node stay internal.** A red node is a
+contracted placeholder; on *re-extraction* (the second coproduct in the
+cointeraction / the δ⁺ comodule) its extracted children must merge into it, never
+split off as a sibling red node via a between-edge. Without this, `δ⁺` over-
+produced nested-red terms and failed its own comodule coassociativity.
+
+Both live in `delta_minus`'s subforest enumeration; `_assemble` already applied
+`πe'`/`e+e'` to *any* cross-component edge, so (a) needed only to add the between-
+edges to the recentering list. Net diff: a few lines. Commits on this branch:
+`697612f` (b), and the between-edge recentering (a).
+
+**Why the earlier "absorb into o" attempts were wrong** (§3, §4b): they tried to
+*reconcile* the two genuinely-distinct basis elements `●^{(0,1)}(o=−3/2−κ)` and
+`●(o=−1/2−κ)` by identifying them. But the cointeraction does not identify them —
+it produces the *same* term on both sides once the recentering combinatorics are
+correct. The discrepancy was never in the `o`-decoration (the scalar `o` is
+lossless, confirmed by research §5/§6); it was a missing set of `δ` terms.

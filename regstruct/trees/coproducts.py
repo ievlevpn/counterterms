@@ -176,16 +176,31 @@ def delta_minus(t: DecoratedTree, sig, root_disjoint: bool = False) -> TensorSum
         # adjacent nodes may be extracted as distinct components (tex 5549, the
         # decisive subtlety for the cointeraction).
         boundary = [(a, b, comp, p) for (a, b, comp, p) in edges if a in phi and b not in phi]
-        within = [(a, b) for (a, b, comp, p) in edges if a in phi and b in phi]
+        within = [(a, b, comp, p) for (a, b, comp, p) in edges if a in phi and b in phi]
+        # A within-φ edge is INTERNAL (same subtree) or BETWEEN (separate subtrees,
+        # joined by a contracted edge) — EXCEPT an edge below a pre-existing red node,
+        # a contracted placeholder, which stays internal so its extracted children
+        # merge into it rather than splitting off as sibling red nodes.
+        forced = [e for e in within if nodes[e[0]].color == "red"]
+        choice = [e for e in within if nodes[e[0]].color != "red"]
         dec_choices = {i: list(_submultiindices(nodes[i].node_dec)) for i in phi}
         edge_choices = list(_edge_decs(width, sig.scaling, _E_CAP))
 
-        for eint_mask in range(1 << len(within)):
-            eint = [within[j] for j in range(len(within)) if eint_mask & (1 << j)]
+        for eint_mask in range(1 << len(choice)):
+            internal = forced + [choice[j] for j in range(len(choice)) if eint_mask & (1 << j)]
+            eint = [(a, b) for (a, b, comp, p) in internal]
             comp_id = _block_tops(phi, eint, nodes)
             comps = defaultdict(list)
             for i in phi:
                 comps[comp_id[i]].append(i)
+            internal_set = set(eint)
+            between = [e for e in within if (e[0], e[1]) not in internal_set]
+            # ∂(A,F) (BHZ): edges leaving the extracted forest A (parent ∈ A, edge not
+            # internal) — BOTH φ→outside boundary AND between-component edges — carry
+            # the e' Taylor recentering (πe' onto the parent, e+e' on the contracted
+            # edge). Between-edges getting e' is what lets δ recenter a node whose
+            # child is also extracted, matching Δ's recenter-then-extract order.
+            recenter = boundary + between
 
             for nphi in product(*(dec_choices[i] for i in sorted(phi))):
                 nphi_map = dict(zip(sorted(phi), nphi))
@@ -194,14 +209,14 @@ def delta_minus(t: DecoratedTree, sig, root_disjoint: bool = False) -> TensorSum
                     binom *= _mi_binom(nodes[i].node_dec, nphi_map[i])
                 if binom == 0:
                     continue
-                for eprime in product(edge_choices, repeat=len(boundary)):
-                    ep_map = {k: eprime[k] for k in range(len(boundary))}
+                for eprime in product(edge_choices, repeat=len(recenter)):
+                    ep_map = {k: eprime[k] for k in range(len(recenter))}
                     efact = 1
                     for ev in eprime:
                         efact *= _mi_fact(ev)
                     coeff = Fraction(binom, efact)
                     term = _assemble(t, nodes, children_of, phi, comps, comp_id,
-                                     boundary, nphi_map, ep_map, sig, width)
+                                     recenter, nphi_map, ep_map, sig, width)
                     if term is None:
                         continue
                     forest, right = term

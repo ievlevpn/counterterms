@@ -63,11 +63,12 @@ Modules: `trees/coproducts.py`, `structures.py` (`core/hopf.py` generic layer st
       `(Δ⊗id)Δ = (id⊗Δ⁺)Δ`, `Δ⁺` coassociativity, counits, homogeneity stability.
 - [x] **Negative twisted antipode `S'₋`** (tex 5034); `S'₋(∘) = −∘`.
 - [x] **`δ⁺` (`D̄⁻`)** + the **cointeraction** `(id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ` — **holds for the gKPZ
-      class (β₀=−1)**.
+      class (β₀=−1) AND the singular β₀=−3/2 trees**. Fix: the e'-Taylor recentering runs over
+      the full extraction boundary `∂(A,F)` (between-component edges too, not only φ→outside),
+      and edges below a pre-existing red node stay internal. See
+      [`notes/cointeraction_singular_noise.md`](notes/cointeraction_singular_noise.md) §8.
 - [x] **Structures** — `RenormalizationStructure` (`δ`, `δ⁻`, `S'₋`) + the **symbolic BHZ
       character** `k = h∘S'₋` (`h` left symbolic). (`structures.py`)
-- [ ] 🔨 **Cointeraction for more singular noise** — residual bug at β₀=−3/2 (the e'-recentering
-      coupling of `δ⁺` with `δ`; not a truncation artifact). `xfail` in tests. **Next task.**
 - [ ] **Generic Hopf layer** (`core/hopf.py`, over the `Symbol` protocol) — character
       convolution, connected-graded antipode, comodule action `k̃`. (currently tree-specific)
 - [ ] **`RegularityStructure (T, T⁺)`** — needs γ-bounded basis generation (positive trees), a
@@ -75,8 +76,8 @@ Modules: `trees/coproducts.py`, `structures.py` (`core/hopf.py` generic layer st
 - [ ] **Rule completion** (BHZ Prop 5.21) — replace the generate-then-filter shortcut.
 - [ ] **`G⁻` vs `G⁻_ad` toggle** (moved from Phase 2) — reduce the free family to `G⁻_ad`.
 
-**Acceptance:** coassociativities + cointeraction green as property tests (✅ except the singular-
-noise cointeraction); `S'₋` validated on small trees. **30+ tests pass, 1 xfail (the residual).**
+**Acceptance:** coassociativities + cointeraction (incl. singular β₀=−3/2) green as property
+tests; `S'₋` validated on small trees. **34 tests pass.**
 
 ---
 

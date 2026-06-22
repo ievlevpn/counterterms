@@ -7,8 +7,9 @@ needs Gaussian/Wick machinery (Phase 4); here `k(τ)` is returned as the exact
 symbolic combination of those `h`-values that the twisted antipode prescribes.
 
 Note (tex 5710/5717): `δ⁻` and `Δ` are individually coassociative and the
-cointeraction holds for the gKPZ class; the cointeraction has a known residual
-for more singular noise (β₀ ≤ −3/2) — see `tests/test_coproducts.py`.
+cointeraction `(Id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ` holds, including for the singular β₀=−3/2
+trees (the e'-recentering runs over the full ∂(A,F); see `tests/test_coproducts.py`
+and `notes/cointeraction_singular_noise.md`).
 """
 from __future__ import annotations
 

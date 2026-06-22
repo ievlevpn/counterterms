@@ -1,5 +1,4 @@
 """Phase 3: the extraction-contraction coproduct δ (negative/renormalization side)."""
-import pytest
 from sympy import Function, Derivative, Rational
 
 from regstruct import Noise, Parabolic, SPDE, Unknown, kappa
@@ -201,21 +200,15 @@ def test_delta_minus_coassoc_singular():
         assert coassoc_lhs(t, sig) == coassoc_rhs(t, sig)
 
 
-@pytest.mark.xfail(strict=True,
-                   reason="residual (diagnosed, unfixed): the cointeraction (Id⊗Δ)δ = "
-                          "M¹³(δ⊗δ⁺)Δ holds for gKPZ (β₀=−1) but fails at β₀=−3/2 on the "
-                          "decorated tree ∘—I₀—∘^{(0,1)}. A node decoration under an edge lands "
-                          "on different red nodes via recenter-then-extract (RHS: leftover on "
-                          "the branch, by δ⁺'s n_φ split) vs extract-then-recenter (LHS: on the "
-                          "trunk, by Δ's πe'; between-edges get no e' per the formula). Both "
-                          "δ,Δ match tex 5613/5636 and are coassociative; reconciling their "
-                          "coupling needs the full BHZ extended-decoration proof (arXiv:"
-                          "1610.08468), not a quick patch. NOT an _E_CAP truncation.")
 def test_cointeraction_singular():
+    # The cointeraction (Id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ on the more singular β₀=−3/2−κ trees
+    # (the KPZ-table trees, incl. the decorated ∘—I₀—∘^{(0,1)}). Holds once the
+    # e'-Taylor recentering is applied on the full ∂(A,F) — boundary AND
+    # between-component edges (BHZ arXiv:1610.08468); see notes/cointeraction_*.md.
     from collections import defaultdict
     from fractions import Fraction
     sig, _base, _u = _gkpz_ctx(reg=Rational(-3, 2) - kappa)
-    trees = [t for t in generate_counterterms(sig) if t.nodes() <= 3]
+    trees = [t for t in generate_counterterms(sig) if t.nodes() <= 4]
 
     def sf(fr):
         return tuple(sorted(fr, key=lambda x: x._sortkey()))
