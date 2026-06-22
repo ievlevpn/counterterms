@@ -88,6 +88,18 @@ def test_json_and_other_formats():
     assert eq.latex_document().rstrip().endswith(r"\end{document}")
 
 
+def test_markdown_table_well_formed():
+    import re
+    from regstruct.render.report import _md_cell
+    assert _md_cell("a|b") == "a\\|b"          # a literal pipe is escaped for GFM
+    md = _build().render("markdown")
+    # in the divergent-trees table every row must have the same number of *unescaped*
+    # pipes (column delimiters) — a stray | in a cell would make it ragged
+    rows = [ln for ln in md.splitlines() if ln.startswith("|")]
+    counts = {len(re.findall(r"(?<!\\)\|", ln)) for ln in rows}
+    assert len(counts) == 1, f"ragged markdown table: {counts}"
+
+
 def test_save_writes_exports(tmp_path):
     eq = _build()
     written = eq.save(stem="gkpz", outdir=str(tmp_path), pdf=False)

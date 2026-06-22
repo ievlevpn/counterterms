@@ -251,6 +251,12 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
 # markdown
 # --------------------------------------------------------------------------- #
 
+def _md_cell(s: object) -> str:
+    """Escape a value for a GFM table cell: a literal ``|`` ends the cell even inside
+    backticks/`$`, so it must be backslash-escaped."""
+    return str(s).replace("|", "\\|")
+
+
 def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
@@ -277,11 +283,11 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
     for t in trees:
         k = cmap.get(t)
         kc = str(k) if k is not None else "— (F=0)"
-        row = f"| `{shorthand(t, sig, coords)}` | `{t.homogeneity(sig)}` | " \
-              f"{t.symmetry_factor()} | `{kc}` |"
+        row = f"| `{_md_cell(shorthand(t, sig, coords))}` | `{_md_cell(t.homogeneity(sig))}` | " \
+              f"{t.symmetry_factor()} | `{_md_cell(kc)}` |"
         if scalar:
             f = fstr(eq._pretty(emap[t])) if k is not None else "0"
-            row += f" `{f}` |"
+            row += f" `{_md_cell(f)}` |"
         L.append(row)
 
     L += ["", "## Renormalized family", ""]
