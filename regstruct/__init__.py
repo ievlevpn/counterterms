@@ -6,9 +6,22 @@ See notes/architecture.md and notes/initial_plan.md.
 from .equation.dsl import SPDE, Noise, Parabolic, Unknown, kappa
 from .core.jets import jet
 
-__all__ = ["SPDE", "Noise", "Parabolic", "Unknown", "kappa", "jet", "renormalize"]
+__all__ = ["SPDE", "Noise", "Parabolic", "Unknown", "kappa", "jet", "renormalize",
+           "build_renormalization", "build_regularity_structure"]
 
 
 def renormalize(spde):
     from .api import renormalize as _r
     return _r(spde)
+
+
+def build_renormalization(spde):
+    """The negative (renormalisation) structure: δ, δ⁻, S'₋, and the BHZ character."""
+    from .structures import build_renormalization as _b
+    return _b(spde)
+
+
+def build_regularity_structure(spde, gamma=1):
+    """The γ-truncated regularity structure (T, T⁺): graded model basis + Δ, Δ⁺."""
+    from .structures import build_regularity_structure as _b
+    return _b(spde, gamma)

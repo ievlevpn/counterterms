@@ -71,13 +71,14 @@ Modules: `trees/coproducts.py`, `structures.py` (`core/hopf.py` generic layer st
       character** `k = h∘S'₋` (`h` left symbolic). (`structures.py`)
 - [ ] **Generic Hopf layer** (`core/hopf.py`, over the `Symbol` protocol) — character
       convolution, connected-graded antipode, comodule action `k̃`. (currently tree-specific)
-- [ ] **`RegularityStructure (T, T⁺)`** — needs γ-bounded basis generation (positive trees), a
-      small extension of `generate_counterterms`.
+- [x] **`RegularityStructure (T, T⁺)`** — γ-bounded model basis (`generate_trees`, positive
+      sector included), graded by homogeneity; `Δ : T → T⁺`, `Δ⁺` on `T⁺`; tested graded +
+      triangular into `T⁺`, with the divergent subspace = the counterterms. (`structures.py`)
 - [ ] **Rule completion** (BHZ Prop 5.21) — replace the generate-then-filter shortcut.
 - [ ] **`G⁻` vs `G⁻_ad` toggle** (moved from Phase 2) — reduce the free family to `G⁻_ad`.
 
 **Acceptance:** coassociativities + cointeraction (incl. singular β₀=−3/2) green as property
-tests; `S'₋` validated on small trees. **34 tests pass.**
+tests over the SPDE corpus; `S'₋` validated on small trees. **112 tests pass (~4s).**
 
 ---
 

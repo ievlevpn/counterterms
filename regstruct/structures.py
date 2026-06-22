@@ -13,13 +13,16 @@ and `notes/cointeraction_singular_noise.md`).
 """
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass, field
+from fractions import Fraction
 
 import sympy
 
 from .equation.dsl import build_context
-from .equation.generate import generate_counterterms
-from .trees.coproducts import delta_minus, delta_minus_group, twisted_antipode
+from .equation.generate import generate_counterterms, generate_trees
+from .trees.coproducts import (
+    delta_minus, delta_minus_group, delta_plus, twisted_antipode)
 
 
 @dataclass
@@ -56,3 +59,59 @@ class RenormalizationStructure:
 def build_renormalization(spde) -> RenormalizationStructure:
     sig, _base, _unknowns = build_context(spde)
     return RenormalizationStructure(sig, tuple(generate_counterterms(sig)))
+
+
+@dataclass
+class RegularityStructure:
+    """A γ-truncated regularity structure ``(T, T⁺)`` for an SPDE (the positive side).
+
+    ``model_basis`` is the basis of the model space ``T``: every rule-conforming tree
+    with ``|τ|_std < γ``, graded by homogeneity (``A`` = the homogeneity set, locally
+    finite and bounded below).  The recentering ``Δ : T → T ⊗ T⁺`` and the
+    structure-group coproduct ``Δ⁺ : T⁺ → T⁺ ⊗ T⁺`` are the validated `delta_plus`;
+    ``T⁺`` is spanned by the positive planted trees that ``Δ`` produces.  The negative
+    (renormalisation) side is `RenormalizationStructure`; the two cointeract.
+
+    ponytail: the abstract polynomial sector ``{X^k}`` is carried as node decorations,
+    not as standalone basis vectors (there is no separate ``X`` node type).
+    """
+
+    sig: object
+    gamma: Fraction
+    model_basis: tuple
+
+    def grades(self) -> dict:
+        """``T = ⊕_α T_α`` — basis trees grouped by homogeneity."""
+        g = defaultdict(list)
+        for t in self.model_basis:
+            g[t.homogeneity(self.sig)].append(t)
+        return dict(g)
+
+    def homogeneities(self) -> list:
+        """The homogeneity set ``A`` (sorted, ascending)."""
+        return sorted({t.homogeneity(self.sig) for t in self.model_basis},
+                      key=lambda h: h._key())
+
+    @property
+    def divergent(self) -> tuple:
+        """The negative-homogeneity subspace (the counterterm carriers)."""
+        return tuple(t for t in self.model_basis if t.homogeneity(self.sig).is_negative())
+
+    def recentering(self, t):
+        """``Δ τ ∈ T ⊗ T⁺`` (tourist_guide.tex 5613)."""
+        return delta_plus(t, self.sig)
+
+    def structure_coproduct(self, b):
+        """``Δ⁺ b ∈ T⁺ ⊗ T⁺`` (the structure-group Hopf algebra, tex 5709)."""
+        return delta_plus(b, self.sig, project_left=True)
+
+    def positive_basis(self) -> set:
+        """The ``T⁺`` elements that appear as right factors of ``Δ`` over the basis."""
+        return {right for t in self.model_basis for (_l, right) in self.recentering(t)}
+
+
+def build_regularity_structure(spde, gamma=Fraction(1)) -> RegularityStructure:
+    """Build the γ-truncated ``(T, T⁺)`` for `spde` (``gamma`` = the std homogeneity cutoff)."""
+    sig, _base, _unknowns = build_context(spde)
+    basis = tuple(generate_trees(sig, gamma))
+    return RegularityStructure(sig, Fraction(gamma), basis)

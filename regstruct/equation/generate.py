@@ -37,12 +37,15 @@ def _multiindices(length: int, scaling, max_scaled: int):
     yield from rec(0, max_scaled, [])
 
 
-def generate_counterterms(sig):
+def generate_trees(sig, bound=_BOUND):
+    """All rule-conforming decorated trees ``τ`` with ``homogeneity.std < bound`` — the
+    γ-truncated basis of the model space ``T``.  ``generate_counterterms`` is the
+    ``|τ|<0`` subset (the counterterm carriers); the rest are the positive sector."""
     decs = list(_multiindices(sig.width, sig.scaling, _MAX_NODE_SCALED))
     pool: dict = {}
 
     def add(t) -> bool:
-        if t in pool or t.homogeneity(sig).std >= _BOUND:
+        if t in pool or t.homogeneity(sig).std >= bound:
             return False
         pool[t] = t
         return True
@@ -68,14 +71,19 @@ def generate_counterterms(sig):
 
             for n in decs:
                 base_h = sig.node_homogeneity(b) + Homogeneity(sig.scaled(n))
-                if base_h.std >= _BOUND:
+                if base_h.std >= bound:
                     continue
-                changed |= _emit(b, n, base_h, atoms, caps, add)
+                changed |= _emit(b, n, base_h, atoms, caps, add, bound)
 
-    return [t for t in pool.values() if t.homogeneity(sig).is_negative()]
+    return list(pool.values())
 
 
-def _emit(b, n, base_h, atoms, caps, add) -> bool:
+def generate_counterterms(sig):
+    """The divergent trees ``|τ| < 0`` — the counterterm-carrying subset of the basis."""
+    return [t for t in generate_trees(sig) if t.homogeneity(sig).is_negative()]
+
+
+def _emit(b, n, base_h, atoms, caps, add, bound=_BOUND) -> bool:
     """DFS over child multisets with homogeneity budget; returns whether pool grew."""
     grew = False
     counts: Counter = Counter()
@@ -89,7 +97,7 @@ def _emit(b, n, base_h, atoms, caps, add) -> bool:
             if caps[(comp, p)] is not None and counts[(comp, p)] >= caps[(comp, p)]:
                 continue
             nh = h + contrib
-            if nh.std >= _BOUND:          # atoms sorted ascending ⇒ rest overshoot too
+            if nh.std >= bound:           # atoms sorted ascending ⇒ rest overshoot too
                 break
             counts[(comp, p)] += 1
             dfs(idx, chosen + [(comp, p, sub)], nh)

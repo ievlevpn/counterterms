@@ -8,7 +8,7 @@ the *symbolic* combination the twisted antipode prescribes.
 """
 import pytest
 
-from regstruct.structures import build_renormalization
+from regstruct.structures import build_regularity_structure, build_renormalization
 from regstruct.trees.tree import tree
 
 from tests.conftest import CORPUS, gkpz
@@ -35,3 +35,54 @@ def test_bhz_character_is_a_polynomial_in_h(name):
     for t in rs.divergent:
         expr = rs.bhz_character(t)
         assert expr.free_symbols <= set(rs._h.values())
+
+
+# --------------------------------------------------------------------------- #
+# RegularityStructure (T, T⁺) — the positive side
+# --------------------------------------------------------------------------- #
+
+def _branch_positive(blue_tree, sig):
+    """Every planted branch I_p(σ) of a T⁺ (blue-rooted) tree has homogeneity > 0."""
+    for (comp, p, sub) in blue_tree.children:
+        h = sig.edge_gain(comp, p) + sub.extended_homogeneity(sig)
+        if not (h.std > 0 or (h.std == 0 and h.kap > 0)):
+            return False
+    return True
+
+
+def test_regularity_structure_is_graded_and_bounded_below():
+    rs = build_regularity_structure(gkpz())
+    assert rs.model_basis
+    assert all(t.homogeneity(rs.sig).std < rs.gamma for t in rs.model_basis)
+    # grades partition the basis; the homogeneity set A is sorted & bounded below
+    assert sum(len(v) for v in rs.grades().values()) == len(rs.model_basis)
+    A = rs.homogeneities()
+    assert A and A == sorted(A, key=lambda h: h._key())
+
+
+def test_divergent_subspace_matches_counterterms():
+    from regstruct.equation.generate import generate_counterterms
+    rs = build_regularity_structure(gkpz())
+    assert set(rs.divergent) == set(generate_counterterms(rs.sig))
+    assert len(rs.divergent) == 5            # the five gKPZ counterterms live inside T
+
+
+@pytest.mark.parametrize("name", list(CORPUS))
+def test_recentering_is_triangular_into_Tplus(name):
+    # Δ : T → T ⊗ T⁺ — co-graded (|left|+|right|=|τ|), triangular (|left| ≤ |τ|),
+    # and every right factor is a positive blue tree (lands in T⁺).
+    rs = build_regularity_structure(CORPUS[name]())
+    for t in rs.model_basis:
+        ext = t.extended_homogeneity(rs.sig)
+        for (left, right), _c in rs.recentering(t).items():
+            lh = left.extended_homogeneity(rs.sig)
+            assert lh + right.extended_homogeneity(rs.sig) == ext
+            assert lh._key() <= ext._key()
+            assert right.color == "blue" and _branch_positive(right, rs.sig)
+
+
+def test_Tplus_generators_are_positive():
+    rs = build_regularity_structure(gkpz())
+    pos = rs.positive_basis()
+    assert pos
+    assert all(_branch_positive(b, rs.sig) for b in pos)
