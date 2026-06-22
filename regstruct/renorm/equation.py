@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from ..core.homogeneity import Homogeneity
     from ..core.signature import Signature
-    from ..equation.dsl import SPDE
+    from ..equation.dsl import SPDE, Unknown
     from ..trees.tree import DecoratedTree
 
 
@@ -44,21 +44,21 @@ class Counterterm:
 class RenormalizedEquation:
     spde: SPDE
     sig: Signature
-    base: dict
-    unknowns: list
-    per_component: dict          # component index -> list[Counterterm]
-    all_trees: list = field(default_factory=list)   # full 𝓑_<0 (incl. F(τ*)=0 trees)
+    base: dict[int, dict[str, sympy.Expr]]
+    unknowns: list[Unknown]
+    per_component: dict[int, list[Counterterm]]      # component index -> its counterterms
+    all_trees: list[DecoratedTree] = field(default_factory=list)  # full 𝓑_<0 (incl. F(τ*)=0 trees)
 
     @property
     def n_components(self) -> int:
         return self.sig.n_components
 
     @property
-    def counterterms(self) -> list:
+    def counterterms(self) -> list[Counterterm]:
         """Counterterms of component 0 (the scalar case)."""
         return self.per_component[0]
 
-    def _display_subs(self, comp: int) -> dict:
+    def _display_subs(self, comp: int) -> dict[sympy.Symbol, sympy.Expr]:
         u = self.unknowns[comp]
         width = self.sig.width
         subs = {jet(comp, (0,) * width): u.field}
@@ -67,8 +67,8 @@ class RenormalizedEquation:
             subs[jet(comp, e_i)] = sympy.Derivative(u.field, u.coords[i])
         return subs
 
-    def _all_display_subs(self) -> dict:
-        subs = {}
+    def _all_display_subs(self) -> dict[sympy.Symbol, sympy.Expr]:
+        subs: dict[sympy.Symbol, sympy.Expr] = {}
         for c in range(self.n_components):
             subs.update(self._display_subs(c))
         return subs

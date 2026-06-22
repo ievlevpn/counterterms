@@ -32,8 +32,16 @@ if TYPE_CHECKING:
     from ..core.homogeneity import Scaling
     from ..core.signature import Signature
 
-# A coproduct value: {(forest: tuple[DecoratedTree, ...], right: DecoratedTree): coeff}
-TensorSum = dict
+# Node-addressed building blocks (see `_explode` / `_build`).
+ChildEntry = tuple[int, int, MultiIndex]                       # (child_id, component, p)
+Edge = tuple[int, int, int, MultiIndex]                        # (parent_id, child_id, component, p)
+NodeOverride = tuple[str, MultiIndex, str, Homogeneity]        # (node_type, node_dec, color, o)
+Forest = tuple[DecoratedTree, ...]                             # a product in U⁻ / ℝ[U]
+# Coproduct / antipode values, all ``… ↦ coeff ∈ ℚ``:
+TensorSum = dict[tuple[Forest, DecoratedTree], Fraction]       # δ : (extracted forest) ⊗ (contracted tree)
+PlusSum = dict[tuple[DecoratedTree, DecoratedTree], Fraction]  # Δ : (left tree) ⊗ (right tree)
+GroupSum = dict[tuple[Forest, Forest], Fraction]               # δ⁻ : (left forest) ⊗ (right forest)
+ForestSum = dict[Forest, Fraction]                             # S'₋ : forest-sum in ℝ[U]
 
 _E_CAP = 4   # ponytail: safety cap on |e'|_𝔰 per boundary edge; the |φ|<0 filter is the real bound
 
@@ -95,7 +103,7 @@ class _Node:
         self.edge: tuple[int, MultiIndex] | None = None        # (component, p) of the edge from parent
 
 
-def _explode(t: DecoratedTree) -> tuple[list, list]:
+def _explode(t: DecoratedTree) -> tuple[list[_Node], list[Edge]]:
     nodes, edges = [], []       # edges: (parent_id, child_id, comp, p)
     def walk(sub: DecoratedTree, parent_id: int | None, edge: tuple[int, MultiIndex] | None) -> int:
         nid = len(nodes)
@@ -111,7 +119,8 @@ def _explode(t: DecoratedTree) -> tuple[list, list]:
     return nodes, edges
 
 
-def _build(root_id: int, node_overrides: dict, child_map: dict) -> DecoratedTree:
+def _build(root_id: int, node_overrides: dict[int, NodeOverride],
+           child_map: dict[int, list[ChildEntry]]) -> DecoratedTree:
     """Rebuild a DecoratedTree from node-addressed data (recursive)."""
     nt, nd, color, o = node_overrides[root_id]
     children = []
@@ -120,7 +129,7 @@ def _build(root_id: int, node_overrides: dict, child_map: dict) -> DecoratedTree
     return tree(nt, nd, children, color=color, o=o)
 
 
-def _block_tops(phi: set[int], eint: list[tuple[int, int]], nodes: list) -> dict[int, int]:
+def _block_tops(phi: set[int], eint: list[tuple[int, int]], nodes: list[_Node]) -> dict[int, int]:
     """Union-find on φ via the internal edges; each block's representative is its
     top node (the one whose parent lies outside the block)."""
     par = {i: i for i in phi}
@@ -257,11 +266,11 @@ def delta_minus(t: DecoratedTree, sig: Signature, root_disjoint: bool = False) -
     return {k: v for k, v in out.items() if v != 0}
 
 
-def _assemble(t: DecoratedTree, nodes: list, children_of: dict, phi: set[int],
-              comps: dict[int, list[int]], comp_id: dict[int, int],
-              boundary: list, nphi_map: dict[int, MultiIndex],
+def _assemble(t: DecoratedTree, nodes: list[_Node], children_of: dict[int, list[ChildEntry]],
+              phi: set[int], comps: dict[int, list[int]], comp_id: dict[int, int],
+              boundary: list[Edge], nphi_map: dict[int, MultiIndex],
               ep_map: dict[int, MultiIndex], sig: Signature, width: int
-              ) -> tuple[tuple[DecoratedTree, ...], DecoratedTree] | None:
+              ) -> tuple[Forest, DecoratedTree] | None:
     zero = (0,) * width
     # π e': boundary-edge decoration pushed onto its φ-endpoint
     pi_e = defaultdict(lambda: zero)
@@ -320,14 +329,15 @@ def _assemble(t: DecoratedTree, nodes: list, children_of: dict, phi: set[int],
     return forest, right
 
 
-def _edges_of(children_of: dict) -> Iterator[tuple[int, int, int, MultiIndex]]:
+def _edges_of(children_of: dict[int, list[ChildEntry]]) -> Iterator[Edge]:
     for a, lst in children_of.items():
         for (b, comp, p) in lst:
             yield (a, b, comp, p)
 
 
-def _component_naive_homog(members: list[int], nodes: list, nphi_map: dict[int, MultiIndex],
-                           pi_e: dict, children_of: dict, sig: Signature) -> Homogeneity:
+def _component_naive_homog(members: list[int], nodes: list[_Node], nphi_map: dict[int, MultiIndex],
+                           pi_e: dict[int, MultiIndex], children_of: dict[int, list[ChildEntry]],
+                           sig: Signature) -> Homogeneity:
     """Naive homogeneity |component|' with decorations n_φ + π e' and interior edges."""
     member_set = set(members)
     h = Homogeneity(0)
@@ -346,7 +356,7 @@ def _component_naive_homog(members: list[int], nodes: list, nphi_map: dict[int, 
 # the group coproduct δ⁻ : U⁻ → U⁻ ⊗ U⁻  (right factor projected by p₋)
 # --------------------------------------------------------------------------- #
 
-def _p_minus(t: DecoratedTree, sig: Signature) -> tuple:
+def _p_minus(t: DecoratedTree, sig: Signature) -> tuple[str, DecoratedTree] | tuple[str]:
     """p₋ on a single tree: keep if divergent; ● and red ●^{0,α} → 𝟙₋; else 0."""
     if t.homogeneity(sig).is_negative():
         return ("keep", t)
@@ -359,7 +369,7 @@ def _sort_forest(f: tuple[DecoratedTree, ...]) -> tuple[DecoratedTree, ...]:
     return tuple(sorted(f, key=lambda x: x._sortkey()))
 
 
-def delta_minus_group(t: DecoratedTree, sig: Signature) -> TensorSum:
+def delta_minus_group(t: DecoratedTree, sig: Signature) -> GroupSum:
     """δ⁻ = (p₋⊗p₋)D⁻ on a single generator → {(left_forest, right_forest): coeff}.
 
     Coassociative (`test_delta_minus_coassociative`): `p₋` collapses bare red nodes
@@ -375,7 +385,7 @@ def delta_minus_group(t: DecoratedTree, sig: Signature) -> TensorSum:
     return {k: v for k, v in out.items() if v != 0}
 
 
-def _delta_group_forest(forest: tuple[DecoratedTree, ...], sig: Signature) -> TensorSum:
+def _delta_group_forest(forest: Forest, sig: Signature) -> GroupSum:
     """δ⁻ extended to a forest (algebra morphism): δ⁻(∏ τ_i) = ∏ δ⁻(τ_i)."""
     acc = {((), ()): Fraction(1)}
     for comp in forest:
@@ -388,7 +398,7 @@ def _delta_group_forest(forest: tuple[DecoratedTree, ...], sig: Signature) -> Te
     return acc
 
 
-def coassoc_lhs(t: DecoratedTree, sig: Signature) -> dict:
+def coassoc_lhs(t: DecoratedTree, sig: Signature) -> dict[tuple[Forest, Forest, Forest], Fraction]:
     """(δ⁻ ⊗ id) δ⁻ τ  →  {(forest, forest, forest): coeff}."""
     out = defaultdict(Fraction)
     for (A, B), c in delta_minus_group(t, sig).items():
@@ -397,7 +407,7 @@ def coassoc_lhs(t: DecoratedTree, sig: Signature) -> dict:
     return {k: v for k, v in out.items() if v != 0}
 
 
-def coassoc_rhs(t: DecoratedTree, sig: Signature) -> dict:
+def coassoc_rhs(t: DecoratedTree, sig: Signature) -> dict[tuple[Forest, Forest, Forest], Fraction]:
     """(id ⊗ δ⁻) δ⁻ τ  →  {(forest, forest, forest): coeff}."""
     out = defaultdict(Fraction)
     for (A, B), c in delta_minus_group(t, sig).items():
@@ -410,7 +420,8 @@ def coassoc_rhs(t: DecoratedTree, sig: Signature) -> dict:
 # the negative twisted antipode S'₋ : U⁻ → ℝ[U]   (tourist_guide.tex 5034)
 # --------------------------------------------------------------------------- #
 
-def twisted_antipode(t: DecoratedTree, sig: Signature, memo: dict | None = None) -> dict:
+def twisted_antipode(t: DecoratedTree, sig: Signature,
+                     memo: dict[tuple, ForestSum] | None = None) -> ForestSum:
     """S'₋(τ) as a forest-sum {forest: coeff} in ℝ[U]; algebra morphism, recursive.
 
         S'₋(τ) = −M₋(S'₋⊗Id)(δτ − τ⊗●^{0,|τ|}).
@@ -433,7 +444,7 @@ def twisted_antipode(t: DecoratedTree, sig: Signature, memo: dict | None = None)
     return result
 
 
-def _antipode_forest(forest: tuple[DecoratedTree, ...], sig: Signature, memo: dict) -> dict:
+def _antipode_forest(forest: Forest, sig: Signature, memo: dict[tuple, ForestSum]) -> ForestSum:
     """S'₋ extended to a forest (algebra morphism)."""
     acc = {(): Fraction(1)}
     for comp in forest:
@@ -459,7 +470,7 @@ def _blue_positive(right: DecoratedTree, sig: Signature) -> bool:
     return True
 
 
-def delta_plus(t: DecoratedTree, sig: Signature, project_left: bool = False) -> TensorSum:
+def delta_plus(t: DecoratedTree, sig: Signature, project_left: bool = False) -> PlusSum:
     """Δ = (Id⊗p₊)D (project_left=False) or Δ⁺ = (p₊⊗p₊)D⁺ (project_left=True).
 
     Sum over root-containing subtrees μ (ancestor-closed node sets); left = μ

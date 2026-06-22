@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 
 # An edge: (component, edge decoration p, subtree).
 Edge = tuple[int, MultiIndex, "DecoratedTree"]
+# The canonical isomorphism key: a heterogeneous, recursively-nested tuple.
+CanonKey = tuple[object, ...]
 
 _ZERO = Homogeneity(0)
 
@@ -39,7 +41,7 @@ class DecoratedTree:
     color: str = "black"                  # 'black' | 'red' | 'blue'
     o: Homogeneity = field(default_factory=lambda: _ZERO)   # extended decoration (red nodes)
 
-    def _sortkey(self) -> tuple:
+    def _sortkey(self) -> CanonKey:
         return (self.node_type, self.color, (self.o.std, self.o.kap), self.node_dec,
                 tuple((c, p, sub._sortkey()) for (c, p, sub) in self.children))
 
@@ -73,7 +75,7 @@ class DecoratedTree:
     def nodes(self) -> int:
         return 1 + sum(sub.nodes() for (_, _, sub) in self.children)
 
-    def canonical_key(self) -> tuple:
+    def canonical_key(self) -> CanonKey:
         """The canonical isomorphism key (satisfies the `core.symbol.Symbol` protocol)."""
         return self._sortkey()
 

@@ -24,9 +24,11 @@ from .core.hopf import antipode, convolve, counit
 from .equation.dsl import build_context
 from .equation.generate import generate_counterterms, generate_trees
 from .trees.coproducts import (
-    _delta_group_forest, delta_minus, delta_minus_group, delta_plus, twisted_antipode)
+    ForestSum, GroupSum, PlusSum, TensorSum, _delta_group_forest, delta_minus,
+    delta_minus_group, delta_plus, twisted_antipode)
 
 if TYPE_CHECKING:
+    from .core.homogeneity import Homogeneity
     from .core.signature import Signature
     from .equation.dsl import SPDE
     from .renorm.scheme import NoiseLaw
@@ -36,16 +38,16 @@ if TYPE_CHECKING:
 @dataclass
 class RenormalizationStructure:
     sig: Signature
-    divergent: tuple                       # the SC⁻ generators (|τ|' < 0)
-    _h: dict = field(default_factory=dict)  # tree -> its h-symbol
+    divergent: tuple[DecoratedTree, ...]    # the SC⁻ generators (|τ|' < 0)
+    _h: dict[DecoratedTree, sympy.Symbol] = field(default_factory=dict)  # tree -> its h-symbol
 
-    def coaction(self, t: DecoratedTree) -> dict:   # δ : U → U⁻ ⊗ U
+    def coaction(self, t: DecoratedTree) -> TensorSum:   # δ : U → U⁻ ⊗ U
         return delta_minus(t, self.sig)
 
-    def coproduct(self, t: DecoratedTree) -> dict:  # δ⁻ : U⁻ → U⁻ ⊗ U⁻
+    def coproduct(self, t: DecoratedTree) -> GroupSum:  # δ⁻ : U⁻ → U⁻ ⊗ U⁻
         return delta_minus_group(t, self.sig)
 
-    def twisted_antipode(self, t: DecoratedTree) -> dict:  # S'₋ : U⁻ → ℝ[U]
+    def twisted_antipode(self, t: DecoratedTree) -> ForestSum:  # S'₋ : U⁻ → ℝ[U]
         return twisted_antipode(t, self.sig)
 
     def h_symbol(self, tree: DecoratedTree) -> sympy.Symbol:
@@ -105,34 +107,34 @@ class RegularityStructure:
 
     sig: Signature
     gamma: Fraction
-    model_basis: tuple
+    model_basis: tuple[DecoratedTree, ...]
 
-    def grades(self) -> dict:
+    def grades(self) -> dict[Homogeneity, list[DecoratedTree]]:
         """``T = ⊕_α T_α`` — basis trees grouped by homogeneity."""
         g = defaultdict(list)
         for t in self.model_basis:
             g[t.homogeneity(self.sig)].append(t)
         return dict(g)
 
-    def homogeneities(self) -> list:
+    def homogeneities(self) -> list[Homogeneity]:
         """The homogeneity set ``A`` (sorted, ascending)."""
         return sorted({t.homogeneity(self.sig) for t in self.model_basis},
                       key=lambda h: h._key())
 
     @property
-    def divergent(self) -> tuple:
+    def divergent(self) -> tuple[DecoratedTree, ...]:
         """The negative-homogeneity subspace (the counterterm carriers)."""
         return tuple(t for t in self.model_basis if t.homogeneity(self.sig).is_negative())
 
-    def recentering(self, t: DecoratedTree) -> dict:
+    def recentering(self, t: DecoratedTree) -> PlusSum:
         """``Δ τ ∈ T ⊗ T⁺`` (tourist_guide.tex 5613)."""
         return delta_plus(t, self.sig)
 
-    def structure_coproduct(self, b: DecoratedTree) -> dict:
+    def structure_coproduct(self, b: DecoratedTree) -> PlusSum:
         """``Δ⁺ b ∈ T⁺ ⊗ T⁺`` (the structure-group Hopf algebra, tex 5709)."""
         return delta_plus(b, self.sig, project_left=True)
 
-    def structure_antipode(self) -> Callable[[DecoratedTree], dict]:
+    def structure_antipode(self) -> Callable[[DecoratedTree], dict[DecoratedTree, Fraction]]:
         """The structure-group antipode ``S : T⁺ → T⁺`` (the convolution inverse of the
         identity), via the generic connected-graded recursion in `core.hopf`."""
         from .core.hopf import antipode
@@ -145,7 +147,7 @@ class RegularityStructure:
 
         return antipode(self.structure_coproduct, mul, unit)
 
-    def positive_basis(self) -> set:
+    def positive_basis(self) -> set[DecoratedTree]:
         """The ``T⁺`` elements that appear as right factors of ``Δ`` over the basis."""
         return {right for t in self.model_basis for (_l, right) in self.recentering(t)}
 
@@ -175,9 +177,9 @@ class RenormalizationGroup:
     """
 
     sig: Signature
-    generators: tuple                       # the negative-tree free parameters c_τ
+    generators: tuple[DecoratedTree, ...]   # the negative-tree free parameters c_τ
 
-    def _coproduct(self, forest: tuple[DecoratedTree, ...]) -> dict:
+    def _coproduct(self, forest: tuple[DecoratedTree, ...]) -> GroupSum:
         return _delta_group_forest(forest, self.sig)
 
     @staticmethod
@@ -189,7 +191,7 @@ class RenormalizationGroup:
         """The neutral element ``ε⁻`` (no renormalisation)."""
         return counit(())
 
-    def character(self, values: dict) -> Callable[[tuple[DecoratedTree, ...]], object]:
+    def character(self, values: dict[DecoratedTree, object]) -> Callable[[tuple[DecoratedTree, ...]], object]:
         """The character with free constants `values` (``tree → scalar``), extended as an
         algebra morphism ``U⁻ → ℝ`` (a product over the forest, ``1`` on the unit)."""
         def chi(forest: tuple[DecoratedTree, ...]) -> object:
@@ -199,11 +201,12 @@ class RenormalizationGroup:
             return out
         return chi
 
-    def convolve(self, f: Callable, g: Callable) -> Callable[[Hashable], object]:
+    def convolve(self, f: Callable[[Hashable], object],
+                 g: Callable[[Hashable], object]) -> Callable[[Hashable], object]:
         """The group product ``(f⋆g)(τ) = (f⊗g)δ⁻τ``."""
         return convolve(f, g, self._coproduct)
 
-    def inverse(self, f: Callable) -> Callable[[tuple[DecoratedTree, ...]], object]:
+    def inverse(self, f: Callable[[Hashable], object]) -> Callable[[tuple[DecoratedTree, ...]], object]:
         """The group inverse ``f⋆⁻¹ = f∘S⁻`` (valid for characters)."""
         S = antipode(self._coproduct, self._mul, ())
         return lambda forest: sum((c * f(g) for g, c in S(forest).items()), 0)

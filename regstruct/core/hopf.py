@@ -27,7 +27,7 @@ from typing import Callable, Hashable
 def convolve(
     f: Callable[[Hashable], object],
     g: Callable[[Hashable], object],
-    coproduct: Callable[[Hashable], dict],
+    coproduct: Callable[[Hashable], dict[tuple[Hashable, Hashable], object]],
 ) -> Callable[[Hashable], object]:
     """Character convolution ``(f⋆g)(x) = (f⊗g)Δx = Σ f(x⁽¹⁾)·g(x⁽²⁾)``.
 
@@ -45,10 +45,10 @@ def counit(unit: Hashable) -> Callable[[Hashable], object]:
 
 
 def antipode(
-    coproduct: Callable[[Hashable], dict],
+    coproduct: Callable[[Hashable], dict[tuple[Hashable, Hashable], object]],
     mul: Callable[[Hashable, Hashable], Hashable],
     unit: Hashable,
-) -> Callable[[Hashable], dict]:
+) -> Callable[[Hashable], dict[Hashable, Fraction]]:
     """The connected-graded antipode ``S`` (the convolution inverse of the identity,
     ``S⋆id = η∘ε``), as a memoised linear map ``key -> {key: Fraction}``.
 
@@ -59,14 +59,14 @@ def antipode(
     which terminates because the reduced left factors have strictly lower degree
     (connectedness).
     """
-    memo: dict = {}
+    memo: dict[Hashable, dict[Hashable, Fraction]] = {}
 
-    def S(x: Hashable) -> dict:
+    def S(x: Hashable) -> dict[Hashable, Fraction]:
         if x == unit:
             return {unit: Fraction(1)}
         if x in memo:
             return memo[x]
-        out: dict = defaultdict(Fraction, {x: Fraction(-1)})
+        out: dict[Hashable, Fraction] = defaultdict(Fraction, {x: Fraction(-1)})
         for (l, r), c in coproduct(x).items():
             if l == unit or r == unit:          # reduced coproduct only
                 continue
@@ -80,14 +80,14 @@ def antipode(
 
 def comodule_action(
     character: Callable[[Hashable], object],
-    coaction: Callable[[Hashable], dict],
-) -> Callable[[Hashable], dict]:
+    coaction: Callable[[Hashable], dict[tuple[Hashable, Hashable], object]],
+) -> Callable[[Hashable], dict[Hashable, object]]:
     """The comodule action ``k̃ = (k⊗Id)∘δ`` of a character `k` through a coaction
     ``δ : M → C ⊗ M`` — maps ``x ↦ Σ k(x^{(left)})·x^{(right)}`` (a linear combination
     in M).  This is how a renormalisation character acts on the model.
     """
-    def act(x: Hashable) -> dict:
-        out: dict = defaultdict(int)
+    def act(x: Hashable) -> dict[Hashable, object]:
+        out: dict[Hashable, object] = defaultdict(int)
         for (left, right), c in coaction(x).items():
             out[right] += c * character(left)
         return {k: v for k, v in out.items() if v}

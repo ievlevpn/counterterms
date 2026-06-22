@@ -44,7 +44,7 @@ def _Dn(expr: sympy.Expr, n: MultiIndex, width: int) -> sympy.Expr:
     return expr
 
 
-def elem_diff(t: DecoratedTree, comp: int, base: dict, sig: Signature) -> sympy.Expr:
+def elem_diff(t: DecoratedTree, comp: int, base: dict[int, dict[str, sympy.Expr]], sig: Signature) -> sympy.Expr:
     """``F_comp(t*)`` — the elementary differential of ``t`` for output equation ``comp``."""
     expr = base[comp][t.node_type]
     for (c, p, _sub) in t.children:                  # Πᵢ ∂_{(cᵢ, p_i)}

@@ -50,7 +50,7 @@ def generate_trees(sig: Signature, bound: Fraction = _BOUND) -> list[DecoratedTr
     γ-truncated basis of the model space ``T``.  ``generate_counterterms`` is the
     ``|τ|<0`` subset (the counterterm carriers); the rest are the positive sector."""
     decs = list(_multiindices(sig.width, sig.scaling, _MAX_NODE_SCALED))
-    pool: dict = {}
+    pool: dict[DecoratedTree, DecoratedTree] = {}
 
     def add(t: DecoratedTree) -> bool:
         if t in pool or t.homogeneity(sig).std >= bound:
@@ -105,7 +105,7 @@ def _emit(
 ) -> bool:
     """DFS over child multisets with homogeneity budget; returns whether pool grew."""
     grew = False
-    counts: Counter = Counter()
+    counts: Counter[tuple[int, MultiIndex]] = Counter()
 
     def dfs(
         start: int,

@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING
 
 import sympy
 
-from ..core.homogeneity import Homogeneity, Scaling
+from ..core.homogeneity import Homogeneity, MultiIndex, Scaling
 from ..core.jets import is_jet, jet, jet_parts
-from ..core.signature import Signature
+from ..core.signature import EdgeRule, Signature
 from .rule import check_subcritical
 
 if TYPE_CHECKING:
@@ -43,6 +43,13 @@ def _split_kappa(expr: object) -> tuple[Fraction, Fraction]:
 class Unknown:
     """A solution component. Components share spacetime coords (same `dim`)."""
 
+    name: str
+    dim: int
+    t: sympy.Symbol
+    x: list[sympy.Symbol]
+    coords: tuple[sympy.Symbol, ...]
+    field: sympy.Expr
+
     def __init__(self, name: str, dim: int) -> None:
         self.name = name
         self.dim = dim
@@ -53,6 +60,12 @@ class Unknown:
 
 
 class Noise:
+    name: str
+    symbol: sympy.Symbol
+    std: Fraction
+    kap: Fraction
+    homogeneity: Homogeneity
+
     def __init__(self, name: str, regularity: object) -> None:
         self.name = name
         self.symbol = sympy.Symbol(name)
@@ -63,6 +76,12 @@ class Noise:
 class Parabolic:
     """``∂_t − Δ (+ mass)`` by default (order 2). `order` is carried into the
     homogeneity arithmetic; only order 2 is the analytically proven regime."""
+
+    dim: int
+    mass: object
+    order: int
+    scaling: Scaling
+    label: str
 
     def __init__(self, dim: int, mass: object = 0, order: int = 2) -> None:
         self.dim = dim
@@ -80,8 +99,8 @@ class Parabolic:
 
 @dataclass
 class SPDE:
-    equations: list   # list of (Unknown, Parabolic, rhs)
-    noises: list
+    equations: list[tuple[Unknown, Parabolic, sympy.Expr]]
+    noises: list[Noise]
 
     def __init__(
         self,
@@ -126,7 +145,7 @@ def _to_jet(
     return expr.xreplace(subs)
 
 
-def build_context(spde: SPDE) -> tuple[Signature, dict, list]:
+def build_context(spde: SPDE) -> tuple[Signature, dict[int, dict[str, sympy.Expr]], list[Unknown]]:
     equations = spde.equations
     noises = spde.noises
     ncomp = len(equations)
@@ -137,10 +156,10 @@ def build_context(spde: SPDE) -> tuple[Signature, dict, list]:
     comp_order = tuple(op.order for (_u, op, _r) in equations)
 
     # per-equation base nonlinearities, in jet variables
-    base: dict[int, dict[str, object]] = {}
+    base: dict[int, dict[str, sympy.Expr]] = {}
     for a, (_u, _op, rhs_a) in enumerate(equations):
         rhs = sympy.expand(sympy.sympify(rhs_a))
-        ba: dict[str, object] = {}
+        ba: dict[str, sympy.Expr] = {}
         g = rhs
         for nz in noises:
             if sympy.expand(rhs).coeff(nz.symbol, 2) != 0:
@@ -176,9 +195,9 @@ def build_context(spde: SPDE) -> tuple[Signature, dict, list]:
 
     # structural rule: per node type, the child edges (component, p) the nonlinearity
     # depends on, unioned over equations; cap = degree for derivative slots, None for fields.
-    allowed: dict[str, tuple] = {}
+    allowed: dict[str, tuple[EdgeRule, ...]] = {}
     for b in node_types:
-        caps: dict[tuple[int, tuple], "int | None"] = {}
+        caps: dict[tuple[int, MultiIndex], int | None] = {}
         for a in range(ncomp):
             fb = base[a][b]
             for s in fb.free_symbols:

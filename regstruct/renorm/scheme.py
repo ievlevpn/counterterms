@@ -40,7 +40,7 @@ class NoiseLaw:
 WHITE_NOISE = NoiseLaw()
 
 
-def wick_pairings(items: Iterable) -> list[list[tuple]]:
+def wick_pairings(items: Iterable[int]) -> list[list[tuple[int, int]]]:
     """All perfect matchings of ``items`` (Isserlis' theorem); ``[]`` if the count is odd."""
     items = list(items)
     if len(items) % 2 == 1:
@@ -55,7 +55,7 @@ def wick_pairings(items: Iterable) -> list[list[tuple]]:
     return out
 
 
-def _noise_vertices(tree: DecoratedTree, sig: Signature) -> list:
+def _noise_vertices(tree: DecoratedTree, sig: Signature) -> list[int]:
     nodes, _ = _explode(tree)
     return [n.id for n in nodes if n.node_type in sig.noise_homog]
 
@@ -70,7 +70,7 @@ class Expectation:
     """``𝔼[Π^ζτ](0)`` as a sum of unevaluated Wick-pairing integrals (empty list ⇒ 0).
     Each term is ``(integrand, integration_variables)``."""
 
-    terms: list
+    terms: list[tuple[sympy.Expr, tuple[sympy.Symbol, ...]]]
 
     @property
     def is_zero(self) -> bool:
@@ -121,7 +121,7 @@ class Character:
     """A choice of renormalization constants — ``τ ↦ value`` (a free symbol, a symbolic
     expression in the elementary expectations, or — once Track B2 exists — a number)."""
 
-    values: dict
+    values: dict[DecoratedTree, object]
 
     def __call__(self, tree: DecoratedTree) -> object:
         return self.values[tree]

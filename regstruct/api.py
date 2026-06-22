@@ -18,11 +18,11 @@ def renormalize(spde: SPDE) -> RenormalizedEquation:
     sig, base, unknowns = build_context(spde)
     trees = generate_counterterms(sig)
 
-    per_component = {a: [] for a in range(sig.n_components)}
+    per_component: dict[int, list[Counterterm]] = {a: [] for a in range(sig.n_components)}
     idx = 0
     for t in trees:
         # one tree may contribute to several components; the constant k_τ is shared.
-        contribs = {}
+        contribs: dict[int, sympy.Expr] = {}
         for a in range(sig.n_components):
             ed = elem_diff(t, a, base, sig)
             if ed != 0:                       # Assumption-D2 safety: drop F_a(τ*) = 0
