@@ -140,9 +140,12 @@ class RenormalizedEquation:
             p.write_text(self.render(fmt, canonical), encoding="utf-8")
             written.append(p)
         if pdf and "latex" in formats and shutil.which("pdflatex"):
-            subprocess.run(
-                ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", f"{stem}.tex"],
-                cwd=d, capture_output=True)
+            # twice: longtable writes its column widths to .aux on the first pass and
+            # only lays them out correctly on the second (else wide tree cells overflow).
+            for _ in range(2):
+                subprocess.run(
+                    ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", f"{stem}.tex"],
+                    cwd=d, capture_output=True)
             for junk in (f"{stem}.aux", f"{stem}.log"):    # keep output/ tidy
                 (d / junk).unlink(missing_ok=True)
             if (d / f"{stem}.pdf").exists():

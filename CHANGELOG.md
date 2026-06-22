@@ -7,12 +7,13 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Fixed
-- **LaTeX divergent-trees table sizing.** The `forest` trees were emitted with a coordinate
-  `baseline`, which made TikZ report a wrong hbox width — wide trees overflowed left of the τ
-  column and over the header. Now each tree is wrapped in `$\vcenter{\hbox{…}}$`, so the column
-  sizes to the tree and the row centers vertically (KPZ's table now fits one page). The
-  `canonical=True` equation is also broken one term per line so its long combined RHS no longer
-  runs past the right margin.
+- **LaTeX divergent-trees table overflow.** Two causes: (1) the `forest` trees carried a
+  coordinate `baseline`, making TikZ report a wrong hbox width — now each tree is wrapped in
+  `$\vcenter{\hbox{…}}$` (correct width, vertically centered on the math axis); (2) `longtable`
+  computes its column widths from `.aux` and needs **two** compiler passes, but `save()` ran
+  `pdflatex` once — so the trees overflowed their column on the single-pass PDF. `save()` now runs
+  `pdflatex` twice. The `canonical=True` equation is also broken one term per line so its long
+  combined RHS no longer runs past the right margin.
 
 ### Changed
 - **Report's canonical section now shows the parity-reduced canonical (BPHZ) constants**
