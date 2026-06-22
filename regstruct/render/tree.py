@@ -131,9 +131,13 @@ _NOISE_STYLE = ("noise", "noisegray", "noiseblue")
 
 
 def forest(t: DecoratedTree, sig: Signature) -> str:
+    # Wrap in $\vcenter{\hbox{…}}$: gives the picture a correct hbox width (so a table
+    # column sizes to the tree) and centers it on the math axis.  A bare forest with a
+    # coordinate `baseline` reports a wrong width and overflows its cell.  Usable in
+    # text mode (the $…$) and inside surrounding math.
     coords = coord_names(sig.width)
-    return ("\\begin{forest} baseline=(current bounding box.center), rstree\n"
-            + _forest_node(t, sig, coords, 1) + "\n\\end{forest}")
+    return ("$\\vcenter{\\hbox{\\begin{forest} rstree\n"
+            + _forest_node(t, sig, coords, 1) + "\n\\end{forest}}}$")
 
 
 def _poly_latex(n: MultiIndex, coords: tuple[str, ...]) -> str:

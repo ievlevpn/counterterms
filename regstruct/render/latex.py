@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import sympy
 
-from .report import (canonical_data, canonical_family_rhs, const_map, elem_map, flatex,
+from .report import (canonical_data, const_map, elem_map, flatex,
                      hom_latex, op_latex, _sorted_trees)
 from .tree import forest
 
@@ -141,12 +141,18 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
                    else flatex(v))
             P.append(f"  {sympy.latex(k_free)} &= {rhs} \\\\")
         P.append(r"\end{align*}")
-        P.append(r"giving the canonically renormalized equation")
-        P.append(r"\begin{align*}")
+        P.append(r"giving the canonically renormalized equation(s)")
+        canon = {t: v for t, _k, v in rows}
         for a, (u, op, _r) in enumerate(eq.spde.equations):
-            P.append(f"  {op_latex(op)}\\, {u.name} &= "
-                     f"{flatex(canonical_family_rhs(eq, a, rows))} \\\\")
-        P.append(r"\end{align*}")
+            P.append(r"\begin{align*}")
+            P.append(f"  {op_latex(op)}\\, {u.name} &= {flatex(eq.original_rhs(a))} \\\\")
+            for ct in sorted(eq.per_component[a], key=lambda c: c.homogeneity._key()):
+                v = canon.get(ct.tree)
+                if v is not None and v != 0:        # one surviving counterterm per line
+                    term = sympy.expand(sympy.Rational(1, ct.symmetry_factor)
+                                        * v * eq._pretty(ct.elem_diff))
+                    P.append(r"  &\quad + " + flatex(term) + r" \\")
+            P.append(r"\end{align*}")
         if legend:
             P.append(r"where each surviving elementary expectation is $h(\sigma)$ for $\sigma$:")
             P.append(r"\begin{center}")
