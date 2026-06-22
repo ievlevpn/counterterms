@@ -8,7 +8,7 @@ from .core.jets import jet
 
 __all__ = ["SPDE", "Noise", "Parabolic", "Unknown", "kappa", "jet", "renormalize",
            "build_renormalization", "build_regularity_structure",
-           "build_renormalization_group"]
+           "build_renormalization_group", "daprato_lift"]
 
 
 def renormalize(spde):
@@ -32,3 +32,10 @@ def build_renormalization_group(spde):
     """The renormalization group G⁻: characters on U⁻ with the convolution group law."""
     from .structures import build_renormalization_group as _b
     return _b(spde)
+
+
+def daprato_lift(spde):
+    """da Prato–Debussche lift: turn a supercritical additive-noise polynomial SPDE
+    into the subcritical equation for the remainder v = u − X (then `.renormalize()`)."""
+    from .equation.daprato import daprato_lift as _l
+    return _l(spde)

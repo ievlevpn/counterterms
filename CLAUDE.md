@@ -19,11 +19,12 @@ type; shared constants across components), **multiple noises**, and **general op
 Golden-tested: gKPZ (exact 5 counterterms, tex 6004–6012), KPZ/gPAM, decoupled/coupled systems,
 multi-noise, operator order, scope rejections. A `render/` package emits the full report (trees
 drawn as shorthand / ascii / LaTeX-`forest`) in text/markdown/json/latex — see `notes/output.md`.
-`uv run pytest` (132 tests, ~4s). Phase 3 is implemented and green: coproducts (cointeraction
-holds **including β₀=−3/2**), `RegularityStructure (T,T⁺)`, the generic `core/hopf` layer,
-subcriticality check, twisted antipode + BHZ character, and the renormalization group `G⁻`.
-Deferred to Phase 4: the `G⁻_ad` reduction (K-admissibility is a model notion) and formal rule
-completion. See `notes/architecture.md` §7 / `ROADMAP.md`.
+`uv run pytest` (139 tests, ~4s). Phase 3 complete & green: coproducts (cointeraction holds
+**including β₀=−3/2**), `RegularityStructure (T,T⁺)`, the generic `core/hopf` layer,
+subcriticality check, twisted antipode + BHZ character, renormalization group `G⁻`. Phase 4
+started: `daprato_lift` (da Prato–Debussche) unlocks polynomial Φ⁴₂/Φ⁴₃ — see
+`notes/phase4_plan.md`. Still deferred: canonical BPHZ *values* (Wick/integrals), `G⁻_ad`
+reduction, formal rule completion. See `notes/architecture.md` §7 / `ROADMAP.md`.
 
 ## Layout
 
@@ -78,12 +79,16 @@ symbolic constants `c_τ = k(τ)/S(τ)`.
 
 ## Scope (enforce with explicit errors)
 
-In scope (MVP): scalar, single noise, 2nd-order parabolic `L`, `β₀∈(−2,−1)`, `g` ≤ quadratic in
-`∂u` (Assumption D2), `|n|_𝔰 ≤ 1`. Covers gKPZ, KPZ, gPAM, PAM.
+In scope: scalar **or systems**, single **or multiple** noises, 2nd-order parabolic `L`
+(general operator order with a warning), `β₀ > −order` (rule-based subcriticality), `g` ≤
+quadratic in `∂u` (Assumption D2), `|n|_𝔰 ≤ 1`. Covers gKPZ, KPZ, gPAM, PAM, coupled systems,
+multi-noise. **Supercritical `β₀ ≤ −order` polynomial additive-noise equations (Φ⁴₂, Φ⁴₃) are
+handled via `daprato_lift` (the da Prato–Debussche change of variables) → subcritical remainder.**
 
-Reject (with clear messages): `β₀ ≤ −2` (Φ⁴₂/Φ⁴₃/sine-Gordon — need da Prato–Debussche pre-pass,
-v3); noise nonlinearities not affine in the noise; `g` more than quadratic in `∂u`; singular
-derivative factors with `|n|_𝔰 > 1`; quasilinear / non-parabolic `L`; subcriticality failure.
+Reject (with clear messages): supercritical rules not liftable here (sine-Gordon /
+non-polynomial — needs Wick exponentials); noise nonlinearities not affine in the noise; `g`
+more than quadratic in `∂u`; singular derivative factors with `|n|_𝔰 > 1`; quasilinear /
+non-parabolic `L`.
 
 ## Validation anchors (the paper is the oracle — no reference code exists)
 

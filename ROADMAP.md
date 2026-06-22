@@ -105,8 +105,12 @@ tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **132 t
       `h^ζ(τ) = 𝔼[Π^ζ τ](0)` and hence the canonical `k_τ` (needs covariance kernels / integrals).
 - [ ] **`G⁻_ad` reduction** *(moved from Phase 3)* — the admissible subgroup `G⁻_ad ⊂ G⁻`; needs
       K-admissibility (kernel vanishing moments + the Π-map), so it belongs with the model layer.
-- [ ] **da Prato–Debussche pre-pass** — handle `β₀ ≤ −2` (Φ⁴₂, Φ⁴₃, sine-Gordon) by introducing
-      one noise symbol per power to lift into a `β₀ > −2` structure.
+- [x] **da Prato–Debussche pre-pass** (`equation/daprato.py`, `daprato_lift`) — lift a
+      supercritical additive-noise **polynomial** SPDE `u=X+v` and Taylor-expand `P(X+v)`,
+      replacing `X^k` by a Wick-power noise `:X^k:` of regularity `k·(β₀+order)`; the
+      remainder equation is subcritical and `.renormalize()` handles it. **Unlocks Φ⁴₂ (3
+      counterterms) and Φ⁴₃ (9)**, previously rejected. sine-Gordon (non-polynomial → Wick
+      exponentials) remains out of scope.
 - [ ] **Multi-index symbol basis** — a second `Symbol` implementation (Linares–Otto–Tempelmayr)
       plugging into the same generic algebra, validating the basis seam.
 - [ ] **Analytic / numerical export** — emit a built structure (trees, homogeneities, coproducts)

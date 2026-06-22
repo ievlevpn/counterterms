@@ -142,9 +142,9 @@ def build_context(spde: SPDE):
 
     # scope checks (the β₀ lower bound is enforced rule-wise by check_subcritical below)
     for nz in noises:
-        if nz.std >= 0:
-            raise ValueError(f"noise '{nz.name}' regularity {nz.std} ≥ 0 is not singular "
-                             "(this package renormalises β₀ < 0 noises)")
+        if not nz.homogeneity.is_negative():       # ordered-ring: −κ (std 0, kap<0) IS singular
+            raise ValueError(f"noise '{nz.name}' regularity {nz.homogeneity} is not singular "
+                             "(this package renormalises noises of negative regularity)")
     for a in range(ncomp):
         for nz in noises:
             if any(is_jet(s) and any(jet_parts(s)[1]) for s in base[a][nz.name].free_symbols):
