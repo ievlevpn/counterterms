@@ -377,3 +377,94 @@ def _antipode_forest(forest, sig, memo):
                 new[_sort_forest(f1 + f2)] += c1 * c2
         acc = dict(new)
     return acc
+
+
+# --------------------------------------------------------------------------- #
+# the recentering coproduct Δ : T → T ⊗ T⁺   (tourist_guide.tex 5613, 5774)
+# --------------------------------------------------------------------------- #
+
+def _blue_positive(right, sig):
+    """p₊: keep a blue-rooted tree iff every planted branch I_p(σ) has |·| > 0."""
+    for (comp, p, sub) in right.children:
+        bh = sig.edge_gain(comp, p) + sub.extended_homogeneity(sig)
+        if not (bh.std > 0 or (bh.std == 0 and bh.kap > 0)):
+            return False
+    return True
+
+
+def delta_plus(t: DecoratedTree, sig, project_left: bool = False):
+    """Δ = (Id⊗p₊)D (project_left=False) or Δ⁺ = (p₊⊗p₊)D⁺ (project_left=True).
+
+    Sum over root-containing subtrees μ (ancestor-closed node sets); left = μ
+    (decorations n_μ + πe'), right = τ/^blue μ (branches on a blue root, edges e+e').
+    """
+    nodes, edges = _explode(t)
+    width = sig.width
+    n = len(nodes)
+    children_of = defaultdict(list)
+    parent_of = {}
+    for (a, b, comp, p) in edges:
+        children_of[a].append((b, comp, p))
+        parent_of[b] = a
+
+    out = defaultdict(Fraction)
+    for mask in range(1 << n):
+        mu = {i for i in range(n) if mask & (1 << i)}
+        if 0 not in mu:
+            continue
+        if any(i != 0 and parent_of.get(i) not in mu for i in mu):   # ancestor-closed
+            continue
+        boundary = [(a, b, comp, p) for (a, b, comp, p) in edges if a in mu and b not in mu]
+        dec_choices = [list(_submultiindices(nodes[i].node_dec)) for i in sorted(mu)]
+        edge_choices = list(_edge_decs(width, sig.scaling, _E_CAP))
+
+        for nmu in product(*dec_choices):
+            nmu_map = dict(zip(sorted(mu), nmu))
+            binom = 1
+            for i in mu:
+                binom *= _mi_binom(nodes[i].node_dec, nmu_map[i])
+            if binom == 0:
+                continue
+            for eprime in product(edge_choices, repeat=len(boundary)):
+                efact = 1
+                for ev in eprime:
+                    efact *= _mi_fact(ev)
+                coeff = Fraction(binom, efact)
+                pi_e = defaultdict(lambda: (0,) * width)
+                edge_extra = {}
+                for idx, (a, b, comp, p) in enumerate(boundary):
+                    pi_e[a] = _mi_add(pi_e[a], eprime[idx])
+                    edge_extra[(a, b)] = eprime[idx]
+
+                # left = μ with decorations n_μ + π e'
+                ovL = {}
+                cmapL = defaultdict(list)
+                for i in mu:
+                    nd = nodes[i]
+                    ovL[i] = (nd.node_type, _mi_add(nmu_map[i], pi_e[i]), nd.color, nd.o)
+                    for (cid, comp, p) in children_of[i]:
+                        if cid in mu:
+                            cmapL[i].append((cid, comp, p))
+                left = _build(0, ovL, cmapL)
+                if project_left and not _blue_positive(left, sig):
+                    continue            # Δ⁺: left must lie in C⁺ (positive branches)
+
+                # right = τ/^blue μ
+                blue_dec = (0,) * width
+                for i in mu:
+                    blue_dec = _mi_add(blue_dec, tuple(a - b for a, b in zip(nodes[i].node_dec, nmu_map[i])))
+                ovR = {nd.id: (nd.node_type, nd.node_dec, nd.color, nd.o) for nd in nodes if nd.id not in mu}
+                cmapR = defaultdict(list)
+                for (a, b, comp, p) in edges:
+                    if a not in mu and b not in mu:
+                        cmapR[a].append((b, comp, p))
+                BLUE = -1
+                ovR[BLUE] = ("bullet", blue_dec, "blue", Homogeneity(0))
+                for (a, b, comp, p) in boundary:
+                    cmapR[BLUE].append((b, comp, _mi_add(p, edge_extra[(a, b)])))
+                right = _build(BLUE, ovR, cmapR)
+
+                if not _blue_positive(right, sig):       # p₊ on the right
+                    continue
+                out[(left, right)] += coeff
+    return {k: v for k, v in out.items() if v != 0}

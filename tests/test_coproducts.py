@@ -6,7 +6,7 @@ from regstruct.core.homogeneity import Homogeneity
 from regstruct.equation.dsl import build_context
 from regstruct.equation.generate import generate_counterterms
 from regstruct.trees.coproducts import (
-    coassoc_lhs, coassoc_rhs, delta_minus, twisted_antipode)
+    coassoc_lhs, coassoc_rhs, delta_minus, delta_plus, twisted_antipode)
 from regstruct.trees.tree import red_node, tree
 
 
@@ -64,3 +64,38 @@ def test_twisted_antipode_terminates_on_all():
     for t in generate_counterterms(sig):
         result = twisted_antipode(t, sig)
         assert result          # nonempty forest-sum
+
+
+def _blue_unit():
+    return tree("bullet", (0, 0), (), color="blue")   # 𝟙₊
+
+
+def test_delta_plus_circ():
+    # Δ∘ = ∘ ⊗ 𝟙₊  (the noise does not recenter).
+    sig, _base, _u = _gkpz_ctx()
+    circ = tree("xi", (0, 0))
+    assert delta_plus(circ, sig) == {(circ, _blue_unit()): 1}
+
+
+def test_delta_plus_comodule_coassociative():
+    # (Δ ⊗ id) Δ = (id ⊗ Δ⁺) Δ   (tourist_guide.tex 5708): T is a right T⁺-comodule.
+    from collections import defaultdict
+    from fractions import Fraction
+    sig, _base, _u = _gkpz_ctx()
+
+    def lhs(t):
+        out = defaultdict(Fraction)
+        for (A, B), c in delta_plus(t, sig).items():
+            for (A1, A2), c2 in delta_plus(A, sig).items():
+                out[(A1, A2, B)] += c * c2
+        return {k: v for k, v in out.items() if v}
+
+    def rhs(t):
+        out = defaultdict(Fraction)
+        for (A, B), c in delta_plus(t, sig).items():
+            for (B1, B2), c2 in delta_plus(B, sig, project_left=True).items():
+                out[(A, B1, B2)] += c * c2
+        return {k: v for k, v in out.items() if v}
+
+    for t in generate_counterterms(sig):
+        assert lhs(t) == rhs(t)
