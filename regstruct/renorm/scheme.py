@@ -89,26 +89,38 @@ def is_extended(tree: DecoratedTree) -> bool:
     return tree.color == "red" or any(is_extended(s) for (_c, _p, s) in tree.children)
 
 
+def is_bare(tree: DecoratedTree) -> bool:
+    """Is the tree *bare* — **every node decoration is zero**?  This (not the presence of red
+    contraction nodes) is exactly the domain where the naive ``Π^ζ`` reduces to kernels⊗noises:
+    ``Π^ζ(●^{n,α})(x)=x^n`` is *independent of the extended decoration* ``α`` (tex 4003–4004), so
+    a red node with ``n=0`` is just the ``1``-vertex `expectation` already builds.  Only a
+    non-zero ``n`` (the ``x^n`` factor) breaks the integral — see `expectation`."""
+    return (not any(tree.node_dec)) \
+        and all(is_bare(s) for (_c, _p, s) in tree.children)
+
+
 def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE) -> Expectation:
     """The Wick expansion of ``h(τ)=𝔼[Π^ζτ](0)`` (symbolic; integrals unevaluated).
 
-    **Ordinary trees only.**  The naive canonical model ``Π^ζ`` implemented here covers
-    ordinary decorated trees (noises at leaves, kernels on edges).  It does **not** implement
-    the *extended* ``o``-decoration on red contraction nodes (those encode the BPHZ
-    subtraction structure produced by ``S'₋``); calling it on such a tree would silently
-    drop the decoration and yield a meaningless bare-kernel integral, so we refuse.
+    **Bare trees only** (every node decoration zero).  The canonical model ``Π^ζ`` (tex 4000–4008)
+    is multiplicative with ``Π^ζ(∘^n)(x)=x^n ζ(x)``, ``Π^ζ(●^n)(x)=Π^ζ(●^{n,α})(x)=x^n`` and
+    ``Π^ζ(I_pτ)=∂^pK(Π^ζτ)``.  For a *bare* tree (all ``n=0``) this collapses to the kernel⊗noise
+    integral built below, and ``𝔼[·](0)`` is exactly the Wick-pairing sum.  **Red contraction
+    nodes are fine**: ``Π^ζ(●^{n,α})`` is independent of the extended decoration ``α`` (tex 4003),
+    so a red node with ``n=0`` is the ``1``-vertex this builds — *not* something needing the full
+    model.  The **only** thing that breaks the integral is a **non-zero node decoration** ``n``:
+    ``Π^ζ`` then carries ``x^n`` — at the root (``x=0``) that is ``0^n`` (so ``h=0``), at an
+    internal vertex a polynomial factor ``z^n``; neither is captured here, so we refuse.
 
     Independent centered noises ⇒ the expectation **factors over noise types**: vertices are
     paired only with same-type vertices (no cross-noise covariances, since ``𝔼[ξη]=0``), and
-    any type with an odd count makes the whole expectation 0."""
+    any type with an odd count makes the whole expectation 0.
+
+    Order: the parity rule (𝔼 of an odd number of centered Gaussians is 0, whatever the
+    deterministic kernel/``x^n`` factors, and red nodes carry no noise) is always valid, so it
+    returns 0 first; only a non-zero, *bare* tree reaches the integral."""
     from collections import defaultdict
     from itertools import product
-
-    if is_extended(tree):
-        raise NotImplementedError(
-            "expectation() is only valid for ordinary trees; this σ has a red contraction "
-            "node (extended o-decoration). Its 𝔼[Π^ζσ](0) involves Π on the extended "
-            "decoration — the BPHZ subtraction structure — which is not implemented (Track B2).")
 
     nodes, edges = _explode(tree)
     by_type: dict[str, list[int]] = defaultdict(list)
@@ -116,7 +128,15 @@ def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE
         if n.node_type in sig.noise_homog:
             by_type[n.node_type].append(n.id)
     if any(len(ids) % 2 == 1 for ids in by_type.values()):
-        return Expectation([])                      # a type with odd count ⇒ E = 0
+        return Expectation([])                      # odd count ⇒ E = 0 (always valid)
+
+    if not is_bare(tree):                            # non-zero node decoration ⇒ value ≠ this integral
+        raise NotImplementedError(
+            "expectation() is the naive Wick integral, valid only for bare trees (all node "
+            "decorations 0); this σ has a non-zero X^n node-decoration. By Π(X^n)(y)=y^n "
+            "(tex 1809, 4003) a root X^n gives a 0^n factor (h=0) and internal X^n give "
+            "polynomial factors — the full canonical model (Track B). (Red contraction nodes "
+            "are fine: Π^ζ(●^{n,α}) is α-independent.)")
 
     z = {n.id: (sympy.Integer(0) if n.id == 0 else sympy.Symbol(f"z{n.id}")) for n in nodes}
     intvars = tuple(z[n.id] for n in nodes if n.id != 0)

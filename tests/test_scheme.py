@@ -60,20 +60,24 @@ def test_independent_noises_no_cross_pairing():
     assert not has_odd_noise(same, sig) and not expectation(same, sig).is_zero
 
 
-def test_expectation_refuses_extended_trees():
-    # expectation() is the naive canonical Π — valid only for ordinary trees. A red
-    # (contraction) node carries an extended o-decoration it doesn't implement, so it must
-    # refuse rather than silently emit a meaningless bare-kernel integral.
+def test_expectation_red_ok_refuses_only_decorations():
+    # Π^ζ(●^{n,α})(x)=x^n is INDEPENDENT of the extended decoration α (tex 4003-4004), so a red
+    # contraction node with n=0 is just a "1"-vertex: expectation HANDLES it (it is bare). The
+    # ONLY thing that breaks the naive integral is a non-zero X^n node-decoration (Π(X^n)(y)=y^n).
     import pytest
     from fractions import Fraction
     from regstruct.core.homogeneity import Homogeneity
-    from regstruct.renorm.scheme import is_extended
+    from regstruct.renorm.scheme import is_bare, is_extended
     from regstruct.trees.tree import red_node, tree
-    red = red_node(Homogeneity(Fraction(-1)), width=SIG.width)
-    contracted = tree("bullet", (0, 0), [(0, (0, 1), red)])     # ●—I—■(red)
-    assert is_extended(contracted) and not is_extended(CIRC)
-    with pytest.raises(NotImplementedError, match="extended o-decoration"):
-        expectation(contracted, SIG)
+    red = red_node(Homogeneity(Fraction(-1)), width=SIG.width)      # ■(red), n=0
+    contracted = tree("bullet", (0, 0), [(0, (0, 1), red)])         # ●—∂I—■: red, yet bare (all n=0)
+    decorated = tree("bullet", (0, 1), [(0, (0, 1), CIRC), (0, (0, 1), CIRC)])  # X_x·●·∂I[∘]²
+    assert is_extended(contracted) and is_bare(contracted)         # red but bare ⇒ computed
+    e = expectation(contracted, SIG)                               # = ∫ ∂^{(0,1)}K(-z) dz, pure kernel
+    assert not e.is_zero and "K_0_1" in str(e) and "C(" not in str(e)   # no noise ⇒ no covariance
+    assert (not is_extended(decorated)) and not is_bare(decorated)
+    with pytest.raises(NotImplementedError, match=r"X\^n node-decoration"):
+        expectation(decorated, SIG)         # the h12-type bug: was a wrong nonzero integral
 
 
 def test_canonical_character_parity_on_gkpz():
