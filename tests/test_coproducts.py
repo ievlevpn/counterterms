@@ -1,11 +1,13 @@
 """Phase 3: the extraction-contraction coproduct δ (negative/renormalization side)."""
+import pytest
 from sympy import Function, Derivative, Rational
 
 from regstruct import Noise, Parabolic, SPDE, Unknown, kappa
 from regstruct.core.homogeneity import Homogeneity
 from regstruct.equation.dsl import build_context
 from regstruct.equation.generate import generate_counterterms
-from regstruct.trees.coproducts import delta_minus
+from regstruct.trees.coproducts import (
+    coassoc_lhs, coassoc_rhs, delta_minus, twisted_antipode)
 from regstruct.trees.tree import red_node, tree
 
 
@@ -41,3 +43,30 @@ def test_delta_stability_invariants():
         assert all(r.extended_homogeneity(sig) == ext for (_f, r) in res)
         assert all(c.extended_homogeneity(sig).is_negative()
                    for (forest, _r) in res for c in forest)
+
+
+@pytest.mark.xfail(reason="WIP: the p₋ quotient of the group coproduct mishandles the "
+                          "extended (o) decoration on re-extraction of red-rooted trees "
+                          "(BHZ Remark 5.38) — fails on the two-edge gKPZ tree. "
+                          "Single-application δ⁻ is validated; this is the next fix.",
+                   strict=True)
+def test_delta_minus_coassociative():
+    # (δ⁻ ⊗ id) δ⁻ = (id ⊗ δ⁻) δ⁻  on U⁻ — the load-bearing algebraic invariant
+    # (tourist_guide.tex 5710), needs no probabilistic input.
+    sig, _base, _u = _gkpz_ctx()
+    for t in generate_counterterms(sig):
+        assert coassoc_lhs(t, sig) == coassoc_rhs(t, sig)
+
+
+def test_twisted_antipode_circ():
+    # S'₋(∘) = −∘  (∘ is primitive).
+    sig, _base, _u = _gkpz_ctx()
+    circ = tree("xi", (0, 0))
+    assert twisted_antipode(circ, sig) == {(circ,): -1}
+
+
+def test_twisted_antipode_terminates_on_all():
+    sig, _base, _u = _gkpz_ctx()
+    for t in generate_counterterms(sig):
+        result = twisted_antipode(t, sig)
+        assert result          # nonempty forest-sum

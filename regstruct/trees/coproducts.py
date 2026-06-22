@@ -25,7 +25,7 @@ from itertools import product
 from math import comb, factorial
 
 from ..core.homogeneity import Homogeneity, MultiIndex
-from .tree import DecoratedTree, tree
+from .tree import DecoratedTree, red_node, tree
 
 # A coproduct value: {(forest: tuple[DecoratedTree, ...], right: DecoratedTree): coeff}
 TensorSum = dict
@@ -263,3 +263,110 @@ def _component_naive_homog(members, nodes, nphi_map, pi_e, children_of, sig):
             if cid in member_set:
                 h = h + sig.edge_gain(comp, p)
     return h
+
+
+# --------------------------------------------------------------------------- #
+# the group coproduct δ⁻ : U⁻ → U⁻ ⊗ U⁻  (right factor projected by p₋)
+# --------------------------------------------------------------------------- #
+
+def _p_minus(t: DecoratedTree, sig):
+    """p₋ on a single tree: keep if divergent; ● and red ●^{0,α} → 𝟙₋; else 0."""
+    if t.homogeneity(sig).is_negative():
+        return ("keep", t)
+    if t.nodes() == 1 and not any(t.node_dec) and (t.color == "red" or t.node_type == "bullet"):
+        return ("unit",)
+    return ("zero",)
+
+
+def _sort_forest(f):
+    return tuple(sorted(f, key=lambda x: x._sortkey()))
+
+
+def delta_minus_group(t: DecoratedTree, sig):
+    """δ⁻ on a single generator tree → {(left_forest, right_forest): coeff}.
+
+    ponytail: WIP — this naive per-step p₋ collapse does not implement the BHZ
+    Hopf-algebra *quotient* consistently; coassociativity fails on the two-edge
+    gKPZ tree (the extended-decoration re-extraction subtlety, BHZ Remark 5.38).
+    Single-application δ (`delta_minus`) is validated; this needs the quotient
+    done properly (work in the extended space T̂⁻, then quotient).
+    """
+    out = defaultdict(Fraction)
+    for (left, right), coeff in delta_minus(t, sig).items():
+        pm = _p_minus(right, sig)
+        if pm[0] == "zero":
+            continue
+        rf = (right,) if pm[0] == "keep" else ()
+        out[(left, rf)] += coeff
+    return {k: v for k, v in out.items() if v != 0}
+
+
+def _delta_group_forest(forest, sig):
+    """δ⁻ extended to a forest (algebra morphism): δ⁻(∏ τ_i) = ∏ δ⁻(τ_i)."""
+    acc = {((), ()): Fraction(1)}
+    for comp in forest:
+        d = delta_minus_group(comp, sig)
+        new = defaultdict(Fraction)
+        for (l1, r1), c1 in acc.items():
+            for (l2, r2), c2 in d.items():
+                new[(_sort_forest(l1 + l2), _sort_forest(r1 + r2))] += c1 * c2
+        acc = dict(new)
+    return acc
+
+
+def coassoc_lhs(t, sig):
+    """(δ⁻ ⊗ id) δ⁻ τ  →  {(forest, forest, forest): coeff}."""
+    out = defaultdict(Fraction)
+    for (A, B), c in delta_minus_group(t, sig).items():
+        for (A1, A2), c2 in _delta_group_forest(A, sig).items():
+            out[(A1, A2, B)] += c * c2
+    return {k: v for k, v in out.items() if v != 0}
+
+
+def coassoc_rhs(t, sig):
+    """(id ⊗ δ⁻) δ⁻ τ  →  {(forest, forest, forest): coeff}."""
+    out = defaultdict(Fraction)
+    for (A, B), c in delta_minus_group(t, sig).items():
+        for (B1, B2), c2 in _delta_group_forest(B, sig).items():
+            out[(A, B1, B2)] += c * c2
+    return {k: v for k, v in out.items() if v != 0}
+
+
+# --------------------------------------------------------------------------- #
+# the negative twisted antipode S'₋ : U⁻ → ℝ[U]   (tourist_guide.tex 5034)
+# --------------------------------------------------------------------------- #
+
+def twisted_antipode(t: DecoratedTree, sig, memo=None):
+    """S'₋(τ) as a forest-sum {forest: coeff} in ℝ[U]; algebra morphism, recursive.
+
+        S'₋(τ) = −M₋(S'₋⊗Id)(δτ − τ⊗●^{0,|τ|}).
+    """
+    if memo is None:
+        memo = {}
+    key = t._sortkey()
+    if key in memo:
+        return memo[key]
+    d = delta_minus(t, sig)
+    top = ((t,), red_node(t.extended_homogeneity(sig), width=sig.width))
+    result = defaultdict(Fraction)
+    for (left, right), coeff in d.items():
+        if (left, right) == top:                 # subtract τ ⊗ ●^{0,|τ|}
+            continue
+        for f, c2 in _antipode_forest(left, sig, memo).items():
+            result[_sort_forest(f + (right,))] += coeff * c2
+    result = {f: -v for f, v in result.items() if v != 0}
+    memo[key] = result
+    return result
+
+
+def _antipode_forest(forest, sig, memo):
+    """S'₋ extended to a forest (algebra morphism)."""
+    acc = {(): Fraction(1)}
+    for comp in forest:
+        sc = twisted_antipode(comp, sig, memo)
+        new = defaultdict(Fraction)
+        for f1, c1 in acc.items():
+            for f2, c2 in sc.items():
+                new[_sort_forest(f1 + f2)] += c1 * c2
+        acc = dict(new)
+    return acc
