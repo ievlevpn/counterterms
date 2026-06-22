@@ -24,20 +24,26 @@ a single tree homogeneity.
 
 ## How to swap it
 
-Write a sibling of `Parabolic` that sets those three fields. No engine changes:
+**Done.** `equation/dsl.py` now has a generic `Operator(dim, scaling, order, label, symbol,
+latex)` — the "general way" — with `Parabolic` and `FractionalHeat` as one-line subclasses:
 
 ```python
-class FractionalHeat:               # ∂_t + (−Δ)^σ
+class FractionalHeat(Operator):     # ∂_t + (−Δ)^σ
     def __init__(self, dim, sigma):
-        self.dim     = dim
-        self.scaling = Scaling(tuple([2*sigma] + [1]*dim))  # time weight = 2σ
-        self.order   = 2*sigma                              # Schauder gain
-        self.label   = "I"
+        order = 2 * sigma           # time weight = Schauder gain = 2σ
+        super().__init__(dim, Scaling(tuple([order] + [1]*dim)), order, "I",
+                         symbol=f"∂_t + (−Δ)^{sigma}", latex=rf"\partial_t + (-\Delta)^{{{sigma}}}")
 ```
 
 The invariant you must preserve: **`order` = the Schauder gain of `L⁻¹` in the metric
 `scaling`** (i.e. `L⁻¹` maps 𝒞^α → 𝒞^{α+order} in the 𝔰-scaled Hölder scale). Get that pair
-right and every `S(τ)`, `Υ`-map, and counterterm comes out correct automatically.
+right and every `S(τ)`, `Υ`-map, and counterterm comes out correct automatically. See
+`examples/06_fractional_heat.py` — gPAM at β₀=−1−κ gives **3** counterterms under heat and **5**
+under σ=¾ (order 3/2), with the homogeneities shifting by the order.
+
+**Rendering:** the renderer prints `op.symbol` / `op.latex` (display-only — the engine never
+reads them); without them it falls back to a generic `L`. So a new operator class must set those
+two strings to print nicely.
 
 ## What you can / can't reach this way
 
@@ -57,5 +63,8 @@ right and every `S(τ)`, `Υ`-map, and counterterm comes out correct automatical
 
 - The elliptic (no-time) case needs the DSL width change, not just an operator swap (~10-line
   change in `dsl.py`): drop the implicit time axis in `width`, `Parabolic`, `_to_jet`.
-- Optional: a generic `Operator(scaling, order, label)` so `Parabolic` / `FractionalHeat`
-  become one-line factories.
+- ~~Generic `Operator`~~ — **done** (see above); `Parabolic`/`FractionalHeat` are subclasses.
+- Caveat: fractional/high order **enlarges the negative-tree set fast**. gPAM stays small, but
+  the gKPZ `(∂u)²` term at order 3/2 explodes enumeration (effectively non-terminating in
+  practice). Subcriticality still holds; it's a combinatorial blow-up, not an error. Keep
+  fractional examples to mild nonlinearities until generation is memoized.

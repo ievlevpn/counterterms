@@ -84,17 +84,12 @@ def render(eq: RenormalizedEquation, fmt: str = "text", canonical: bool = False)
 # --------------------------------------------------------------------------- #
 
 def operator_str(op: object) -> str:
-    s = "∂_t − Δ"
-    if getattr(op, "mass", 0):
-        s += f" + {op.mass}"
-    return f"({s})"
+    # operators carry their own display symbol (Operator.symbol); fall back to L
+    return f"({getattr(op, 'symbol', 'L')})"
 
 
 def op_latex(op: object) -> str:
-    s = r"\partial_t - \Delta"
-    if getattr(op, "mass", 0):
-        s += f" + {op.mass}"
-    return f"({s})"
+    return f"({getattr(op, 'latex', 'L')})"
 
 
 def hom_latex(h: Homogeneity) -> str:

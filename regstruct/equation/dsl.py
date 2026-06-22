@@ -73,42 +73,79 @@ class Noise:
         self.homogeneity = Homogeneity(self.std, self.kap)
 
 
-class Parabolic:
-    """``∂_t − Δ (+ mass)`` by default (order 2). `order` is carried into the
-    homogeneity arithmetic; only order 2 is the analytically proven regime."""
+class Operator:
+    """A linear operator ``L`` for the renormalization machinery.
+
+    The engine reads **only three numbers** (see notes/swapping_the_operator.md): the
+    `scaling` 𝔰 of the metric, the Schauder `order` *m* of ``L⁻¹`` (it maps
+    𝒞^α → 𝒞^{α+m} in the 𝔰-scaled Hölder scale), and an edge `label`.  Get the
+    ``(scaling, order)`` pair right and every ``S(τ)``, Υ-map and counterterm is correct.
+    `symbol`/`latex` are **display-only** — nothing downstream reads them; they tell the
+    renderer how to print the LHS (otherwise it falls back to a generic ``L``).
+    `Parabolic` / `FractionalHeat` are convenience subclasses that fill these in."""
 
     dim: int
-    mass: object
-    order: int
     scaling: Scaling
+    order: object        # int (or Fraction for fractional/anisotropic L)
     label: str
+    symbol: str
+    latex: str
 
-    def __init__(self, dim: int, mass: object = 0, order: int = 2) -> None:
+    def __init__(self, dim: int, scaling: Scaling, order: object,
+                 label: str = "I", symbol: str = "L", latex: str = "L") -> None:
         self.dim = dim
-        self.mass = mass
+        self.scaling = scaling
         self.order = order
-        self.scaling = Scaling(tuple([order] + [1] * dim))
-        self.label = "I"
+        self.label = label
+        self.symbol = symbol
+        self.latex = latex
         if order != 2:
             import warnings
             warnings.warn(
                 f"Schauder/admissibility is proven only for 2nd-order parabolic L; "
                 f"homogeneities are computed for order={order} but the regularity-"
-                f"structure theory is unverified there.", stacklevel=2)
+                f"structure theory is unverified there.", stacklevel=3)
+
+
+class Parabolic(Operator):
+    """``∂_t − Δ (+ mass)`` (order 2). The default operator."""
+
+    mass: object
+
+    def __init__(self, dim: int, mass: object = 0, order: int = 2) -> None:
+        self.mass = mass
+        tail = f" + {mass}" if mass else ""
+        super().__init__(
+            dim, Scaling(tuple([order] + [1] * dim)), order, "I",
+            symbol="∂_t − Δ" + tail, latex=r"\partial_t - \Delta" + tail)
+
+
+class FractionalHeat(Operator):
+    """``∂_t + (−Δ)^σ`` — time weight ``2σ`` and Schauder order ``2σ`` (σ=1 is the heat
+    operator). σ may be fractional; the order-≠2 warning fires (theory unverified)."""
+
+    sigma: object
+
+    def __init__(self, dim: int, sigma: object) -> None:
+        self.sigma = sigma
+        order = 2 * sigma
+        super().__init__(
+            dim, Scaling(tuple([order] + [1] * dim)), order, "I",
+            symbol=f"∂_t + (−Δ)^{sigma}", latex=rf"\partial_t + (-\Delta)^{{{sigma}}}")
 
 
 @dataclass
 class SPDE:
-    equations: list[tuple[Unknown, Parabolic, sympy.Expr]]
+    equations: list[tuple[Unknown, Operator, sympy.Expr]]
     noises: list[Noise]
 
     def __init__(
         self,
         noises: list[Noise],
-        operator: Parabolic | None = None,
+        operator: Operator | None = None,
         unknown: Unknown | None = None,
         rhs: sympy.Expr | None = None,
-        equations: list[tuple[Unknown, Parabolic, sympy.Expr]] | None = None,
+        equations: list[tuple[Unknown, Operator, sympy.Expr]] | None = None,
     ) -> None:
         if equations is None:
             equations = [(unknown, operator, rhs)]

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .equation.dsl import SPDE, Noise, Parabolic, Unknown, kappa
+from .equation.dsl import SPDE, FractionalHeat, Noise, Operator, Parabolic, Unknown, kappa
 from .core.jets import jet
 
 if TYPE_CHECKING:
@@ -20,9 +20,9 @@ if TYPE_CHECKING:
         RenormalizationStructure,
     )
 
-__all__ = ["SPDE", "Noise", "Parabolic", "Unknown", "kappa", "jet", "renormalize",
-           "build_renormalization", "build_regularity_structure",
-           "build_renormalization_group", "daprato_lift"]
+__all__ = ["SPDE", "Noise", "Operator", "Parabolic", "FractionalHeat", "Unknown",
+           "kappa", "jet", "renormalize", "build_renormalization",
+           "build_regularity_structure", "build_renormalization_group", "daprato_lift"]
 
 
 def renormalize(spde: SPDE) -> RenormalizedEquation:
