@@ -74,7 +74,7 @@ Everything public is re-exported from the top-level `regstruct` package.
 |---|---|---|
 | Write the SPDE (DSL) | `Unknown`, `Noise`, `Parabolic`, `SPDE` | `equation/dsl.py` |
 | Derive the renormalized family | `SPDE(...).renormalize()` → `RenormalizedEquation` | `api.py`, `renorm/equation.py` |
-| Access each counterterm (tree, `|τ|`, `S(τ)`, `F(τ*)`, `k_τ`) | `eq.counterterms`, `eq.per_component` | `renorm/equation.py` |
+| Access each counterterm (tree, `\|τ\|`, `S(τ)`, `F(τ*)`, `k_τ`) | `eq.counterterms`, `eq.per_component` | `renorm/equation.py` |
 | Render the report (text / markdown / json / latex) | `eq.summary()`, `eq.render(fmt)`, `eq.save()` | `render/report.py`, `render/latex.py` |
 | **Φ⁴₂/Φ⁴₃** (supercritical, β₀≤−order) | `daprato_lift(spde).renormalize()` | `equation/daprato.py` |
 

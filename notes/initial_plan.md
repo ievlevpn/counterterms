@@ -228,7 +228,7 @@ fam.counterterms              # [Counterterm(tree, homogeneity, S, c_symbol, vec
 |---|---|---|
 | `operator` | `Parabolic(dim, mass=…)` | the differential operator; fixes `d`, scaling `𝔰`, Schauder gain `m=2`. Whitelisted to 2nd-order parabolic (the proven theory); fields `m, 𝔰` are carried generally for forward-compat but validated. |
 | `unknown(s)` | `Unknown` (or list) | the solution field(s); for systems each is a sector with its own operator `I^{(a)}`. |
-| `noises` | `[Noise(name, regularity)]` | each noise's Hölder regularity (the `β_j`); `|Ξ_j| = β_j`. |
+| `noises` | `[Noise(name, regularity)]` | each noise's Hölder regularity (the `β_j`); `\|Ξ_j\| = β_j`. |
 | `rhs` | SymPy expr | the nonlinearity in `u`, its spatial derivatives, and the noise(s). Must be **affine in each noise** and **≤ quadratic in `∂u`** (Assumption D2). |
 | `rule` *(optional)* | `Rule` | explicit override when auto-derivation can't be certified. |
 

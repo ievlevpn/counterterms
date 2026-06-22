@@ -41,12 +41,12 @@ trivially derivable, just not surfaced · **P3/P4** = needs a later phase
 |---|------|---------------|--------|
 | 1 | The SPDE as parsed (echo: `L u = f(u)ζ + g`) | `spde.rhs`, `spde.unknown`, `spde.operator` | now |
 | 2 | Operator `L`, scaling 𝔰, spatial dim `d`, mass | `Signature.scaling`, `Parabolic` | now |
-| 3 | Noise(s) and regularity `β_j = |Ξ_j|` | `Noise.homogeneity` | now |
+| 3 | Noise(s) and regularity `β_j = \|Ξ_j\|` | `Noise.homogeneity` | now |
 | 4 | Subcriticality verdict (+ why it terminated) | generation terminating + bound | easy |
 | 5 | Derived structural **rule** `R` (per node: allowed child edges + caps) | `Signature.allowed` | easy |
 | 6 | `𝓑_{<0}` — **every** negative-homogeneity tree | `generate_counterterms` | now |
 | 7 | per tree: drawing + shorthand | `DecoratedTree` (§3) | easy |
-| 8 | per tree: `|τ|` (homogeneity, exact in `ℚ+ℚκ`) | `tree.homogeneity(sig)` | now |
+| 8 | per tree: `\|τ\|` (homogeneity, exact in `ℚ+ℚκ`) | `tree.homogeneity(sig)` | now |
 | 9 | per tree: `S(τ)` symmetry factor | `tree.symmetry_factor()` | now |
 | 10 | per tree: node count, depth | `tree.nodes()` (+ a `depth()` one-liner) | easy |
 | 11 | per tree: `F(τ*)` (the Υ-map vector field, in jet vars) | `Counterterm.elem_diff` | now |
@@ -115,7 +115,7 @@ power  := edge^m                           # repeated identical edge → exponen
 
 The five gKPZ counterterms (golden test) in shorthand:
 
-| tree | shorthand | `|τ|` | `S` |
+| tree | shorthand | `\|τ\|` | `S` |
 |------|-----------|------|-----|
 | bare noise | `Ξ` | `−1−κ` | 1 |
 | noise + poly | `X_x·Ξ` | `−κ` | 1 |

@@ -39,7 +39,7 @@ raises) · ⬜ not built (out of scope) · n/a expository.
 | §2.2 Regularity structures (1030) | the graded `(T, G)` object | 🟡 | `structures.py RegularityStructure (T,T⁺)` builds the **graded model basis** `T` and `T⁺`; the **group `G` action on a model** is analytic (⬜) |
 | §2.3 **Models & modelled distributions** (1241) | `(Π, Γ)`, `D^γ` | ⬜ | **not built** — no `Π`, `Γ`, `‖·‖_γ`. The analytic core; out of scope (needs realizations of the noise) |
 | §2.4 Products & derivatives (1879) | `⋆` on `D^γ`, `∂` | ⬜ | analytic; the *tree-level* derivative/product lives in the Υ-map & coproducts instead |
-| §3.1 Operators on ℝ×ℝᵈ (2043) | kernels `K`, scaling | 🟡 | scaling/Schauder **exponent** bookkeeping is in `core/{signature,homogeneity}` (`|I_pτ|=|τ|+(m−|p|_𝔰)`); the **kernel `K` itself** ⬜ |
+| §3.1 Operators on ℝ×ℝᵈ (2043) | kernels `K`, scaling | 🟡 | scaling/Schauder **exponent** bookkeeping is in `core/{signature,homogeneity}` (`\|I_pτ\|=\|τ\|+(m−\|p\|_𝔰)`); the **kernel `K` itself** ⬜ |
 | §3.2 Abstract integration `I` (2179) | `I_p`, abstract integration | ✅ | edges with `(edge_type, p)` decoration in `trees/tree.py`; homogeneity recursion exact (golden-tested) |
 | §3.3 **Admissible models** (2291) | `Π I = K ∗ Π` | 🔌 | `RenormalizationGroup.admissible()` raises `NotImplementedError` (Track B3) — K-admissibility is a *model* notion |
 | §3.4 Lifting **K** as `D^γ→D^γ` (2452) | Schauder on modelled dist. | ⬜ | analytic; only the homogeneity gain is modeled symbolically |
@@ -96,7 +96,7 @@ can't supply. None is a defect; each is named in `ROADMAP.md` / CLAUDE.md scope.
 |---|---|---|
 | **Models `(Π, Γ)` and modelled distributions `D^γ`** | §2.3–2.4 | ⬜ never started — the single biggest "absent half" of the paper |
 | **Reconstruction theorem** | §2.3 (proof App. D, 6418) | ⬜ |
-| **Schauder estimates / lifting `K` on `D^γ`** | §3.4 | ⬜ (only the homogeneity *gain* `m−|p|_𝔰` is symbolic) |
+| **Schauder estimates / lifting `K` on `D^γ`** | §3.4 | ⬜ (only the homogeneity *gain* `m−\|p\|_𝔰` is symbolic) |
 | **Admissible smooth models / canonical lift** | §3.3, §3.5 | 🔌 `admissible()` raises |
 | **Fixed-point solver** (the actual `u`) | §4.4 | ⬜ — out of scope by design; the project outputs equations, not solutions |
 | **Numeric BPHZ constants** `h(σ)=𝔼[Πσ](0)` (Wick + divergent integrals) | §7 | 🟡 combinatorics only: Isserlis/Wick **parity** done (`renorm/scheme.py`), so odd-noise constants vanish; **evaluating the integrals (`BPHZ.numeric_character`) raises** — "the analysis wall" |

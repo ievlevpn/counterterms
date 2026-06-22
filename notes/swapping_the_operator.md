@@ -12,8 +12,8 @@ operator" = handing the pipeline a new operator object with three fields.
 
 | field | what it is | where it bites |
 |---|---|---|
-| `scaling` | the scaling 𝔰 = weights of (t, x₁,…,x_d), e.g. `(2,1,…,1)` | `|X^n| = |n|_𝔰`, `|p|_𝔰`, the `>1` derivative-scope check |
-| `order` | the Schauder smoothing order *m* of `L⁻¹` | `|I_p τ| = |τ| + (m − |p|_𝔰)` (`signature.py:45`) |
+| `scaling` | the scaling 𝔰 = weights of (t, x₁,…,x_d), e.g. `(2,1,…,1)` | `\|X^n\| = \|n\|_𝔰`, `\|p\|_𝔰`, the `>1` derivative-scope check |
+| `order` | the Schauder smoothing order *m* of `L⁻¹` | `\|I_p τ\| = \|τ\| + (m − \|p\|_𝔰)` (`signature.py:45`) |
 | `label` | edge-type tag (`"I"`) | bookkeeping only |
 
 The `mass=0` argument and the symbolic form of `L` are **decorative** — `Parabolic.__init__`
