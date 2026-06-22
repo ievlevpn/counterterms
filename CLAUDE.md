@@ -19,7 +19,7 @@ type; shared constants across components), **multiple noises**, and **general op
 Golden-tested: gKPZ (exact 5 counterterms, tex 6004–6012), KPZ/gPAM, decoupled/coupled systems,
 multi-noise, operator order, scope rejections. A `render/` package emits the full report (trees
 drawn as shorthand / ascii / LaTeX-`forest`) in text/markdown/json/latex — see `notes/output.md`.
-`uv run pytest` (139 tests, ~4s). Phase 3 complete & green: coproducts (cointeraction holds
+`uv run pytest` (163 tests, ~5s). Phase 3 complete & green: coproducts (cointeraction holds
 **including β₀=−3/2**), `RegularityStructure (T,T⁺)`, the generic `core/hopf` layer,
 subcriticality check, twisted antipode + BHZ character, renormalization group `G⁻`. Phase 4
 started: `daprato_lift` (da Prato–Debussche) unlocks polynomial Φ⁴₂/Φ⁴₃ — see

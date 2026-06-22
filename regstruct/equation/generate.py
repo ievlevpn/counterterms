@@ -79,8 +79,11 @@ def generate_trees(sig: Signature, bound: Fraction = _BOUND) -> list[DecoratedTr
 
             for n in decs:
                 base_h = sig.node_homogeneity(b) + Homogeneity(sig.scaled(n))
-                if base_h.std >= bound:
-                    continue
+                # NB: do NOT skip when base_h.std ≥ bound — capped negative-contribution
+                # children (a gradient edge I_{(0,1)} over a noise contributes m−|p|+β₀ < 0
+                # once β₀ < −(m−|p|), e.g. β₀=−3/2) can pull the full tree below the bound.
+                # The DFS rejects the bare node and the budget `break` still terminates it
+                # (negative-contribution children are derivative slots with a finite cap).
                 changed |= _emit(b, n, base_h, atoms, caps, add, bound)
 
     return list(pool.values())
