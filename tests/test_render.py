@@ -21,7 +21,7 @@ def test_text_report_has_all_trees():
         assert f"τ = {sh} " in txt, f"missing tree {sh}\n{txt}"
     # exact-5 sanity + the placeholder frontier is honest
     assert "5 trees, 5 counterterms, 0 dropped" in txt
-    assert "CANONICAL" in txt and "Phase 4" in txt
+    assert "CANONICAL" in txt and "left symbolic" in txt
     assert "canonical=True" in txt           # default report points to the opt-in section
 
 
@@ -50,7 +50,7 @@ def test_canonical_shows_epsilon_regularized_integrals():
     # with the ε-regularization made explicit (ξ_ε, C_ε), in text and LaTeX.
     eq = _build()
     txt = eq.report(canonical=True)
-    assert "ξ_ε" in txt and "DIVERGE as ε→0" in txt
+    assert "ξ_ε" in txt and "diverge as ε→0" in txt
     # gKPZ h0 = ∫ C_ε(z1−z2)·∂^(0,1)K(−z1)·∂^(0,1)K(−z2) dz1 dz2
     assert "∫ C_ε(z1 - z2)·∂^(0,1)K(-z1)·∂^(0,1)K(-z2) dz1 dz2" in txt
     assert "h_ε(" in txt

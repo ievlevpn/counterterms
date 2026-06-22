@@ -145,7 +145,7 @@ def canonical_data(eq: RenormalizedEquation) -> tuple[list, list]:
 
 
 def _h_annotation(tr: DecoratedTree) -> str:
-    return f"  [contracted node, o={tr.o}]" if tr.color == "red" else ""
+    return f"  [o={tr.o}]" if tr.color == "red" else ""
 
 
 # --------------------------------------------------------------------------- #
@@ -164,31 +164,54 @@ def _kernel_p(name: str) -> tuple[int, ...]:
     return tuple(int(x) for x in name[2:].split("_"))
 
 
-def expectation_latex(e: Expectation, width: int) -> str:
-    """LaTeX for ``h_ε(σ)`` as a sum of unevaluated Wick-pairing integrals (``ε`` explicit)."""
+def _factor_latex(f: sympy.Expr) -> str:
+    """One integrand factor → LaTeX: ``K_p`` → ``∂^p K(·)``, covariance → ``C_ε(·)``."""
+    if isinstance(f, sympy.Pow):
+        return _factor_latex(f.base) + "^{" + sympy.latex(f.exp) + "}"
+    name, arg = f.func.__name__, sympy.latex(f.args[0])
+    if name.startswith("K_"):
+        p = _kernel_p(name)
+        k = "K" if not any(p) else r"\partial^{(" + ",".join(map(str, p)) + ")}K"
+        return k + r"\!\left(" + arg + r"\right)"
+    return r"C_\varepsilon\!\left(" + arg + r"\right)"         # regularized covariance
+
+
+def integral_latex_block(sym: str, e: Expectation, width: int,
+                         max_units: float = 6.5, per_line: int = 4) -> str:
+    """LaTeX display for ``sym = h_ε(σ)``.  Short ⇒ one ``\\[…\\]`` line; long ⇒ a ``multline*``
+    broken at factor boundaries (``per_line`` factors per line) so a big integrand (many
+    kernel/covariance factors, or a sum over Wick pairings) does not overflow the text width.
+
+    We break on an estimate of *rendered* width — each factor ``∂^pK``/``C_ε`` is ~1 unit, each
+    integration variable in the measure ~0.4, and ``+`` between terms ~1 — not the LaTeX *source*
+    length (which the verbose ``\\partial^{(0,1)}K\\!\\left(…\\right)`` markup would inflate)."""
     if e.is_zero:
-        return "0"
-
-    def fac(f: sympy.Expr) -> str:
-        if isinstance(f, sympy.Pow):
-            return fac(f.base) + "^{" + sympy.latex(f.exp) + "}"
-        name, arg = f.func.__name__, sympy.latex(f.args[0])
-        if name.startswith("K_"):
-            p = _kernel_p(name)
-            k = "K" if not any(p) else r"\partial^{(" + ",".join(map(str, p)) + ")}K"
-            return k + r"\!\left(" + arg + r"\right)"
-        return r"C_\varepsilon\!\left(" + arg + r"\right)"     # regularized covariance
-
-    parts = []
+        return r"\[" + sym + r" = 0\]"
+    terms = []                                                # (domain, [factors], measure, nvar)
     for integrand, intvars in e.terms:
-        body = " ".join(fac(f) for f in sympy.Mul.make_args(integrand))
+        facs = [_factor_latex(f) for f in sympy.Mul.make_args(integrand)]
         if intvars:
             dom = r"\int_{(\mathbb R^{%d})^{%d}}" % (width, len(intvars))
-            meas = r"\,".join(r"\mathrm d" + sympy.latex(v) for v in intvars)
-            parts.append(dom + " " + body + r"\," + meas)
+            meas = r"\," + r"\,".join(r"\mathrm d" + sympy.latex(v) for v in intvars)
         else:
-            parts.append(body)
-    return " + ".join(parts)
+            dom = meas = ""
+        terms.append((dom, facs, meas, len(intvars)))
+    units = sum(len(f) + 0.4 * nv for _d, f, _m, nv in terms) + 1.0 * (len(terms) - 1)
+    if units <= max_units:
+        oneline = " + ".join(" ".join([d, *f]).strip() + m for d, f, m, _ in terms)
+        return r"\[" + sym + " = " + oneline + r"\]"
+    lines = []                                                # break the integrand across lines
+    for ti, (dom, facs, meas, _nv) in enumerate(terms):
+        chunks = [facs[i:i + per_line] for i in range(0, len(facs), per_line)] or [[]]
+        for ci, chunk in enumerate(chunks):
+            seg = (sym + " = ") if (ti == 0 and ci == 0) else ("+ " if ci == 0 else "")
+            if ci == 0 and dom:
+                seg += dom + " "
+            seg += " ".join(chunk)
+            if ci == len(chunks) - 1:
+                seg += meas
+            lines.append(seg)
+    return "\\begin{multline*}\n" + " \\\\\n".join(lines) + "\n\\end{multline*}"
 
 
 def expectation_str(e: Expectation, width: int) -> str:
@@ -295,8 +318,8 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
         out.append(f"  Mean-zero parity ⇒ trees with odd noise count vanish "
                    f"({nzero}/{len(rows)} here); survivors are polynomials in the elementary")
         out.append("  expectations hᵢ ≡ h_ε(σ) = 𝔼[Π^ε σ](0) of the ε-regularized noise ξ_ε.")
-        out.append("  These constants are ε-dependent and DIVERGE as ε→0; evaluating the")
-        out.append("  integrals below (their ε→0 renormalization) is Phase 4 / Track B2.")
+        out.append("  These constants are ε-dependent and diverge as ε→0; the integrals below")
+        out.append("  are left unevaluated.")
         for t, k_free, v in rows:
             rhs = "0   (vanishes — odd noise parity)" if v == 0 else fstr(v)
             out.append(f"  {k_free} = {rhs}      [τ={shorthand(t, sig, coords)}]")
@@ -307,22 +330,18 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
                        f"{fstr(canonical_family_rhs(eq, a, rows))}")
         if legend:
             out.append("  where, for the ε-regularized noise ξ_ε (covariance C_ε), each")
-            out.append("  elementary expectation is the divergent integral (K = singular kernel of")
-            out.append("  L⁻¹ — the diagonal-singular part of the Green's fn; it explodes on the diagonal).")
-            out.append("  Only BARE σ (all node decorations 0) get an explicit integral; red")
-            out.append("  contraction nodes are fine (Π^ζ(●^{n,α})=x^n, α-independent — tex 4003). A")
-            out.append("  non-zero X^n decoration breaks it (Π(X^n)(y)=y^n ⇒ root X^n gives 0):")
+            out.append("  elementary expectation, with K the singular kernel of L⁻¹.  Those")
+            out.append("  carrying a polynomial factor X^n are left symbolic:")
             for sym, tr in legend:
                 out.append(f"    {sym} = h_ε({shorthand(tr, sig, coords)}){_h_annotation(tr)}")
                 if is_bare(tr):
                     out.append(f"       = {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}")
                 else:
-                    out.append("       = (σ has an X^n node-decoration — value needs the full Π^ζ, "
-                               "not the naive integral)")
+                    out.append("       = (left symbolic — σ carries a polynomial factor X^n)")
     else:
         out.append(_sec("CANONICAL (BPHZ) RENORMALIZATION"))
         out.append("  k_τ = h(S'₋τ) for centered Gaussian noise (parity-reduced; many vanish):")
-        out.append("  pass canonical=True.  Numeric h(σ) values need a NoiseLaw (Phase 4).")
+        out.append("  pass canonical=True.  The h(σ) values are left symbolic.")
     return "\n".join(out)
 
 
@@ -393,8 +412,8 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
               f"Mean-zero parity ⇒ odd-noise trees vanish ({nzero}/{len(rows)} here); "
               "survivors are polynomials in the elementary expectations "
               "`hᵢ ≡ h_ε(σ) = 𝔼[Π^ε σ](0)` of the **ε-regularized noise ξ_ε**. These "
-              "constants are ε-dependent and **diverge as ε→0**; evaluating the integrals "
-              "below (their ε→0 renormalization) is Phase 4 / Track B2.", ""]
+              "constants are ε-dependent and **diverge as ε→0**; the integrals below are "
+              "left unevaluated.", ""]
         for t, k_free, v in rows:
             rhs = "0  *(vanishes — odd noise parity)*" if v == 0 else f"`{fstr(v)}`"
             L.append(f"- `{k_free}` = {rhs}   (τ = `{shorthand(t, sig, coords)}`)")
@@ -403,19 +422,15 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
             L.append(f"{operator_str(op)} {u.name} = {fstr(canonical_family_rhs(eq, a, rows))}")
         L.append("```")
         if legend:
-            L += ["", "where, for the ε-regularized noise `ξ_ε` (covariance `C_ε`), each "
-                  "elementary expectation is the integral (`K` = the singular kernel of `L⁻¹` — the "
-                  "diagonal-singular part of the Green's function, which explodes on the diagonal). "
-                  "Only **bare** σ (all node decorations 0) get an explicit integral; red "
-                  "contraction nodes are fine (`Π^ζ(●^{n,α})=x^n`, α-independent — tex 4003), but a "
-                  "non-zero `X^n` decoration breaks it (`Π(X^n)(y)=y^n` ⇒ root `X^n` gives 0):", ""]
+            L += ["", "where, for the ε-regularized noise `ξ_ε` (covariance `C_ε`) and the "
+                  "singular kernel `K` of `L⁻¹`, each elementary expectation is given below; those "
+                  "carrying a polynomial factor `X^n` are left symbolic:", ""]
             for sym, tr in legend:
                 head = f"- `{sym} = h_ε({shorthand(tr, sig, coords)})`{_h_annotation(tr)}"
                 if is_bare(tr):
                     L.append(head + f"  `= {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}`")
                 else:
-                    L.append(head + "  *(σ has an `X^n` decoration — value needs the full `Π^ζ`, "
-                             "not the naive integral)*")
+                    L.append(head + "  *(left symbolic — σ carries a polynomial factor `X^n`)*")
     return "\n".join(L)
 
 

@@ -145,8 +145,8 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
                  r"polynomials in the elementary expectations "
                  r"$h_i \equiv h_\varepsilon(\sigma)=\mathbb E[\Pi^\varepsilon\sigma](0)$ of the "
                  r"$\varepsilon$-regularized noise $\xi_\varepsilon$.  These constants are "
-                 r"$\varepsilon$-dependent and \emph{diverge as} $\varepsilon\to0$; evaluating "
-                 r"the integrals below is Phase~4 / Track~B2.")
+                 r"$\varepsilon$-dependent and diverge as $\varepsilon\to0$; the integrals below "
+                 r"are left unevaluated.")
         P.append(r"\begin{align*}")
         for t, k_free, v in rows:
             rhs = (r"0 && \text{(vanishes: odd noise parity)}" if v == 0
@@ -167,18 +167,13 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
             P.append(r"\end{align*}")
         if legend:
             from ..renorm.scheme import WHITE_NOISE, expectation, is_bare
-            from .report import expectation_latex
+            from .report import integral_latex_block
             P.append(r"where, for the $\varepsilon$-regularized noise $\xi_\varepsilon$ "
-                     r"(covariance $C_\varepsilon$; $K$ the \emph{singular kernel} of $L^{-1}$ "
-                     r"--- Hairer's $K$ in $\bar K = K + R$, the diagonal-singular part of the "
-                     r"Green's function $\bar K$, which explodes on the diagonal), each surviving "
-                     r"\emph{bare} expectation (all node decorations $0$) is the integral below.  A "
-                     r"red contraction node is fine ($\Pi^\zeta(\textcolor{red}{\bullet}^{n,\alpha})"
-                     r"(x)=x^n$, independent of the extended decoration $\alpha$, tex 4003); only a "
-                     r"non-zero $X^n$ decoration breaks it (recall $(\Pi X^n)(y)=y^n$, so a root "
-                     r"$X^n$ gives $0$), leaving $h_\varepsilon(\sigma)$ symbolic.")
+                     r"(covariance $C_\varepsilon$) and the singular kernel $K$ of $L^{-1}$, the "
+                     r"elementary expectations are given below.  Those carrying a polynomial "
+                     r"factor $X^n$ are left symbolic.")
             for sym, tr in legend:
-                note = (r"\quad{\footnotesize(contraction node, $o=" + hom_latex(tr.o) + "$)}"
+                note = (r"\quad{\footnotesize($o=" + hom_latex(tr.o) + "$)}"
                         if tr.color == "red" else "")
                 P.append(r"\begin{center}")
                 P.append(f"${sympy.latex(sym)} = h_\\varepsilon\\bigl({{}}$ {forest(tr, sig)} "
@@ -186,17 +181,15 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
                 P.append(r"\end{center}")
                 if is_bare(tr):
                     e = expectation(tr, sig, WHITE_NOISE)
-                    P.append(r"\[" + sympy.latex(sym) + r" = " + expectation_latex(e, sig.width) + r"\]")
+                    P.append(integral_latex_block(sympy.latex(sym), e, sig.width))
                 else:
-                    P.append(r"\begin{center}{\footnotesize $" + sympy.latex(sym)
-                             + r"$ is left symbolic --- $\sigma$ has a non-zero $X^n$ decoration, "
-                             + r"so $h_\varepsilon(\sigma)$ needs the full $\Pi^\zeta$ "
-                             + r"(not the naive integral).}\end{center}")
+                    P.append(r"\begin{center}{\footnotesize (left symbolic --- "
+                             r"$\sigma$ carries a polynomial factor $X^n$)}\end{center}")
     else:
         P.append(r"\bigskip")
         P.append(r"{\itshape Pass \texttt{canonical=True} for the canonical (BPHZ) "
                  r"renormalization $k_\tau=h(S'_-\tau)$ of a centered Gaussian noise "
-                 r"(parity-reduced; many constants vanish). Numeric $h(\sigma)$ values need a "
-                 r"noise law (Phase~4).}")
+                 r"(parity-reduced; many constants vanish). The $h(\sigma)$ values are left "
+                 r"symbolic.}")
     P.append(r"\end{document}")
     return "\n".join(P)
