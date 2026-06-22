@@ -1,10 +1,11 @@
 # ENTRYPOINTS — how to read this code
 
-A guided reading order for understanding `regstruct` in detail. The codebase is small
-(~11 source files) and each file has a single job; this is the order that makes them click.
+A guided reading order for understanding `regstruct` in detail. Each file has a single job;
+this is the order that makes them click. (For "what can I *do*, and which module?", see the
+capability map in [`README.md`](README.md); this doc is for reading the *code*.)
 
-If you only read two things: **`regstruct/api.py`** (the whole pipeline in ~25 lines) and
-**`tests/test_golden_gkpz.py`** (the input/output contract on the paper's worked example).
+If you only read two things: **`regstruct/api.py`** (the whole Phase-1 pipeline in ~25 lines) and
+**`tests/test_goldens.py`** (the input/output contract on the paper's worked examples).
 
 For the mathematics behind any file, see [`notes/initial_plan.md`](notes/initial_plan.md); for
 why the modules are split the way they are, see [`notes/architecture.md`](notes/architecture.md).
@@ -98,7 +99,19 @@ renders jet variables back to `u` and its derivatives for display.
 - **Jet symbols are the lingua franca** between the parser (`dsl._to_jet`), the engine
   (`nonlinearity`) and the renderer (`equation._display_subs`). Grep `jet(` to follow them.
 
-## What is deliberately NOT here yet (Phase 3)
-No coproducts, no twisted antipode, no regularity/renormalization structures — the free-constant
-family needs none of that (see `notes/architecture.md` §2, §7). When those land they will be
-`core/hopf.py`, `trees/coproducts.py`, and `structures/`.
+## Beyond the Phase-1 spine (now built)
+
+The reading order above is the Phase-1 pipeline (`SPDE → counterterm family`). The algebraic
+layer (Phase 3) sits on top of the same `Signature`/`DecoratedTree` core:
+
+- `trees/coproducts.py` — extraction `δ`/`δ⁻`, recentering `Δ`/`Δ⁺`, twisted antipode `S'₋`
+  (the load-bearing, most intricate file; the cointeraction subtlety is in `notes/cointeraction_singular_noise.md`).
+- `core/hopf.py` — generic `convolve`/`antipode`/`comodule_action` over plain coproduct/mul maps.
+- `structures.py` — bundles the above into `RegularityStructure (T,T⁺)`, `RenormalizationStructure`
+  (BHZ character), and the group `G⁻`.
+- `renorm/scheme.py` — the canonical-character Wick/parity machinery (symbolic; integrals unbuilt).
+- `equation/daprato.py` — the da Prato–Debussche lift; `render/export.py` — JSON export.
+
+For *what each does and how to call it*, see the capability map in [`README.md`](README.md).
+What is **not** built: numeric BPHZ constants (Gaussian integrals) and the `G⁻_ad` reduction —
+the analytic/probability wall (`notes/phase4_plan.md`).
