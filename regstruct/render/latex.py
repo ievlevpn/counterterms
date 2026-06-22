@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING
 
 import sympy
 
-from .report import (canonical_data, const_map, elem_map, flatex, hom_latex, op_latex,
-                     _sorted_trees)
+from .report import (canonical_data, canonical_family_rhs, const_map, elem_map, flatex,
+                     hom_latex, op_latex, _sorted_trees)
 from .tree import forest
 
 if TYPE_CHECKING:
@@ -140,6 +140,12 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
             rhs = (r"0 && \text{(vanishes: odd noise parity)}" if v == 0
                    else flatex(v))
             P.append(f"  {sympy.latex(k_free)} &= {rhs} \\\\")
+        P.append(r"\end{align*}")
+        P.append(r"giving the canonically renormalized equation")
+        P.append(r"\begin{align*}")
+        for a, (u, op, _r) in enumerate(eq.spde.equations):
+            P.append(f"  {op_latex(op)}\\, {u.name} &= "
+                     f"{flatex(canonical_family_rhs(eq, a, rows))} \\\\")
         P.append(r"\end{align*}")
         if legend:
             P.append(r"where each surviving elementary expectation is $h(\sigma)$ for $\sigma$:")

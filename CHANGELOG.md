@@ -14,6 +14,9 @@ All notable changes to this project are documented here. The format follows
   tractable (~90-char expressions / 0.5 s instead of 144 `h`-terms / 2.3 s). Vanishing constants
   are labelled "(odd noise parity)"; the `h`-legend lists only the surviving expectations,
   renumbered contiguously. JSON key `bhz` → `canonical_bphz` (with a `vanishes` flag).
+  `canonical=True` now also prints the **canonically renormalized equation** itself — the
+  surviving counterterms substituted in (`(k_τ/S)·F(τ*)` with `k_τ` at its canonical `h(σ)`
+  value), vanishing ones dropped, no free constants. (JSON: `canonical_family_latex`.)
 
 ### Added
 - **Canonical (BHZ) renormalization in the report** (`render(..., canonical=True)`,

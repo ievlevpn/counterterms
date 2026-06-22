@@ -38,6 +38,11 @@ def test_canonical_bphz_section():
     assert sum(not r["vanishes"] for r in data["canonical_bphz"]) == 2
     # the legend lists only h-symbols that survive in the reduced constants
     assert {h["symbol"] for h in data["h_legend"]} == {"h0", "h1"}
+    # the canonically renormalized equation is printed, with the surviving counterterms
+    # substituted (h-coefficients, no free k's) and the vanishing ones dropped
+    assert "Canonically renormalized equation" in txt
+    fam = data["canonical_family_latex"]["u"]
+    assert "h_{0}" in fam and "h_{1}" in fam and "k_" not in fam
 
 
 def test_forest_draws_red_contraction_node():

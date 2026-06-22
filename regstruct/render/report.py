@@ -152,6 +152,19 @@ def _h_annotation(tr: DecoratedTree) -> str:
     return f"  [contracted node, o={tr.o}]" if tr.color == "red" else ""
 
 
+def canonical_family_rhs(eq: RenormalizedEquation, comp: int, rows: list):
+    """The canonically renormalized RHS of component ``comp``: the original equation plus
+    each surviving counterterm with its free constant replaced by the canonical (BPHZ)
+    value ``(k_τ/S(τ))·F(τ*)``; vanishing (odd-parity) trees drop out."""
+    canon = {t: v for t, _k, v in rows}
+    expr = eq.original_rhs(comp)
+    for ct in eq.per_component[comp]:
+        v = canon.get(ct.tree, sympy.Integer(0))
+        if v != 0:
+            expr += sympy.Rational(1, ct.symmetry_factor) * v * eq._pretty(ct.elem_diff)
+    return sympy.expand(expr)
+
+
 # --------------------------------------------------------------------------- #
 # text
 # --------------------------------------------------------------------------- #
@@ -223,6 +236,11 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
         for t, k_free, v in rows:
             rhs = "0   (vanishes — odd noise parity)" if v == 0 else fstr(v)
             out.append(f"  {k_free} = {rhs}      [τ={shorthand(t, sig, coords)}]")
+        out.append("")
+        out.append("  Canonically renormalized equation:")
+        for a, (u, op, _r) in enumerate(eq.spde.equations):
+            out.append(f"    {operator_str(op)} {u.name} = "
+                       f"{fstr(canonical_family_rhs(eq, a, rows))}")
         if legend:
             out.append("  where")
             for sym, tr in legend:
@@ -298,6 +316,10 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
         for t, k_free, v in rows:
             rhs = "0  *(vanishes — odd noise parity)*" if v == 0 else f"`{fstr(v)}`"
             L.append(f"- `{k_free}` = {rhs}   (τ = `{shorthand(t, sig, coords)}`)")
+        L += ["", "Canonically renormalized equation:", "", "```"]
+        for a, (u, op, _r) in enumerate(eq.spde.equations):
+            L.append(f"{operator_str(op)} {u.name} = {fstr(canonical_family_rhs(eq, a, rows))}")
+        L.append("```")
         if legend:
             L += ["", "where", ""]
             for sym, tr in legend:
@@ -356,4 +378,7 @@ def json_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
         data["h_legend"] = [{"symbol": str(sym), "tree": shorthand(tr, sig, coords),
                              "contracted": tr.color == "red", "o": str(tr.o)}
                             for sym, tr in legend]
+        data["canonical_family_latex"] = {
+            eq.unknowns[a].name: flatex(canonical_family_rhs(eq, a, rows))
+            for a in range(eq.n_components)}
     return json.dumps(data, indent=2, ensure_ascii=False)
