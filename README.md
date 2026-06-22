@@ -13,7 +13,7 @@ You give it a subcritical singular SPDE; it gives you the **family of renormaliz
 (the BCCH / `ThmRenormPDEs` formula) — the original PDE plus one tree-indexed counterterm per
 negative-homogeneity decorated tree, with free renormalization constants:
 
-$$(\partial_t - \Delta + 1)\,u^{(k)} = f(u^{(k)})\,\zeta + g\big(u^{(k)}, \partial u^{(k)}\big) + \sum_{\tau \in \mathcal{B},\; |\tau| < 0} \frac{k_\tau}{S(\tau)}\, F(\tau^*)\big(u^{(k)}, \partial u^{(k)}\big)$$
+$$(\partial_t - \Delta + 1) u^{(k)} = f(u^{(k)}) \zeta + g(u^{(k)}, \partial u^{(k)}) + \sum_{\tau \in \mathcal{B}, |\tau| < 0} \frac{k_\tau}{S(\tau)} F(\tau^*)(u^{(k)}, \partial u^{(k)})$$
 
 — and, underneath, the full algebraic machinery (the regularity structure $(T, T^+)$, the
 extraction/recentering coproducts, the twisted antipode, the BHZ character, the renormalization
@@ -39,7 +39,7 @@ from sympy import Derivative, Function, Rational
 from counterterms import SPDE, Noise, Parabolic, Unknown, kappa
 
 u  = Unknown("u", dim=1)
-xi = Noise("xi", regularity=Rational(-1) - kappa)              # ζ ∈ C^{−1−κ}
+xi = Noise("xi", regularity=Rational(-1) - kappa)              # noise regularity -1 - kappa
 f, g = Function("f"), Function("g")
 
 spde = SPDE(operator=Parabolic(dim=1, mass=1), unknown=u, noises=[xi],
@@ -60,14 +60,14 @@ from counterterms import build_renormalization
 
 rs = build_renormalization(spde)
 for t in rs.divergent:
-    print(rs.canonical_character(t))   # exact antipode combo in h-values; odd-noise τ → 0
+    print(rs.canonical_character(t))   # exact antipode combo in h-values; odd-noise tau -> 0
 ```
 
 ## Example output
 
 `eq.save()` writes the report as text / Markdown / JSON and a typeset LaTeX → PDF. Here is the
 PDF for the gKPZ equation above — the parsed equation, every divergent tree $\tau$ (drawn in the
-paper's convention: ○ noise, ● integration node, dotted = derivative kernel) with its
+paper's convention: $\circ$ noise, $\bullet$ integration node, dotted = derivative kernel) with its
 homogeneity $|\tau|$, symmetry factor $S(\tau)$, free constant $k_\tau$ and elementary differential
 $F(\tau^*)$, and the assembled renormalized family:
 
@@ -87,7 +87,7 @@ Everything public is re-exported from the top-level `counterterms` package.
 | Derive the renormalized family | `SPDE(...).renormalize()` → `RenormalizedEquation` | `api.py`, `renorm/equation.py` |
 | Access each counterterm (tree, $\lvert\tau\rvert$, $S(\tau)$, $F(\tau^*)$, $k_\tau$) | `eq.counterterms`, `eq.per_component` | `renorm/equation.py` |
 | Render the report (text / markdown / json / latex) | `eq.summary()`, `eq.render(fmt)`, `eq.save()` | `render/report.py`, `render/latex.py` |
-| **Φ⁴₂/Φ⁴₃** (supercritical, $\beta_0 \le -\text{order}$) | `daprato_lift(spde).renormalize()` | `equation/daprato.py` |
+| **$\Phi^4_2 / \Phi^4_3$** (supercritical, $\beta_0 \le -\text{order}$) | `daprato_lift(spde).renormalize()` | `equation/daprato.py` |
 
 ### The trees and the rule
 | You want… | Call | Module |
@@ -125,7 +125,7 @@ Everything public is re-exported from the top-level `counterterms` package.
 **In scope:** scalar **or coupled systems**, single **or multiple** noises, 2nd-order parabolic
 $L$ (general operator order with a warning), $\beta_0 > -\text{order}$ (rule-based subcriticality), $g$ at most
 quadratic in $\partial u$ (Assumption D2), $\lvert p\rvert_\mathfrak{s} \le 1$. Covers **gKPZ, KPZ, gPAM, PAM, coupled systems,
-multi-noise**, and — via `daprato_lift` — **Φ⁴₂, Φ⁴₃**.
+multi-noise**, and — via `daprato_lift` — **$\Phi^4_2$, $\Phi^4_3$**.
 
 **Rejected with clear errors:** non-polynomial supercritical equations (sine-Gordon needs Wick
 exponentials), noise nonlinearities not affine in the noise, $g$ more than quadratic in $\partial u$,
@@ -144,10 +144,10 @@ renormalization group. See [`notes/use_cases.md`](notes/use_cases.md) and
 
 Phases 1–3 complete and green; Phase 4 partially built.
 
-- **Phase 1–2** — `SPDE → renormalized family` for scalar/systems, one/many noises, operator order.
-- **Phase 3** — coproducts (the cointeraction holds **including β₀=−3/2**), `RegularityStructure` $(T, T^+)$,
+- **Phase 1–2** — the renormalized family from an `SPDE`, for scalar/systems, one/many noises, operator order.
+- **Phase 3** — coproducts (the cointeraction holds **including $\beta_0 = -3/2$**), `RegularityStructure` $(T, T^+)$,
   the generic `core/hopf` layer, subcriticality, twisted antipode + BHZ character, the group $G^-$.
-- **Phase 4 (partial)** — `daprato_lift` (Φ⁴₂/₃), the canonical-character *symbolic* half + Wick
+- **Phase 4 (partial)** — `daprato_lift` ($\Phi^4_{2/3}$), the canonical-character *symbolic* half + Wick
   parity, the full-structure JSON export, and the seams (sockets) for the unbuilt analytic pieces.
 
 See [`ROADMAP.md`](ROADMAP.md) and [`CHANGELOG.md`](CHANGELOG.md).
@@ -155,8 +155,8 @@ See [`ROADMAP.md`](ROADMAP.md) and [`CHANGELOG.md`](CHANGELOG.md).
 ## Validation
 
 The paper is the only oracle (no reference implementation exists). The suite reproduces the gKPZ
-example's exact five counterterms (β₀=−1) **and the full strongly-conforming-tree table at
-β₀=−3/2 (43 trees, tex 6024–6163)** — matching the latter caught and fixed a real tree-generation
+example's exact five counterterms ($\beta_0 = -1$) **and the full strongly-conforming-tree table at
+$\beta_0 = -3/2$ (43 trees, tex 6024–6163)** — matching the latter caught and fixed a real tree-generation
 bug. Plus an independent symmetry-factor cross-check and benchmark counts. See
 [`notes/validation.md`](notes/validation.md).
 
