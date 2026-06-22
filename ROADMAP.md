@@ -53,7 +53,7 @@ single-noise results are unchanged (regression green).
 ## Phase 3 — the algebraic-renormalization core 🔨
 
 **Goal:** build the genuine regularity-structures machinery. This is the famous-hard part.
-Modules: `trees/coproducts.py`, `structures.py` (`core/hopf.py` generic layer still TODO).
+Modules: `trees/coproducts.py`, `structures.py`, `core/hopf.py` (the basis-agnostic layer).
 
 - [x] **Extended-decoration trees** — red nodes with `𝔬 ∈ ℤ[β₀]` (reusing `Homogeneity`); the
       contraction `τ /^red φ`, `extended_homogeneity`. (`trees/tree.py`)
@@ -69,8 +69,11 @@ Modules: `trees/coproducts.py`, `structures.py` (`core/hopf.py` generic layer st
       [`notes/cointeraction_singular_noise.md`](notes/cointeraction_singular_noise.md) §8.
 - [x] **Structures** — `RenormalizationStructure` (`δ`, `δ⁻`, `S'₋`) + the **symbolic BHZ
       character** `k = h∘S'₋` (`h` left symbolic). (`structures.py`)
-- [ ] **Generic Hopf layer** (`core/hopf.py`, over the `Symbol` protocol) — character
-      convolution, connected-graded antipode, comodule action `k̃`. (currently tree-specific)
+- [x] **Generic Hopf layer** (`core/hopf.py`) — basis-agnostic `convolve` (character group
+      law), connected-graded `antipode`, and `comodule_action` `k̃`, over plain
+      coproduct/`mul`/`unit` maps. Reused verbatim for **both** `U⁻` (forests, `δ⁻`) and `T⁺`
+      (blue trees, `Δ⁺`); the antipode axiom `S⋆id = η∘ε` is the test on each.
+      `RegularityStructure.structure_antipode()` is the first consumer.
 - [x] **`RegularityStructure (T, T⁺)`** — γ-bounded model basis (`generate_trees`, positive
       sector included), graded by homogeneity; `Δ : T → T⁺`, `Δ⁺` on `T⁺`; tested graded +
       triangular into `T⁺`, with the divergent subspace = the counterterms. (`structures.py`)

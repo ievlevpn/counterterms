@@ -86,3 +86,12 @@ def test_Tplus_generators_are_positive():
     pos = rs.positive_basis()
     assert pos
     assert all(_branch_positive(b, rs.sig) for b in pos)
+
+
+def test_structure_antipode_via_generic_hopf():
+    from fractions import Fraction
+    rs = build_regularity_structure(gkpz())
+    S = rs.structure_antipode()
+    unit = tree("bullet", (0,) * rs.sig.width, (), color="blue")
+    assert S(unit) == {unit: Fraction(1)}          # S(𝟙₊) = 𝟙₊
+    assert all(S(b) for b in rs.positive_basis())  # total & nonempty on T⁺

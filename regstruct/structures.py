@@ -105,6 +105,19 @@ class RegularityStructure:
         """``Δ⁺ b ∈ T⁺ ⊗ T⁺`` (the structure-group Hopf algebra, tex 5709)."""
         return delta_plus(b, self.sig, project_left=True)
 
+    def structure_antipode(self):
+        """The structure-group antipode ``S : T⁺ → T⁺`` (the convolution inverse of the
+        identity), via the generic connected-graded recursion in `core.hopf`."""
+        from .core.hopf import antipode
+        from .trees.tree import tree
+        unit = tree("bullet", (0,) * self.sig.width, (), color="blue")
+
+        def mul(a, b):                                   # X^j·X^k · (merge branches)
+            nd = tuple(x + y for x, y in zip(a.node_dec, b.node_dec))
+            return tree("bullet", nd, a.children + b.children, color="blue")
+
+        return antipode(self.structure_coproduct, mul, unit)
+
     def positive_basis(self) -> set:
         """The ``T⁺`` elements that appear as right factors of ``Δ`` over the basis."""
         return {right for t in self.model_basis for (_l, right) in self.recentering(t)}
