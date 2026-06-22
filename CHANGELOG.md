@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **Report's canonical section now shows the parity-reduced canonical (BPHZ) constants**
+  (`canonical_character`) instead of the raw `bhz_character`. For a centered Gaussian noise the
+  mean-zero parity rule makes odd-noise trees vanish — gKPZ collapses from 7-term polynomials in
+  14 `h`-symbols to `k_3 = −h₀`, `k_4 = −h₁` with 3 of 5 constants `= 0`, and KPZ becomes
+  tractable (~90-char expressions / 0.5 s instead of 144 `h`-terms / 2.3 s). Vanishing constants
+  are labelled "(odd noise parity)"; the `h`-legend lists only the surviving expectations,
+  renumbered contiguously. JSON key `bhz` → `canonical_bphz` (with a `vanishes` flag).
+
 ### Added
 - **Canonical (BHZ) renormalization in the report** (`render(..., canonical=True)`,
   `eq.report/latex_document/to_json/save(canonical=True)`). Wires Phase 3 to the renderer: each

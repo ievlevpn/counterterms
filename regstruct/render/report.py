@@ -123,15 +123,27 @@ def _sorted_trees(eq: RenormalizedEquation) -> list[DecoratedTree]:
 # --------------------------------------------------------------------------- #
 
 def canonical_data(eq: RenormalizedEquation) -> tuple[list, list]:
-    """Build the renormalization structure and return
-    ``(rows, legend)`` where ``rows = [(tree, free_const k_τ, bhz_expr)]`` over the
-    counterterm trees (homogeneity order) and ``legend = [(h_symbol, σ)]`` for every
-    elementary expectation ``h(σ)`` appearing.  Heavy for deep trees (KPZ)."""
+    """Build the renormalization structure and return ``(rows, legend)``:
+
+    * ``rows = [(tree, free_const k_τ, value)]`` over the counterterm trees (homogeneity
+      order), where ``value`` is the **canonical (BPHZ) constant** ``k_τ = h(S'₋τ)`` for a
+      centered-Gaussian noise — *parity-reduced*, so trees with an odd number of noise
+      vertices vanish (``value == 0``) and the survivors collapse to short polynomials in
+      the even-noise ``h``-symbols;
+    * ``legend = [(h_symbol, σ)]`` for each surviving elementary expectation ``h(σ)``.
+
+    The parity rule both sharpens the output (gKPZ: 3 of 5 vanish) and tames it
+    (KPZ: ~90-char expressions instead of 144 ``h``-symbols)."""
     from ..structures import build_renormalization
     rs = build_renormalization(eq.spde)
     cmap = const_map(eq)
-    rows = [(t, cmap[t], rs.bhz_character(t)) for t in _sorted_trees(eq) if t in cmap]
-    legend = sorted(((sym, tr) for tr, sym in rs._h.items()),
+    rows = [(t, cmap[t], rs.canonical_character(t)) for t in _sorted_trees(eq) if t in cmap]
+    # keep only the h-symbols that survive, and renumber them h0, h1, … contiguously
+    used = sorted(set().union(*(v.free_symbols for _t, _k, v in rows)) if rows else set(),
+                  key=lambda s: int(str(s)[1:]))
+    relabel = {s: sympy.Symbol(f"h{i}") for i, s in enumerate(used)}
+    rows = [(t, k, v.xreplace(relabel)) for t, k, v in rows]
+    legend = sorted(((relabel[sym], tr) for tr, sym in rs._h.items() if sym in relabel),
                     key=lambda x: int(str(x[0])[1:]))
     return rows, legend
 
@@ -202,20 +214,23 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
 
     if canonical:
         rows, legend = canonical_data(eq)
-        out.append(_sec("CANONICAL (BHZ) RENORMALIZATION  k_τ = h(S'₋τ)"))
-        out.append("  Each free constant, set to its canonical (BPHZ) value — symbolic in the")
-        out.append("  elementary expectations h(σ) = 𝔼[Π σ](0) (numeric values: Phase 4).")
-        for t, k_free, k_bhz in rows:
-            out.append(f"  {k_free} = {fstr(k_bhz)}      [τ={shorthand(t, sig, coords)}]")
-        out.append("  where")
-        for sym, tr in legend:
-            out.append(f"    {sym} = h({shorthand(tr, sig, coords)}){_h_annotation(tr)}")
+        nzero = sum(1 for _t, _k, v in rows if v == 0)
+        out.append(_sec("CANONICAL (BPHZ) RENORMALIZATION  k_τ = h(S'₋τ)"))
+        out.append("  Each free constant at its canonical value for a centered Gaussian noise.")
+        out.append(f"  Mean-zero parity ⇒ trees with odd noise count vanish "
+                   f"({nzero}/{len(rows)} here); survivors are polynomials in the elementary")
+        out.append("  expectations h(σ) = 𝔼[Π σ](0) (numeric h(σ): Phase 4).")
+        for t, k_free, v in rows:
+            rhs = "0   (vanishes — odd noise parity)" if v == 0 else fstr(v)
+            out.append(f"  {k_free} = {rhs}      [τ={shorthand(t, sig, coords)}]")
+        if legend:
+            out.append("  where")
+            for sym, tr in legend:
+                out.append(f"    {sym} = h({shorthand(tr, sig, coords)}){_h_annotation(tr)}")
     else:
-        out.append(_sec("CANONICAL (BHZ) RENORMALIZATION"))
-        out.append("  k_τ = h(S'₋τ), symbolic in h(σ): pass canonical=True "
-                   "(heavy for deep trees, e.g. KPZ).")
-        out.append(_sec("CANONICAL VALUES (Phase 4 — needs a NoiseLaw)"))
-        out.append("  numeric h(σ) = 𝔼[Π σ](0) via Wick — see ROADMAP O4.")
+        out.append(_sec("CANONICAL (BPHZ) RENORMALIZATION"))
+        out.append("  k_τ = h(S'₋τ) for centered Gaussian noise (parity-reduced; many vanish):")
+        out.append("  pass canonical=True.  Numeric h(σ) values need a NoiseLaw (Phase 4).")
     return "\n".join(out)
 
 
@@ -274,14 +289,19 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
 
     if canonical:
         rows, legend = canonical_data(eq)
-        L += ["", "## Canonical (BHZ) renormalization", "",
-              "Each free constant at its canonical (BPHZ) value, symbolic in the elementary "
-              "expectations `h(σ) = 𝔼[Π σ](0)` (numeric values: Phase 4).", ""]
-        for t, k_free, k_bhz in rows:
-            L.append(f"- `{k_free} = {fstr(k_bhz)}`   (τ = `{shorthand(t, sig, coords)}`)")
-        L += ["", "where", ""]
-        for sym, tr in legend:
-            L.append(f"- `{sym} = h({shorthand(tr, sig, coords)})`{_h_annotation(tr)}")
+        nzero = sum(1 for _t, _k, v in rows if v == 0)
+        L += ["", "## Canonical (BPHZ) renormalization", "",
+              "Each free constant at its canonical value for a centered Gaussian noise. "
+              f"Mean-zero parity ⇒ odd-noise trees vanish ({nzero}/{len(rows)} here); "
+              "survivors are polynomials in the elementary expectations "
+              "`h(σ) = 𝔼[Π σ](0)` (numeric h(σ): Phase 4).", ""]
+        for t, k_free, v in rows:
+            rhs = "0  *(vanishes — odd noise parity)*" if v == 0 else f"`{fstr(v)}`"
+            L.append(f"- `{k_free}` = {rhs}   (τ = `{shorthand(t, sig, coords)}`)")
+        if legend:
+            L += ["", "where", ""]
+            for sym, tr in legend:
+                L.append(f"- `{sym} = h({shorthand(tr, sig, coords)})`{_h_annotation(tr)}")
     return "\n".join(L)
 
 
@@ -329,9 +349,10 @@ def json_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
     }
     if canonical:
         rows, legend = canonical_data(eq)
-        data["bhz"] = [{"tree": shorthand(t, sig, coords), "constant": str(kf),
-                        "value": str(kb), "value_latex": flatex(kb)}
-                       for t, kf, kb in rows]
+        data["canonical_bphz"] = [{"tree": shorthand(t, sig, coords), "constant": str(kf),
+                                   "value": str(v), "value_latex": flatex(v),
+                                   "vanishes": v == 0}
+                                  for t, kf, v in rows]
         data["h_legend"] = [{"symbol": str(sym), "tree": shorthand(tr, sig, coords),
                              "contracted": tr.color == "red", "o": str(tr.o)}
                             for sym, tr in legend]

@@ -140,13 +140,16 @@ dep (`forest` is a `.tex` concern; ANSI colour is `isatty`-gated; `rich` only if
       current scope, so "0 dropped" — the slot is wired and labelled for when red nodes arrive.)*
 - [x] **O2:** `render/latex.py` — standalone `pdflatex`-ready document; JSON export (`to_json`,
       the clean handoff at the symbolic boundary).
-- [x] **O3 (with Phase 3):** the **canonical (BHZ) renormalization** section (`canonical=True`,
-      opt-in — heavy for deep trees): each free `k_τ` as its exact symbolic value `k_τ = h(S'₋τ)`,
-      a polynomial in the elementary expectations `h(σ)`, plus an `h`-legend that draws every `σ`
-      (the tree drawer now renders **red contraction nodes** with their `o`-decoration and blue
-      `T⁺` roots). *Deliberately not rendered:* the raw `Δτ`/`Δ⁻τ`/`S'₋τ` tree⊗tree expansions —
-      the BHZ character already distills them, and they explode (KPZ: 144 `h`-terms). They stay
-      programmatic (`structures.py`). The model-space homogeneity spectrum is likewise available
+- [x] **O3 (with Phase 3 + Phase-4 B1):** the **canonical (BPHZ) renormalization** section
+      (`canonical=True`, opt-in): each free `k_τ` at its canonical value `k_τ = h(S'₋τ)` for a
+      centered Gaussian noise — **parity-reduced** (`canonical_character`), so odd-noise trees
+      vanish (gKPZ: 3/5 → 0) and survivors collapse to short polynomials in the surviving `h(σ)`
+      (KPZ: ~90 chars / 466 ms, vs 144 `h`-terms / 2.3 s for the raw `bhz_character`). An
+      `h`-legend draws each surviving `σ`; the tree drawer renders **red contraction nodes** (with
+      `o`-decoration) and blue `T⁺` roots. *Deliberately not rendered:* the raw `Δτ`/`Δ⁻τ`/`S'₋τ`
+      tree⊗tree expansions — the character distills them, and they explode; they stay programmatic
+      (`structures.py`, and the machine-readable `render/export.py`). The model-space spectrum is
+      likewise available
       via `RegularityStructure.grades()` but not auto-rendered.
 - [ ] **O4 (with Phase 4):** the numeric column — substitute the `h(σ)` values from a `NoiseLaw`
       (Wick) so `k_τ` becomes a number, not a symbol.

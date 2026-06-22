@@ -25,17 +25,30 @@ def test_text_report_has_all_trees():
     assert "canonical=True" in txt           # default report points to the opt-in section
 
 
-def test_canonical_bhz_section():
+def test_canonical_bphz_section():
     eq = _build()
     txt = eq.report(canonical=True)
-    # the bare-noise counterterm renormalizes to k = -h(∘)  (S'₋∘ = -∘)
-    assert "k_0 = -h0" in txt
-    # the h-legend distinguishes a contracted (red) node from its black twin
-    assert "[contracted node, o=" in txt
+    # centered-Gaussian parity: the bare noise ∘ (one noise vertex) vanishes
+    assert "vanishes" in txt
     import json
     data = json.loads(eq.render("json", canonical=True))
-    assert data["bhz"][0]["value"] == "-h0"
-    assert any(h["contracted"] for h in data["h_legend"])
+    rows = {r["tree"]: r for r in data["canonical_bphz"]}
+    assert rows["Ξ"]["vanishes"] and rows["Ξ"]["value"] == "0"   # odd parity
+    # gKPZ: exactly two canonical constants survive (3 of 5 vanish)
+    assert sum(not r["vanishes"] for r in data["canonical_bphz"]) == 2
+    # the legend lists only h-symbols that survive in the reduced constants
+    assert {h["symbol"] for h in data["h_legend"]} == {"h0", "h1"}
+
+
+def test_forest_draws_red_contraction_node():
+    # the drawer renders Phase-3 red (contraction) nodes distinctly + their o-decoration
+    from fractions import Fraction
+    from regstruct.core.homogeneity import Homogeneity
+    from regstruct.trees.tree import red_node
+    from tests.conftest import gkpz
+    sig = gkpz().renormalize().sig
+    tex = forest(red_node(Homogeneity(Fraction(-1)), width=sig.width), sig)
+    assert "redvertex" in tex and "o{=}" in tex
 
 
 def test_trees_sorted_by_homogeneity():

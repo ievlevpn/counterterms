@@ -125,29 +125,36 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
             P.append(r"  &\quad + " + flatex(term) + r" \\")
         P.append(r"\end{align*}")
 
-    # canonical (BHZ) renormalization — symbolic in the elementary expectations h(σ)
+    # canonical (BPHZ) renormalization — parity-reduced, symbolic in the expectations h(σ)
     if canonical:
         rows, legend = canonical_data(eq)
-        P.append(r"\section*{Canonical (BHZ) renormalization}")
-        P.append(r"Each free constant at its canonical (BPHZ) value $k_\tau = h(S'_-\tau)$, "
-                 r"symbolic in the elementary expectations $h(\sigma)=\mathbb E[\Pi\sigma](0)$ "
-                 r"(numeric values: Phase~4).")
+        nzero = sum(1 for _t, _k, v in rows if v == 0)
+        P.append(r"\section*{Canonical (BPHZ) renormalization}")
+        P.append(r"Each free constant at its canonical value $k_\tau = h(S'_-\tau)$ for a "
+                 r"centered Gaussian noise.  Mean-zero parity makes trees with an odd number of "
+                 f"noise vertices vanish ({nzero} of {len(rows)} below); the survivors are "
+                 r"polynomials in the elementary expectations $h(\sigma)=\mathbb E[\Pi\sigma](0)$ "
+                 r"(numeric $h(\sigma)$: Phase~4).")
         P.append(r"\begin{align*}")
-        for t, k_free, k_bhz in rows:
-            P.append(f"  {sympy.latex(k_free)} &= {flatex(k_bhz)} \\\\")
+        for t, k_free, v in rows:
+            rhs = (r"0 && \text{(vanishes: odd noise parity)}" if v == 0
+                   else flatex(v))
+            P.append(f"  {sympy.latex(k_free)} &= {rhs} \\\\")
         P.append(r"\end{align*}")
-        P.append(r"where each elementary expectation is $h(\sigma)$ for the tree $\sigma$:")
-        P.append(r"\begin{center}")
-        for sym, tr in legend:
-            note = (r"\quad{\footnotesize(contraction node, $o=" + hom_latex(tr.o) + "$)}"
-                    if tr.color == "red" else "")
-            P.append(f"${sympy.latex(sym)} = h\\bigl({{}}$ {forest(tr, sig)} $\\bigr)$"
-                     f"{note}\\par\\bigskip")
-        P.append(r"\end{center}")
+        if legend:
+            P.append(r"where each surviving elementary expectation is $h(\sigma)$ for $\sigma$:")
+            P.append(r"\begin{center}")
+            for sym, tr in legend:
+                note = (r"\quad{\footnotesize(contraction node, $o=" + hom_latex(tr.o) + "$)}"
+                        if tr.color == "red" else "")
+                P.append(f"${sympy.latex(sym)} = h\\bigl({{}}$ {forest(tr, sig)} $\\bigr)$"
+                         f"{note}\\par\\bigskip")
+            P.append(r"\end{center}")
     else:
         P.append(r"\bigskip")
-        P.append(r"{\itshape Pass \texttt{canonical=True} for the BHZ renormalization "
-                 r"$k_\tau=h(S'_-\tau)$ (symbolic in $h(\sigma)$; heavy for deep trees). "
-                 r"Numeric constants need a noise law (Phase~4).}")
+        P.append(r"{\itshape Pass \texttt{canonical=True} for the canonical (BPHZ) "
+                 r"renormalization $k_\tau=h(S'_-\tau)$ of a centered Gaussian noise "
+                 r"(parity-reduced; many constants vanish). Numeric $h(\sigma)$ values need a "
+                 r"noise law (Phase~4).}")
     P.append(r"\end{document}")
     return "\n".join(P)
