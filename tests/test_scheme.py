@@ -11,7 +11,7 @@ from regstruct.renorm.scheme import expectation, has_odd_noise, wick_pairings
 from regstruct.structures import build_renormalization
 from regstruct.trees.tree import tree
 
-from tests.conftest import gkpz
+from tests.conftest import gkpz, multinoise
 
 CIRC = tree("xi", (0, 0))
 SIG = build_context(gkpz())[0]
@@ -47,6 +47,33 @@ def test_expectation_integrand_structure():
     (integrand, variables), = expectation(two, SIG).terms
     assert len(variables) == 1
     assert "K_0_0" in str(integrand) and "C(" in str(integrand)   # kernel × covariance
+
+
+def test_independent_noises_no_cross_pairing():
+    # ξ and η are independent ⇒ 𝔼[ξη]=0. A tree mixing one ξ and one η must vanish
+    # (no cross-noise covariance), even though the total noise count (2) is even.
+    sig = build_context(multinoise())[0]
+    eta = tree("eta", (0, 0))
+    cross = tree("xi", (0, 0), [(0, (0, 0), eta)])      # ∘_ξ — I — ∘_η  (one of each)
+    same = tree("xi", (0, 0), [(0, (0, 0), tree("xi", (0, 0)))])   # ∘_ξ — I — ∘_ξ
+    assert has_odd_noise(cross, sig) and expectation(cross, sig).is_zero
+    assert not has_odd_noise(same, sig) and not expectation(same, sig).is_zero
+
+
+def test_expectation_refuses_extended_trees():
+    # expectation() is the naive canonical Π — valid only for ordinary trees. A red
+    # (contraction) node carries an extended o-decoration it doesn't implement, so it must
+    # refuse rather than silently emit a meaningless bare-kernel integral.
+    import pytest
+    from fractions import Fraction
+    from regstruct.core.homogeneity import Homogeneity
+    from regstruct.renorm.scheme import is_extended
+    from regstruct.trees.tree import red_node, tree
+    red = red_node(Homogeneity(Fraction(-1)), width=SIG.width)
+    contracted = tree("bullet", (0, 0), [(0, (0, 1), red)])     # ●—I—■(red)
+    assert is_extended(contracted) and not is_extended(CIRC)
+    with pytest.raises(NotImplementedError, match="extended o-decoration"):
+        expectation(contracted, SIG)
 
 
 def test_canonical_character_parity_on_gkpz():

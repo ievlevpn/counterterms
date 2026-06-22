@@ -55,14 +55,16 @@ def wick_pairings(items: Iterable[int]) -> list[list[tuple[int, int]]]:
     return out
 
 
-def _noise_vertices(tree: DecoratedTree, sig: Signature) -> list[int]:
-    nodes, _ = _explode(tree)
-    return [n.id for n in nodes if n.node_type in sig.noise_homog]
-
-
 def has_odd_noise(tree: DecoratedTree, sig: Signature) -> bool:
-    """Does the tree carry an odd number of noise vertices? (⇒ canonical expectation 0.)"""
-    return len(_noise_vertices(tree, sig)) % 2 == 1
+    """Does *any* noise type appear an odd number of times? (⇒ canonical expectation 0.)
+
+    For independent centered noises the expectation factors over noise types, so a single
+    type with odd count already kills it — e.g. ``Ξ_ξ·I[Ξ_η]`` (one ξ, one η) vanishes even
+    though the total count (2) is even."""
+    from collections import Counter
+    nodes, _ = _explode(tree)
+    counts = Counter(n.node_type for n in nodes if n.node_type in sig.noise_homog)
+    return any(c % 2 == 1 for c in counts.values())
 
 
 @dataclass
@@ -82,12 +84,39 @@ class Expectation:
         return " + ".join(f"∫ {ig} d{vs}" for ig, vs in self.terms)
 
 
+def is_extended(tree: DecoratedTree) -> bool:
+    """Does the tree carry a red (contraction) node — an extended ``o``-decoration?"""
+    return tree.color == "red" or any(is_extended(s) for (_c, _p, s) in tree.children)
+
+
 def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE) -> Expectation:
-    """The Wick expansion of ``h(τ)=𝔼[Π^ζτ](0)`` (symbolic; integrals unevaluated)."""
+    """The Wick expansion of ``h(τ)=𝔼[Π^ζτ](0)`` (symbolic; integrals unevaluated).
+
+    **Ordinary trees only.**  The naive canonical model ``Π^ζ`` implemented here covers
+    ordinary decorated trees (noises at leaves, kernels on edges).  It does **not** implement
+    the *extended* ``o``-decoration on red contraction nodes (those encode the BPHZ
+    subtraction structure produced by ``S'₋``); calling it on such a tree would silently
+    drop the decoration and yield a meaningless bare-kernel integral, so we refuse.
+
+    Independent centered noises ⇒ the expectation **factors over noise types**: vertices are
+    paired only with same-type vertices (no cross-noise covariances, since ``𝔼[ξη]=0``), and
+    any type with an odd count makes the whole expectation 0."""
+    from collections import defaultdict
+    from itertools import product
+
+    if is_extended(tree):
+        raise NotImplementedError(
+            "expectation() is only valid for ordinary trees; this σ has a red contraction "
+            "node (extended o-decoration). Its 𝔼[Π^ζσ](0) involves Π on the extended "
+            "decoration — the BPHZ subtraction structure — which is not implemented (Track B2).")
+
     nodes, edges = _explode(tree)
-    noise_ids = [n.id for n in nodes if n.node_type in sig.noise_homog]
-    if len(noise_ids) % 2 == 1:
-        return Expectation([])                      # mean-zero ⇒ E = 0
+    by_type: dict[str, list[int]] = defaultdict(list)
+    for n in nodes:
+        if n.node_type in sig.noise_homog:
+            by_type[n.node_type].append(n.id)
+    if any(len(ids) % 2 == 1 for ids in by_type.values()):
+        return Expectation([])                      # a type with odd count ⇒ E = 0
 
     z = {n.id: (sympy.Integer(0) if n.id == 0 else sympy.Symbol(f"z{n.id}")) for n in nodes}
     intvars = tuple(z[n.id] for n in nodes if n.id != 0)
@@ -96,11 +125,13 @@ def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE
         kernels *= sympy.Function("K_" + "_".join(map(str, p)))(z[a] - z[b])
     C = sympy.Function(law.covariance)
 
+    # a global pairing = one within-type matching per noise type (Cartesian product)
     terms = []
-    for pairing in wick_pairings(noise_ids):
+    for combo in product(*(wick_pairings(ids) for ids in by_type.values())):
         cov = sympy.Integer(1)
-        for (i, j) in pairing:
-            cov *= C(z[i] - z[j])
+        for matching in combo:
+            for (i, j) in matching:
+                cov *= C(z[i] - z[j])
         terms.append((sympy.expand(kernels * cov), intvars))
     return Expectation(terms)
 
