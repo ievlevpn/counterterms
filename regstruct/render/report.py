@@ -8,6 +8,7 @@ a labelled placeholder until those phases land.
 from __future__ import annotations
 
 import json
+from typing import TYPE_CHECKING, Callable
 
 import sympy
 from sympy.core.function import AppliedUndef
@@ -16,6 +17,11 @@ from sympy.printing.str import StrPrinter
 
 from .tree import ascii_art, coord_names, edge_glyph_text, shorthand, _node_glyph
 
+if TYPE_CHECKING:
+    from ..core.homogeneity import Homogeneity
+    from ..renorm.equation import RenormalizedEquation
+    from ..trees.tree import DecoratedTree
+
 
 # --------------------------------------------------------------------------- #
 # prime notation:  Derivative(f(u), u)  →  f'(u)   (f''(u), f'''(u), f^{(4)}(u))
@@ -23,7 +29,11 @@ from .tree import ascii_art, coord_names, edge_glyph_text, shorthand, _node_glyp
 # derivatives of multi-arg g(u,∂u) fall back to SymPy's default ∂-notation.
 # --------------------------------------------------------------------------- #
 
-def _prime(expr, base_print, sup):
+def _prime(
+    expr: sympy.Expr,
+    base_print: Callable[[sympy.Expr], str],
+    sup: Callable[[int], str],
+) -> str | None:
     f = expr.expr
     if isinstance(f, AppliedUndef) and len(f.args) == 1:
         (var,) = f.args
@@ -35,26 +45,26 @@ def _prime(expr, base_print, sup):
 
 
 class _PrimeLatex(LatexPrinter):
-    def _print_Derivative(self, expr):
+    def _print_Derivative(self, expr: sympy.Expr) -> str:
         return (_prime(expr, self._print, lambda n: f"^{{({n})}}")
                 or super()._print_Derivative(expr))
 
 
 class _PrimeStr(StrPrinter):
-    def _print_Derivative(self, expr):
+    def _print_Derivative(self, expr: sympy.Expr) -> str:
         return (_prime(expr, self._print, lambda n: f"^({n})")
                 or super()._print_Derivative(expr))
 
 
-def flatex(expr) -> str:
+def flatex(expr: sympy.Expr) -> str:
     return _PrimeLatex().doprint(expr)
 
 
-def fstr(expr) -> str:
+def fstr(expr: sympy.Expr) -> str:
     return _PrimeStr().doprint(expr)
 
 
-def render(eq, fmt: str = "text", canonical: bool = False) -> str:
+def render(eq: RenormalizedEquation, fmt: str = "text", canonical: bool = False) -> str:
     # `canonical` adds the Phase-3 BHZ section (k_τ = h(S'₋τ)); off by default
     # because the twisted antipode blows up for deep trees (e.g. KPZ).
     if fmt == "text":
@@ -73,25 +83,25 @@ def render(eq, fmt: str = "text", canonical: bool = False) -> str:
 # shared helpers
 # --------------------------------------------------------------------------- #
 
-def operator_str(op) -> str:
+def operator_str(op: object) -> str:
     s = "∂_t − Δ"
     if getattr(op, "mass", 0):
         s += f" + {op.mass}"
     return f"({s})"
 
 
-def op_latex(op) -> str:
+def op_latex(op: object) -> str:
     s = r"\partial_t - \Delta"
     if getattr(op, "mass", 0):
         s += f" + {op.mass}"
     return f"({s})"
 
 
-def hom_latex(h) -> str:
+def hom_latex(h: Homogeneity) -> str:
     return str(h).replace("κ", r"\kappa")
 
 
-def const_map(eq) -> dict:
+def const_map(eq: RenormalizedEquation) -> dict:
     """tree -> free constant k_τ (constants are shared across components)."""
     m = {}
     for cts in eq.per_component.values():
@@ -100,11 +110,11 @@ def const_map(eq) -> dict:
     return m
 
 
-def elem_map(eq, comp: int = 0) -> dict:
+def elem_map(eq: RenormalizedEquation, comp: int = 0) -> dict:
     return {ct.tree: ct.elem_diff for ct in eq.per_component.get(comp, [])}
 
 
-def _sorted_trees(eq):
+def _sorted_trees(eq: RenormalizedEquation) -> list[DecoratedTree]:
     return sorted(eq.all_trees, key=lambda t: t.homogeneity(eq.sig)._key())
 
 
@@ -112,7 +122,7 @@ def _sorted_trees(eq):
 # Phase-3 bridge: the canonical (BHZ) renormalization, symbolic in h(σ).
 # --------------------------------------------------------------------------- #
 
-def canonical_data(eq):
+def canonical_data(eq: RenormalizedEquation) -> tuple[list, list]:
     """Build the renormalization structure and return
     ``(rows, legend)`` where ``rows = [(tree, free_const k_τ, bhz_expr)]`` over the
     counterterm trees (homogeneity order) and ``legend = [(h_symbol, σ)]`` for every
@@ -126,7 +136,7 @@ def canonical_data(eq):
     return rows, legend
 
 
-def _h_annotation(tr) -> str:
+def _h_annotation(tr: DecoratedTree) -> str:
     return f"  [contracted node, o={tr.o}]" if tr.color == "red" else ""
 
 
@@ -138,7 +148,7 @@ def _sec(title: str) -> str:
     return f"\n── {title} " + "─" * max(2, 64 - len(title))
 
 
-def text_report(eq, canonical: bool = False) -> str:
+def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
     cmap = const_map(eq)
@@ -213,7 +223,7 @@ def text_report(eq, canonical: bool = False) -> str:
 # markdown
 # --------------------------------------------------------------------------- #
 
-def markdown_report(eq, canonical: bool = False) -> str:
+def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
     cmap = const_map(eq)
@@ -279,14 +289,14 @@ def markdown_report(eq, canonical: bool = False) -> str:
 # json
 # --------------------------------------------------------------------------- #
 
-def json_report(eq, canonical: bool = False) -> str:
+def json_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
     cmap = const_map(eq)
     emap = elem_map(eq)
     scalar = sig.n_components == 1
 
-    def hom_d(h):
+    def hom_d(h: Homogeneity) -> dict:
         return {"std": str(h.std), "kap": str(h.kap), "str": str(h)}
 
     trees = []

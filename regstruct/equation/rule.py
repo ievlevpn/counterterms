@@ -17,9 +17,13 @@ rule-based check, not a hardcoded ``−2``.
 from __future__ import annotations
 
 from fractions import Fraction
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..core.signature import Signature
 
 
-def check_subcritical(sig) -> None:
+def check_subcritical(sig: Signature) -> None:
     """Raise ``ValueError`` if the rule carried by `sig` is not subcritical."""
     if not sig.noise_homog:
         return

@@ -16,16 +16,24 @@ from __future__ import annotations
 
 from collections import Counter
 from fractions import Fraction
+from typing import TYPE_CHECKING
 
 from ..core.homogeneity import Homogeneity
 from ..trees.tree import tree
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
+
+    from ..core.homogeneity import MultiIndex, Scaling
+    from ..core.signature import Signature
+    from ..trees.tree import DecoratedTree
 
 _BOUND = Fraction(1)          # keep trees with homogeneity.std < 1
 _MAX_NODE_SCALED = 2          # safety cap on |n|_𝔰 of a node decoration
 
 
-def _multiindices(length: int, scaling, max_scaled: int):
-    def rec(i, rem, acc):
+def _multiindices(length: int, scaling: Scaling, max_scaled: int) -> Iterator[MultiIndex]:
+    def rec(i: int, rem: int, acc: list[int]) -> Iterator[MultiIndex]:
         if i == length:
             yield tuple(acc)
             return
@@ -37,14 +45,14 @@ def _multiindices(length: int, scaling, max_scaled: int):
     yield from rec(0, max_scaled, [])
 
 
-def generate_trees(sig, bound=_BOUND):
+def generate_trees(sig: Signature, bound: Fraction = _BOUND) -> list[DecoratedTree]:
     """All rule-conforming decorated trees ``τ`` with ``homogeneity.std < bound`` — the
     γ-truncated basis of the model space ``T``.  ``generate_counterterms`` is the
     ``|τ|<0`` subset (the counterterm carriers); the rest are the positive sector."""
     decs = list(_multiindices(sig.width, sig.scaling, _MAX_NODE_SCALED))
     pool: dict = {}
 
-    def add(t) -> bool:
+    def add(t: DecoratedTree) -> bool:
         if t in pool or t.homogeneity(sig).std >= bound:
             return False
         pool[t] = t
@@ -78,17 +86,29 @@ def generate_trees(sig, bound=_BOUND):
     return list(pool.values())
 
 
-def generate_counterterms(sig):
+def generate_counterterms(sig: Signature) -> list[DecoratedTree]:
     """The divergent trees ``|τ| < 0`` — the counterterm-carrying subset of the basis."""
     return [t for t in generate_trees(sig) if t.homogeneity(sig).is_negative()]
 
 
-def _emit(b, n, base_h, atoms, caps, add, bound=_BOUND) -> bool:
+def _emit(
+    b: str,
+    n: MultiIndex,
+    base_h: Homogeneity,
+    atoms: list[tuple[int, MultiIndex, DecoratedTree, Homogeneity]],
+    caps: dict[tuple[int, MultiIndex], int | None],
+    add: Callable[[DecoratedTree], bool],
+    bound: Fraction = _BOUND,
+) -> bool:
     """DFS over child multisets with homogeneity budget; returns whether pool grew."""
     grew = False
     counts: Counter = Counter()
 
-    def dfs(start, chosen, h):
+    def dfs(
+        start: int,
+        chosen: list[tuple[int, MultiIndex, DecoratedTree]],
+        h: Homogeneity,
+    ) -> None:
         nonlocal grew
         if add(tree(b, n, chosen)):
             grew = True

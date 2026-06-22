@@ -13,12 +13,19 @@ The child equation index ``cᵢ`` comes from the edge — this is how systems co
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import sympy
 
 from ..core.jets import is_jet, jet, jet_parts
 
+if TYPE_CHECKING:
+    from ..core.homogeneity import MultiIndex
+    from ..core.signature import Signature
+    from ..trees.tree import DecoratedTree
 
-def _D(expr, ell: int, width: int):
+
+def _D(expr: sympy.Expr, ell: int, width: int) -> sympy.Expr:
     """Total derivative ``D_ℓ = Σ_{c,k} u^c_{k+e_ℓ} ∂_{u^c_k}`` (over all components)."""
     e_ell = tuple(1 if j == ell else 0 for j in range(width))
     res = sympy.Integer(0)
@@ -30,14 +37,14 @@ def _D(expr, ell: int, width: int):
     return res
 
 
-def _Dn(expr, n, width: int):
+def _Dn(expr: sympy.Expr, n: MultiIndex, width: int) -> sympy.Expr:
     for ell in range(width):
         for _ in range(n[ell]):
             expr = _D(expr, ell, width)
     return expr
 
 
-def elem_diff(t, comp: int, base, sig):
+def elem_diff(t: DecoratedTree, comp: int, base: dict, sig: Signature) -> sympy.Expr:
     """``F_comp(t*)`` — the elementary differential of ``t`` for output equation ``comp``."""
     expr = base[comp][t.node_type]
     for (c, p, _sub) in t.children:                  # Πᵢ ∂_{(cᵢ, p_i)}

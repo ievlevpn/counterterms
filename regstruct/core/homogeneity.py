@@ -29,7 +29,7 @@ class Homogeneity:
     std: Fraction
     kap: Fraction = Fraction(0)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         object.__setattr__(self, "std", Fraction(self.std))
         object.__setattr__(self, "kap", Fraction(self.kap))
 
@@ -42,14 +42,14 @@ class Homogeneity:
     def is_negative(self) -> bool:
         return self.std < 0 or (self.std == 0 and self.kap < 0)
 
-    def _key(self):
+    def _key(self) -> tuple[Fraction, Fraction]:
         return (self.std, self.kap)
 
     def __lt__(self, other: "Homogeneity") -> bool:
         return self._key() < other._key()
 
     def __str__(self) -> str:
-        parts = []
+        parts: list[str] = []
         if self.std != 0 or self.kap == 0:
             parts.append(str(self.std))
         if self.kap != 0:

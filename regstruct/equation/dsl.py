@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from fractions import Fraction
+from typing import TYPE_CHECKING
 
 import sympy
 
@@ -21,15 +22,18 @@ from ..core.jets import is_jet, jet, jet_parts
 from ..core.signature import Signature
 from .rule import check_subcritical
 
+if TYPE_CHECKING:
+    from ..renorm.equation import RenormalizedEquation
+
 kappa = sympy.Symbol("kappa", positive=True)
 
 
-def _frac(x) -> Fraction:
+def _frac(x: object) -> Fraction:
     r = sympy.Rational(x)
     return Fraction(int(r.p), int(r.q))
 
 
-def _split_kappa(expr) -> tuple[Fraction, Fraction]:
+def _split_kappa(expr: object) -> tuple[Fraction, Fraction]:
     expr = sympy.expand(sympy.sympify(expr))
     if expr.has(kappa) and sympy.Poly(expr, kappa).degree() > 1:
         raise ValueError("regularity must be affine in κ")
@@ -39,7 +43,7 @@ def _split_kappa(expr) -> tuple[Fraction, Fraction]:
 class Unknown:
     """A solution component. Components share spacetime coords (same `dim`)."""
 
-    def __init__(self, name: str, dim: int):
+    def __init__(self, name: str, dim: int) -> None:
         self.name = name
         self.dim = dim
         self.t = sympy.Symbol("t")
@@ -49,7 +53,7 @@ class Unknown:
 
 
 class Noise:
-    def __init__(self, name: str, regularity):
+    def __init__(self, name: str, regularity: object) -> None:
         self.name = name
         self.symbol = sympy.Symbol(name)
         self.std, self.kap = _split_kappa(regularity)
@@ -60,7 +64,7 @@ class Parabolic:
     """``∂_t − Δ (+ mass)`` by default (order 2). `order` is carried into the
     homogeneity arithmetic; only order 2 is the analytically proven regime."""
 
-    def __init__(self, dim: int, mass=0, order: int = 2):
+    def __init__(self, dim: int, mass: object = 0, order: int = 2) -> None:
         self.dim = dim
         self.mass = mass
         self.order = order
@@ -79,13 +83,20 @@ class SPDE:
     equations: list   # list of (Unknown, Parabolic, rhs)
     noises: list
 
-    def __init__(self, noises, operator=None, unknown=None, rhs=None, equations=None):
+    def __init__(
+        self,
+        noises: list[Noise],
+        operator: Parabolic | None = None,
+        unknown: Unknown | None = None,
+        rhs: sympy.Expr | None = None,
+        equations: list[tuple[Unknown, Parabolic, sympy.Expr]] | None = None,
+    ) -> None:
         if equations is None:
             equations = [(unknown, operator, rhs)]
         self.equations = equations
         self.noises = noises
 
-    def renormalize(self):
+    def renormalize(self) -> RenormalizedEquation:
         from ..api import renormalize
         return renormalize(self)
 
@@ -94,14 +105,18 @@ class SPDE:
 # parsing
 # --------------------------------------------------------------------------- #
 
-def _deriv_index(d: sympy.Derivative, coords) -> tuple[int, ...]:
+def _deriv_index(d: sympy.Derivative, coords: tuple[sympy.Symbol, ...]) -> tuple[int, ...]:
     counts = {c: 0 for c in coords}
     for var, cnt in d.variable_count:
         counts[var] += int(cnt)
     return tuple(counts[c] for c in coords)
 
 
-def _to_jet(expr, field_to_comp, coords):
+def _to_jet(
+    expr: sympy.Expr,
+    field_to_comp: dict[sympy.Expr, int],
+    coords: tuple[sympy.Symbol, ...],
+) -> sympy.Expr:
     expr = sympy.sympify(expr)
     for d in list(expr.atoms(sympy.Derivative)):
         if d.expr in field_to_comp:
@@ -111,7 +126,7 @@ def _to_jet(expr, field_to_comp, coords):
     return expr.xreplace(subs)
 
 
-def build_context(spde: SPDE):
+def build_context(spde: SPDE) -> tuple[Signature, dict, list]:
     equations = spde.equations
     noises = spde.noises
     ncomp = len(equations)

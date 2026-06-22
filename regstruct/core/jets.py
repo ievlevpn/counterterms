@@ -16,7 +16,7 @@ def jet(comp: int, k: MultiIndex) -> sympy.Symbol:
     return sympy.Symbol(f"u{comp}_" + "_".join(str(i) for i in k))
 
 
-def is_jet(s) -> bool:
+def is_jet(s: object) -> bool:
     return (isinstance(s, sympy.Symbol) and len(s.name) > 1
             and s.name[0] == "u" and s.name[1].isdigit())
 

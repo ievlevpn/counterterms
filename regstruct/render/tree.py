@@ -11,6 +11,12 @@ width, so ``p=(0,1)`` prints as an *x*-derivative, not index soup.
 from __future__ import annotations
 
 from collections import Counter
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..core.homogeneity import Homogeneity, MultiIndex
+    from ..core.signature import Signature
+    from ..trees.tree import DecoratedTree
 
 # Unicode super/subscripts.  Only t and x have clean subscript glyphs; other
 # coords fall back to ``_name`` (ponytail: covers d≤1 prettily, the common case).
@@ -28,17 +34,17 @@ def _sub(name: str) -> str:
     return _SUB_LETTER.get(name, "_" + name)
 
 
-def _noises(sig) -> list[str]:
+def _noises(sig: Signature) -> list[str]:
     return [nt for nt in sig.node_types if nt != "bullet"]
 
 
-def _node_glyph(node_type: str, sig) -> str:
+def _node_glyph(node_type: str, sig: Signature) -> str:
     if node_type == "bullet":
         return "●"
     return "Ξ" if len(_noises(sig)) == 1 else "Ξ_" + node_type
 
 
-def _poly_text(n, coords) -> str:
+def _poly_text(n: MultiIndex, coords: tuple[str, ...]) -> str:
     parts = []
     for i, e in enumerate(n):
         if e:
@@ -49,13 +55,13 @@ def _poly_text(n, coords) -> str:
     return "".join(parts)
 
 
-def _node_token(t, sig, coords) -> str:
+def _node_token(t: DecoratedTree, sig: Signature, coords: tuple[str, ...]) -> str:
     glyph = _node_glyph(t.node_type, sig)
     poly = _poly_text(t.node_dec, coords)
     return f"{poly}·{glyph}" if poly else glyph
 
 
-def edge_glyph_text(c, p, sig, coords) -> str:
+def edge_glyph_text(c: int, p: MultiIndex, sig: Signature, coords: tuple[str, ...]) -> str:
     s = "𝓘"
     if sig.n_components > 1:
         s += str(c).translate(_SUP)               # component of the planting kernel
@@ -63,7 +69,9 @@ def edge_glyph_text(c, p, sig, coords) -> str:
     return s
 
 
-def _grouped(children):
+def _grouped(
+    children: tuple[tuple[int, MultiIndex, DecoratedTree], ...],
+) -> object:
     """Distinct child edges with multiplicity, preserving canonical order."""
     return Counter(children).items()
 
@@ -72,7 +80,7 @@ def _grouped(children):
 # shorthand
 # --------------------------------------------------------------------------- #
 
-def shorthand(t, sig, coords=None) -> str:
+def shorthand(t: DecoratedTree, sig: Signature, coords: tuple[str, ...] | None = None) -> str:
     if coords is None:
         coords = coord_names(sig.width)
     factors = [_node_token(t, sig, coords)]
@@ -88,14 +96,20 @@ def shorthand(t, sig, coords=None) -> str:
 # 2D terminal drawing  (fixed 4-char indent; edge embedded in the child token)
 # --------------------------------------------------------------------------- #
 
-def ascii_art(t, sig) -> str:
+def ascii_art(t: DecoratedTree, sig: Signature) -> str:
     coords = coord_names(sig.width)
     lines = [_node_token(t, sig, coords)]
     _walk(t, sig, coords, "", lines)
     return "\n".join(lines)
 
 
-def _walk(t, sig, coords, prefix, lines):
+def _walk(
+    t: DecoratedTree,
+    sig: Signature,
+    coords: tuple[str, ...],
+    prefix: str,
+    lines: list[str],
+) -> None:
     kids = list(t.children)                        # expanded multiset, canonically sorted
     for i, (c, p, sub) in enumerate(kids):
         last = i == len(kids) - 1
@@ -116,13 +130,13 @@ def _walk(t, sig, coords, prefix, lines):
 _NOISE_STYLE = ("noise", "noisegray", "noiseblue")
 
 
-def forest(t, sig) -> str:
+def forest(t: DecoratedTree, sig: Signature) -> str:
     coords = coord_names(sig.width)
     return ("\\begin{forest} baseline=(current bounding box.center), rstree\n"
             + _forest_node(t, sig, coords, 1) + "\n\\end{forest}")
 
 
-def _poly_latex(n, coords) -> str:
+def _poly_latex(n: MultiIndex, coords: tuple[str, ...]) -> str:
     parts = []
     for i, e in enumerate(n):
         if e:
@@ -133,11 +147,11 @@ def _poly_latex(n, coords) -> str:
     return "".join(parts)
 
 
-def _o_latex(o) -> str:
+def _o_latex(o: Homogeneity) -> str:
     return str(o).replace("κ", r"\kappa")
 
 
-def _node_opts(t, sig, coords) -> list[str]:
+def _node_opts(t: DecoratedTree, sig: Signature, coords: tuple[str, ...]) -> list[str]:
     # Phase-3 extended decoration: red = contraction node (square, carries o),
     # blue = T⁺ root.  Black nodes keep the paper's circle/dot convention.
     if t.color == "red":
@@ -161,7 +175,7 @@ def _node_opts(t, sig, coords) -> list[str]:
     return opts
 
 
-def _edge_opts(c, p, sig, coords) -> list[str]:
+def _edge_opts(c: int, p: MultiIndex, sig: Signature, coords: tuple[str, ...]) -> list[str]:
     deriv = any(p)
     opts = ["edge={densely dotted,thick}"] if deriv else []
     labels = []
@@ -175,7 +189,13 @@ def _edge_opts(c, p, sig, coords) -> list[str]:
     return opts
 
 
-def _forest_node(t, sig, coords, depth, edge_opts=None) -> str:
+def _forest_node(
+    t: DecoratedTree,
+    sig: Signature,
+    coords: tuple[str, ...],
+    depth: int,
+    edge_opts: list[str] | None = None,
+) -> str:
     pad = "  " * depth
     opts = _node_opts(t, sig, coords) + (edge_opts or [])
     head = pad + "[{}, " + ", ".join(opts)

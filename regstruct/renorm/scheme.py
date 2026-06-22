@@ -16,11 +16,16 @@ parity rule alone already determines which canonical renormalisation constants a
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Protocol
+from typing import TYPE_CHECKING, Iterable, Protocol
 
 import sympy
 
 from ..trees.coproducts import _explode
+
+if TYPE_CHECKING:
+    from ..core.signature import Signature
+    from ..structures import RenormalizationStructure
+    from ..trees.tree import DecoratedTree
 
 
 @dataclass(frozen=True)
@@ -35,7 +40,7 @@ class NoiseLaw:
 WHITE_NOISE = NoiseLaw()
 
 
-def wick_pairings(items):
+def wick_pairings(items: Iterable) -> list[list[tuple]]:
     """All perfect matchings of ``items`` (Isserlis' theorem); ``[]`` if the count is odd."""
     items = list(items)
     if len(items) % 2 == 1:
@@ -50,12 +55,12 @@ def wick_pairings(items):
     return out
 
 
-def _noise_vertices(tree, sig):
+def _noise_vertices(tree: DecoratedTree, sig: Signature) -> list:
     nodes, _ = _explode(tree)
     return [n.id for n in nodes if n.node_type in sig.noise_homog]
 
 
-def has_odd_noise(tree, sig) -> bool:
+def has_odd_noise(tree: DecoratedTree, sig: Signature) -> bool:
     """Does the tree carry an odd number of noise vertices? (⇒ canonical expectation 0.)"""
     return len(_noise_vertices(tree, sig)) % 2 == 1
 
@@ -77,7 +82,7 @@ class Expectation:
         return " + ".join(f"∫ {ig} d{vs}" for ig, vs in self.terms)
 
 
-def expectation(tree, sig, law: NoiseLaw = WHITE_NOISE) -> Expectation:
+def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE) -> Expectation:
     """The Wick expansion of ``h(τ)=𝔼[Π^ζτ](0)`` (symbolic; integrals unevaluated)."""
     nodes, edges = _explode(tree)
     noise_ids = [n.id for n in nodes if n.node_type in sig.noise_homog]
@@ -118,14 +123,14 @@ class Character:
 
     values: dict
 
-    def __call__(self, tree):
+    def __call__(self, tree: DecoratedTree) -> object:
         return self.values[tree]
 
 
 class RenormalizationScheme(Protocol):
     """Turn a built `RenormalizationStructure` into a `Character`."""
 
-    def character(self, structure) -> Character:
+    def character(self, structure: RenormalizationStructure) -> Character:
         ...
 
 
@@ -133,7 +138,7 @@ class FreeConstants:
     """The default scheme: each ``c_τ`` is a free symbol (the safe, complete answer — a
     solution *is* the family indexed by these)."""
 
-    def character(self, structure) -> Character:
+    def character(self, structure: RenormalizationStructure) -> Character:
         return Character({t: sympy.Symbol(f"c_{i}")
                           for i, t in enumerate(structure.divergent)})
 
@@ -148,15 +153,15 @@ class BPHZ:
     path is wired but unbuilt — `numeric_character` raises until B2 lands.]
     """
 
-    def __init__(self, noise: NoiseLaw = WHITE_NOISE, evaluator=None):
+    def __init__(self, noise: NoiseLaw = WHITE_NOISE, evaluator: IntegralEvaluator | None = None) -> None:
         self.noise = noise
         self.evaluator = evaluator
 
-    def character(self, structure) -> Character:
+    def character(self, structure: RenormalizationStructure) -> Character:
         return Character({t: structure.canonical_character(t, self.noise)
                           for t in structure.divergent})
 
-    def numeric_character(self, structure) -> Character:
+    def numeric_character(self, structure: RenormalizationStructure) -> Character:
         """The canonical constants as numbers — requires an `IntegralEvaluator` (B2)."""
         ev = self.evaluator or UnbuiltEvaluator()
         return Character({t: ev.evaluate(expectation(t, structure.sig, self.noise),
@@ -169,14 +174,14 @@ class IntegralEvaluator(Protocol):
     concrete kernel and covariance.  The singular/divergent integrals (and their
     regularised renormalisation) live behind this seam — the analysis wall."""
 
-    def evaluate(self, expectation: Expectation, *, noise: NoiseLaw):
+    def evaluate(self, expectation: Expectation, *, noise: NoiseLaw) -> object:
         ...
 
 
 class UnbuiltEvaluator:
     """Placeholder `IntegralEvaluator` — Track B2 is not implemented (the analysis wall)."""
 
-    def evaluate(self, expectation: Expectation, *, noise: NoiseLaw = WHITE_NOISE):
+    def evaluate(self, expectation: Expectation, *, noise: NoiseLaw = WHITE_NOISE) -> object:
         raise NotImplementedError(
             "evaluating the divergent Wick-pairing integrals is Phase 4 / Track B2 — it "
             "needs singular-integral machinery (closed forms / regularised numerics); "

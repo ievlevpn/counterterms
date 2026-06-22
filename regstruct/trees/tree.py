@@ -18,8 +18,12 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import dataclass, field
 from math import factorial
+from typing import TYPE_CHECKING
 
 from ..core.homogeneity import Homogeneity, MultiIndex
+
+if TYPE_CHECKING:
+    from ..core.signature import Signature
 
 # An edge: (component, edge decoration p, subtree).
 Edge = tuple[int, MultiIndex, "DecoratedTree"]
@@ -35,11 +39,11 @@ class DecoratedTree:
     color: str = "black"                  # 'black' | 'red' | 'blue'
     o: Homogeneity = field(default_factory=lambda: _ZERO)   # extended decoration (red nodes)
 
-    def _sortkey(self):
+    def _sortkey(self) -> tuple:
         return (self.node_type, self.color, (self.o.std, self.o.kap), self.node_dec,
                 tuple((c, p, sub._sortkey()) for (c, p, sub) in self.children))
 
-    def homogeneity(self, sig) -> Homogeneity:
+    def homogeneity(self, sig: Signature) -> Homogeneity:
         """Naive homogeneity ``|τ|'`` (ignores the o-decoration; red nodes count as 0)."""
         base = _ZERO if self.color == "red" else sig.node_homogeneity(self.node_type)
         h = base + Homogeneity(sig.scaled(self.node_dec))
@@ -53,7 +57,7 @@ class DecoratedTree:
             s = s + sub._o_sum()
         return s
 
-    def extended_homogeneity(self, sig) -> Homogeneity:
+    def extended_homogeneity(self, sig: Signature) -> Homogeneity:
         """Extended homogeneity ``|τ|`` = naive + Σ over red nodes of o (tex 5502)."""
         return self.homogeneity(sig) + self._o_sum()
 
@@ -69,19 +73,19 @@ class DecoratedTree:
     def nodes(self) -> int:
         return 1 + sum(sub.nodes() for (_, _, sub) in self.children)
 
-    def canonical_key(self):
+    def canonical_key(self) -> tuple:
         """The canonical isomorphism key (satisfies the `core.symbol.Symbol` protocol)."""
         return self._sortkey()
 
 
-def tree(node_type: str, node_dec: MultiIndex, children=(),
+def tree(node_type: str, node_dec: MultiIndex, children: tuple[Edge, ...] = (),
          color: str = "black", o: Homogeneity = _ZERO) -> DecoratedTree:
     """Build a tree, canonicalising the child multiset by sorting."""
     ch = tuple(sorted(children, key=lambda e: (e[0], e[1], e[2]._sortkey())))
     return DecoratedTree(node_type, tuple(node_dec), ch, color, o)
 
 
-def red_node(o: Homogeneity, node_dec: MultiIndex = None, width: int = None) -> DecoratedTree:
+def red_node(o: Homogeneity, node_dec: MultiIndex | None = None, width: int | None = None) -> DecoratedTree:
     """A contracted (red) node with extended decoration ``o`` and no children."""
     if node_dec is None:
         node_dec = (0,) * (width if width is not None else 1)

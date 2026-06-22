@@ -17,9 +17,13 @@ from __future__ import annotations
 
 import json
 from fractions import Fraction
+from typing import TYPE_CHECKING, Iterable
 
 from ..core.homogeneity import Homogeneity
 from ..trees.tree import DecoratedTree, tree as _build_tree
+
+if TYPE_CHECKING:
+    from ..equation.dsl import SPDE
 
 SCHEMA = "regstruct/structure/v1"
 
@@ -50,7 +54,7 @@ def _hom(h: Homogeneity) -> list:
     return [str(h.std), str(h.kap)]
 
 
-def _forest(f) -> list:
+def _forest(f: Iterable[DecoratedTree]) -> list:
     return [tree_to_dict(t) for t in f]
 
 
@@ -58,7 +62,7 @@ def _forest(f) -> list:
 # the structure document
 # --------------------------------------------------------------------------- #
 
-def export_structure(spde, gamma=Fraction(1)) -> dict:
+def export_structure(spde: SPDE, gamma: Fraction = Fraction(1)) -> dict:
     """Build `spde`'s regularity/renormalization structure and return it as a
     JSON-serializable dict (schema ``regstruct/structure/v1``)."""
     from ..structures import build_regularity_structure, build_renormalization
@@ -72,11 +76,11 @@ def export_structure(spde, gamma=Fraction(1)) -> dict:
     sig = rs.sig
     _sig, base_nl, _u = build_context(spde)        # per-equation nonlinearities for F(τ*)
 
-    def _delta_plus_terms(t):
+    def _delta_plus_terms(t: DecoratedTree) -> list:
         return [{"coeff": str(c), "left": tree_to_dict(l), "right": tree_to_dict(r)}
                 for (l, r), c in delta_plus(t, sig).items()]
 
-    def _delta_minus_terms(t):
+    def _delta_minus_terms(t: DecoratedTree) -> list:
         return [{"coeff": str(c), "left": _forest(l), "right": _forest(r)}
                 for (l, r), c in delta_minus_group(t, sig).items()]
 
@@ -119,6 +123,6 @@ def export_structure(spde, gamma=Fraction(1)) -> dict:
     }
 
 
-def structure_json(spde, gamma=Fraction(1), indent=2) -> str:
+def structure_json(spde: SPDE, gamma: Fraction = Fraction(1), indent: int = 2) -> str:
     """`export_structure` as a JSON string."""
     return json.dumps(export_structure(spde, gamma), indent=indent, ensure_ascii=False)

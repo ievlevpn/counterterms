@@ -1,6 +1,8 @@
 """Top-level pipeline: SPDE → family of renormalized equations (free constants)."""
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import sympy
 
 from .equation.dsl import build_context
@@ -8,8 +10,11 @@ from .equation.generate import generate_counterterms
 from .renorm.equation import Counterterm, RenormalizedEquation
 from .renorm.nonlinearity import elem_diff
 
+if TYPE_CHECKING:
+    from .equation.dsl import SPDE
 
-def renormalize(spde) -> RenormalizedEquation:
+
+def renormalize(spde: SPDE) -> RenormalizedEquation:
     sig, base, unknowns = build_context(spde)
     trees = generate_counterterms(sig)
 

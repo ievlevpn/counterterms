@@ -8,11 +8,16 @@ gives ``f'(u)`` prime notation); we only assemble the document.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import sympy
 
 from .report import (canonical_data, const_map, elem_map, flatex, hom_latex, op_latex,
                      _sorted_trees)
 from .tree import forest
+
+if TYPE_CHECKING:
+    from ..renorm.equation import RenormalizedEquation
 
 # Node/edge styles match tourist_guide.tex 329–337 (noise / noisegray / noiseblue,
 # K = solid kernel, DK = dotted derivative kernel).
@@ -43,12 +48,12 @@ _PREAMBLE = r"""\documentclass[11pt]{article}
 _NOISE_FILL = ("white", "black!35", "blue!45")     # matches tree.py _NOISE_STYLE
 
 
-def _dot(fill, size):
+def _dot(fill: str, size: float) -> str:
     return (rf"\tikz[baseline=-.5ex]\node[circle,draw,fill={fill},inner sep=0pt,"
             rf"minimum size={size}pt]{{}};")
 
 
-def _legend(eq) -> str:
+def _legend(eq: RenormalizedEquation) -> str:
     parts = []
     noises = eq.spde.noises
     for i, nz in enumerate(noises):
@@ -60,7 +65,7 @@ def _legend(eq) -> str:
     return r"{\footnotesize Legend:\; " + r",\quad ".join(parts) + ".}"
 
 
-def latex_document(eq, canonical: bool = False) -> str:
+def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
     sig = eq.sig
     cmap = const_map(eq)
     emap = elem_map(eq)

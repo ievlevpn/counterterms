@@ -103,3 +103,12 @@ table (tex 6028–6063). See plan §9. Build these as tests before trusting the 
   `test_*.py`). The golden tests above are the backbone.
 - This is research math: precision over speed. When unsure about a formula, **grep the `.tex`**
   and cite the line — don't guess.
+- **Type annotations are required.** Every function/method in `regstruct/` carries full type
+  hints — all parameters (except `self`/`cls`) and the return type (`-> None` for `__init__`);
+  annotate dataclass fields too. Put `from __future__ import annotations` at the top of each
+  module (annotations stay lazy strings) and import domain types under `if TYPE_CHECKING:` to
+  avoid cycles. Use the project vocabulary: `Signature`, `DecoratedTree`, `Homogeneity`,
+  `MultiIndex` (`=tuple[int,...]`), `SPDE`, `sympy.Expr`/`sympy.Symbol`, `Fraction`,
+  `tuple[DecoratedTree, ...]` for forests, `TensorSum` for coproduct results. Prefer a precise
+  domain type; use `object` over a wrong guess. **Tests (`tests/`) are exempt.** New code must
+  keep this invariant — `uv run python -m ast`-clean and annotated.

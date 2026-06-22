@@ -8,33 +8,42 @@ A scalar problem is the one-component case.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import sympy
 
 from ..core.jets import is_jet, jet, jet_parts
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from ..core.homogeneity import Homogeneity
+    from ..core.signature import Signature
+    from ..equation.dsl import SPDE
+    from ..trees.tree import DecoratedTree
+
 
 @dataclass(frozen=True)
 class Counterterm:
-    tree: object
-    homogeneity: object
+    tree: DecoratedTree
+    homogeneity: Homogeneity
     symmetry_factor: int
-    elem_diff: object        # F_a(τ*) in jet variables
+    elem_diff: sympy.Expr     # F_a(τ*) in jet variables
     constant: sympy.Symbol   # the free renormalization constant k_τ (shared across components)
 
     @property
-    def coefficient(self):
+    def coefficient(self) -> sympy.Expr:
         return self.constant / self.symmetry_factor      # k_τ / S(τ)
 
     @property
-    def term(self):
+    def term(self) -> sympy.Expr:
         return self.coefficient * self.elem_diff
 
 
 @dataclass
 class RenormalizedEquation:
-    spde: object
-    sig: object
+    spde: SPDE
+    sig: Signature
     base: dict
     unknowns: list
     per_component: dict          # component index -> list[Counterterm]
@@ -45,11 +54,11 @@ class RenormalizedEquation:
         return self.sig.n_components
 
     @property
-    def counterterms(self):
+    def counterterms(self) -> list:
         """Counterterms of component 0 (the scalar case)."""
         return self.per_component[0]
 
-    def _display_subs(self, comp: int):
+    def _display_subs(self, comp: int) -> dict:
         u = self.unknowns[comp]
         width = self.sig.width
         subs = {jet(comp, (0,) * width): u.field}
@@ -58,13 +67,13 @@ class RenormalizedEquation:
             subs[jet(comp, e_i)] = sympy.Derivative(u.field, u.coords[i])
         return subs
 
-    def _all_display_subs(self):
+    def _all_display_subs(self) -> dict:
         subs = {}
         for c in range(self.n_components):
             subs.update(self._display_subs(c))
         return subs
 
-    def counterterm_rhs(self, comp: int = 0):
+    def counterterm_rhs(self, comp: int = 0) -> sympy.Expr:
         """Σ_τ (k_τ/S(τ)) F_comp(τ*), with jets rendered as u and its derivatives."""
         subs = self._all_display_subs()
         out = sympy.Integer(0)
@@ -74,7 +83,7 @@ class RenormalizedEquation:
 
     # --- pretty substitution: jet u^c_k → compact symbol u, u_x, u_xx, … ------ #
 
-    def _pretty(self, expr):
+    def _pretty(self, expr: sympy.Expr) -> sympy.Expr:
         """Render jet variables as compact subscripted field symbols for output."""
         from ..render.tree import coord_names
         coords = coord_names(self.sig.width)
@@ -90,7 +99,7 @@ class RenormalizedEquation:
                     subs[s] = sympy.Symbol(f"{name}_{sub}")
         return expr.xreplace(subs)
 
-    def original_rhs(self, comp: int = 0):
+    def original_rhs(self, comp: int = 0) -> sympy.Expr:
         """The un-renormalized RHS  f(u)ζ + g(u,∂u)  of component ``comp``, prettified."""
         expr = self.base[comp]["bullet"]
         for nz in self.spde.noises:
@@ -114,8 +123,8 @@ class RenormalizedEquation:
         return self.render("json", canonical)
 
     def save(self, stem: str = "equation", outdir: str = "output",
-             formats=("text", "markdown", "json", "latex"), pdf: bool = True,
-             canonical: bool = False) -> list:
+             formats: tuple[str, ...] = ("text", "markdown", "json", "latex"), pdf: bool = True,
+             canonical: bool = False) -> list[Path]:
         """Write the exports to ``outdir/`` (default ``output/``); compile the PDF
         if ``pdflatex`` is on PATH.  Returns the paths written."""
         import shutil

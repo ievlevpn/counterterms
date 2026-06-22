@@ -11,16 +11,19 @@ notes/phase4_plan.md A3.]
 """
 from __future__ import annotations
 
-from typing import Hashable, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Hashable, Protocol, runtime_checkable
 
 from .homogeneity import Homogeneity
+
+if TYPE_CHECKING:
+    from .signature import Signature
 
 
 @runtime_checkable
 class Symbol(Protocol):
     """A basis atom: it knows its homogeneity and a canonical key for equality/hashing."""
 
-    def homogeneity(self, sig) -> Homogeneity:
+    def homogeneity(self, sig: Signature) -> Homogeneity:
         ...
 
     def canonical_key(self) -> Hashable:

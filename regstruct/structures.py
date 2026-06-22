@@ -16,6 +16,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, field
 from fractions import Fraction
+from typing import TYPE_CHECKING, Callable, Hashable
 
 import sympy
 
@@ -25,28 +26,34 @@ from .equation.generate import generate_counterterms, generate_trees
 from .trees.coproducts import (
     _delta_group_forest, delta_minus, delta_minus_group, delta_plus, twisted_antipode)
 
+if TYPE_CHECKING:
+    from .core.signature import Signature
+    from .equation.dsl import SPDE
+    from .renorm.scheme import NoiseLaw
+    from .trees.tree import DecoratedTree
+
 
 @dataclass
 class RenormalizationStructure:
-    sig: object
+    sig: Signature
     divergent: tuple                       # the SC⁻ generators (|τ|' < 0)
     _h: dict = field(default_factory=dict)  # tree -> its h-symbol
 
-    def coaction(self, t):                 # δ : U → U⁻ ⊗ U
+    def coaction(self, t: DecoratedTree) -> dict:   # δ : U → U⁻ ⊗ U
         return delta_minus(t, self.sig)
 
-    def coproduct(self, t):                # δ⁻ : U⁻ → U⁻ ⊗ U⁻
+    def coproduct(self, t: DecoratedTree) -> dict:  # δ⁻ : U⁻ → U⁻ ⊗ U⁻
         return delta_minus_group(t, self.sig)
 
-    def twisted_antipode(self, t):         # S'₋ : U⁻ → ℝ[U]
+    def twisted_antipode(self, t: DecoratedTree) -> dict:  # S'₋ : U⁻ → ℝ[U]
         return twisted_antipode(t, self.sig)
 
-    def h_symbol(self, tree) -> sympy.Symbol:
+    def h_symbol(self, tree: DecoratedTree) -> sympy.Symbol:
         if tree not in self._h:
             self._h[tree] = sympy.Symbol(f"h{len(self._h)}")
         return self._h[tree]
 
-    def bhz_character(self, t):
+    def bhz_character(self, t: DecoratedTree) -> sympy.Expr:
         """k(τ) = h(S'₋(τ)), a symbolic expression in the (multiplicative) h-values."""
         expr = sympy.Integer(0)
         for forest, coeff in self.twisted_antipode(t).items():
@@ -56,7 +63,7 @@ class RenormalizationStructure:
             expr += term
         return sympy.expand(expr)
 
-    def canonical_character(self, t, law=None):
+    def canonical_character(self, t: DecoratedTree, law: NoiseLaw | None = None) -> sympy.Expr:
         """The canonical (Gaussian) BHZ constant ``k(τ) = h(S'₋τ)`` with the parity rule
         of a centered Gaussian noise applied: ``h(σ)=0`` whenever σ has an odd number of
         noise vertices (mean zero).  Returns the parity-reduced symbolic combination in
@@ -76,7 +83,7 @@ class RenormalizationStructure:
         return sympy.expand(expr)
 
 
-def build_renormalization(spde) -> RenormalizationStructure:
+def build_renormalization(spde: SPDE) -> RenormalizationStructure:
     sig, _base, _unknowns = build_context(spde)
     return RenormalizationStructure(sig, tuple(generate_counterterms(sig)))
 
@@ -96,7 +103,7 @@ class RegularityStructure:
     not as standalone basis vectors (there is no separate ``X`` node type).
     """
 
-    sig: object
+    sig: Signature
     gamma: Fraction
     model_basis: tuple
 
@@ -117,22 +124,22 @@ class RegularityStructure:
         """The negative-homogeneity subspace (the counterterm carriers)."""
         return tuple(t for t in self.model_basis if t.homogeneity(self.sig).is_negative())
 
-    def recentering(self, t):
+    def recentering(self, t: DecoratedTree) -> dict:
         """``Δ τ ∈ T ⊗ T⁺`` (tourist_guide.tex 5613)."""
         return delta_plus(t, self.sig)
 
-    def structure_coproduct(self, b):
+    def structure_coproduct(self, b: DecoratedTree) -> dict:
         """``Δ⁺ b ∈ T⁺ ⊗ T⁺`` (the structure-group Hopf algebra, tex 5709)."""
         return delta_plus(b, self.sig, project_left=True)
 
-    def structure_antipode(self):
+    def structure_antipode(self) -> Callable[[DecoratedTree], dict]:
         """The structure-group antipode ``S : T⁺ → T⁺`` (the convolution inverse of the
         identity), via the generic connected-graded recursion in `core.hopf`."""
         from .core.hopf import antipode
         from .trees.tree import tree
         unit = tree("bullet", (0,) * self.sig.width, (), color="blue")
 
-        def mul(a, b):                                   # X^j·X^k · (merge branches)
+        def mul(a: DecoratedTree, b: DecoratedTree) -> DecoratedTree:  # X^j·X^k · (merge branches)
             nd = tuple(x + y for x, y in zip(a.node_dec, b.node_dec))
             return tree("bullet", nd, a.children + b.children, color="blue")
 
@@ -143,7 +150,7 @@ class RegularityStructure:
         return {right for t in self.model_basis for (_l, right) in self.recentering(t)}
 
 
-def build_regularity_structure(spde, gamma=Fraction(1)) -> RegularityStructure:
+def build_regularity_structure(spde: SPDE, gamma: Fraction = Fraction(1)) -> RegularityStructure:
     """Build the γ-truncated ``(T, T⁺)`` for `spde` (``gamma`` = the std homogeneity cutoff)."""
     sig, _base, _unknowns = build_context(spde)
     basis = tuple(generate_trees(sig, gamma))
@@ -167,40 +174,41 @@ class RenormalizationGroup:
     model layer (Phase 4); a symbolic-only reduction would be unsound.
     """
 
-    sig: object
+    sig: Signature
     generators: tuple                       # the negative-tree free parameters c_τ
 
-    def _coproduct(self, forest):
+    def _coproduct(self, forest: tuple[DecoratedTree, ...]) -> dict:
         return _delta_group_forest(forest, self.sig)
 
     @staticmethod
-    def _mul(a, b):                         # the algebra product on U⁻ (forest concat)
+    def _mul(a: tuple[DecoratedTree, ...], b: tuple[DecoratedTree, ...]) -> tuple[DecoratedTree, ...]:
+        # the algebra product on U⁻ (forest concat)
         return tuple(sorted(a + b, key=lambda t: t._sortkey()))
 
-    def identity(self):
+    def identity(self) -> Callable[[Hashable], object]:
         """The neutral element ``ε⁻`` (no renormalisation)."""
         return counit(())
 
-    def character(self, values: dict):
+    def character(self, values: dict) -> Callable[[tuple[DecoratedTree, ...]], object]:
         """The character with free constants `values` (``tree → scalar``), extended as an
         algebra morphism ``U⁻ → ℝ`` (a product over the forest, ``1`` on the unit)."""
-        def chi(forest):
+        def chi(forest: tuple[DecoratedTree, ...]) -> object:
             out = 1
             for t in forest:
                 out = out * values.get(t, 0)
             return out
         return chi
 
-    def convolve(self, f, g):
+    def convolve(self, f: Callable, g: Callable) -> Callable[[Hashable], object]:
         """The group product ``(f⋆g)(τ) = (f⊗g)δ⁻τ``."""
         return convolve(f, g, self._coproduct)
 
-    def inverse(self, f):
+    def inverse(self, f: Callable) -> Callable[[tuple[DecoratedTree, ...]], object]:
         """The group inverse ``f⋆⁻¹ = f∘S⁻`` (valid for characters)."""
         S = antipode(self._coproduct, self._mul, ())
         return lambda forest: sum((c * f(g) for g, c in S(forest).items()), 0)
 
-    def admissible(self):
+    def admissible(self) -> object:
         """[SOCKET — Track B3] The admissible subgroup ``G⁻_ad ⊂ G⁻``.
 
         K-admissibility (``Π(I_nτ)=∂^nK∗Πτ``) constrains which renormalisation characters
@@ -213,7 +221,7 @@ class RenormalizationGroup:
             "see notes/phase4_plan.md B3.")
 
 
-def build_renormalization_group(spde) -> RenormalizationGroup:
+def build_renormalization_group(spde: SPDE) -> RenormalizationGroup:
     """Build the renormalization group ``G⁻`` for `spde` (free constant per negative tree)."""
     sig, _base, _unknowns = build_context(spde)
     return RenormalizationGroup(sig, tuple(generate_counterterms(sig)))
