@@ -1,5 +1,4 @@
 """Phase 3: the extraction-contraction coproduct δ (negative/renormalization side)."""
-import pytest
 from sympy import Function, Derivative, Rational
 
 from regstruct import Noise, Parabolic, SPDE, Unknown, kappa
@@ -45,11 +44,6 @@ def test_delta_stability_invariants():
                    for (forest, _r) in res for c in forest)
 
 
-@pytest.mark.xfail(reason="WIP: the p₋ quotient of the group coproduct mishandles the "
-                          "extended (o) decoration on re-extraction of red-rooted trees "
-                          "(BHZ Remark 5.38) — fails on the two-edge gKPZ tree. "
-                          "Single-application δ⁻ is validated; this is the next fix.",
-                   strict=True)
 def test_delta_minus_coassociative():
     # (δ⁻ ⊗ id) δ⁻ = (id ⊗ δ⁻) δ⁻  on U⁻ — the load-bearing algebraic invariant
     # (tourist_guide.tex 5710), needs no probabilistic input.

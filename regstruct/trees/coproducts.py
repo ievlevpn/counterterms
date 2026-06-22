@@ -176,10 +176,20 @@ def delta_minus(t: DecoratedTree, sig) -> TensorSum:
                 if term is None:
                     continue
                 forest, right = term
-                # p₋: keep only divergent extracted components
-                if any(not c.extended_homogeneity(sig).is_negative() for c in forest):
+                # p₋ on the left factor (tex 5760): a bare red node ●^{0,α} → 𝟙₋,
+                # an SC⁻ tree (naive |·|' < 0) is kept, anything else kills the term.
+                kept, killed = [], False
+                for c in forest:
+                    if c.nodes() == 1 and c.color == "red" and not any(c.node_dec):
+                        continue                      # ●^{0,α} → 𝟙₋
+                    if c.homogeneity(sig).is_negative():
+                        kept.append(c)
+                    else:
+                        killed = True
+                        break
+                if killed:
                     continue
-                out[(forest, right)] += coeff
+                out[(tuple(kept), right)] += coeff
 
     return {k: v for k, v in out.items() if v != 0}
 
@@ -283,13 +293,10 @@ def _sort_forest(f):
 
 
 def delta_minus_group(t: DecoratedTree, sig):
-    """δ⁻ on a single generator tree → {(left_forest, right_forest): coeff}.
+    """δ⁻ = (p₋⊗p₋)D⁻ on a single generator → {(left_forest, right_forest): coeff}.
 
-    ponytail: WIP — this naive per-step p₋ collapse does not implement the BHZ
-    Hopf-algebra *quotient* consistently; coassociativity fails on the two-edge
-    gKPZ tree (the extended-decoration re-extraction subtlety, BHZ Remark 5.38).
-    Single-application δ (`delta_minus`) is validated; this needs the quotient
-    done properly (work in the extended space T̂⁻, then quotient).
+    Coassociative (`test_delta_minus_coassociative`): `p₋` collapses bare red nodes
+    ●^{0,α} to 𝟙₋ on both factors (see `delta_minus`'s left projection and `_p_minus`).
     """
     out = defaultdict(Fraction)
     for (left, right), coeff in delta_minus(t, sig).items():
