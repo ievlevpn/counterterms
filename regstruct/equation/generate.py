@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 
 _BOUND = Fraction(1)          # keep trees with homogeneity.std < 1
 _MAX_NODE_SCALED = 2          # safety cap on |n|_𝔰 of a node decoration
+_MAX_POOL = 5000              # runaway-growth backstop (largest legitimate case ≈ 191 trees)
 
 
 def _multiindices(length: int, scaling: Scaling, max_scaled: int) -> Iterator[MultiIndex]:
@@ -56,18 +57,22 @@ def generate_trees(sig: Signature, bound: Fraction = _BOUND) -> list[DecoratedTr
         if t in pool or t.homogeneity(sig).std >= bound:
             return False
         pool[t] = t
+        if len(pool) > _MAX_POOL:      # fail fast instead of hanging (see note below)
+            raise RuntimeError(
+                f"tree generation exceeded {_MAX_POOL} trees — the negative-homogeneity "
+                f"set is intractably large for this equation. The rule is subcritical (so "
+                f"the set is finite in principle), but a small Schauder gain keeps too many "
+                f"trees singular: typically high/fractional operator order combined with a "
+                f"rich nonlinearity (e.g. quadratic in ∂u). See notes/swapping_the_operator.md.")
         return True
 
     for b in sig.node_types:           # seeds: bare decorated nodes
         for n in decs:
             add(tree(b, n, ()))
 
-    guard = 0
     changed = True
-    while changed:
+    while changed:                     # pool grows monotonically and is capped ⇒ terminates
         changed = False
-        guard += 1
-        assert guard < 50, "tree generation did not terminate"   # subcriticality backstop
         current = list(pool.values())
 
         for b in sig.node_types:

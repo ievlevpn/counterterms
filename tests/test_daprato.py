@@ -9,7 +9,6 @@ import pytest
 from sympy import Function, Rational, sin
 
 from regstruct import Noise, Parabolic, SPDE, Unknown, daprato_lift, kappa
-from regstruct.core.jets import jet
 
 
 def _phi4(d, beta0_std):

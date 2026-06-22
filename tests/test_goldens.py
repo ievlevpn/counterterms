@@ -9,7 +9,6 @@ backbone regression for the whole pipeline.
 """
 import warnings
 
-import sympy
 from sympy import Derivative, Rational, simplify
 
 from regstruct import Noise, Parabolic, SPDE, Unknown, jet, kappa

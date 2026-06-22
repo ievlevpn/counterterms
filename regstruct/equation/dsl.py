@@ -187,7 +187,6 @@ def build_context(spde: SPDE) -> tuple[Signature, dict[int, dict[str, sympy.Expr
     noises = spde.noises
     ncomp = len(equations)
     coords = equations[0][0].coords
-    width = len(coords)
     field_to_comp = {eqn[0].field: a for a, eqn in enumerate(equations)}
     scaling = equations[0][1].scaling          # global scaling
     comp_order = tuple(op.order for (_u, op, _r) in equations)

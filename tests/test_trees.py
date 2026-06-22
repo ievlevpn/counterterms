@@ -7,7 +7,6 @@
 
 Plus the homogeneity recursion (naive vs extended, the `o`-decoration on red nodes).
 """
-from regstruct import kappa
 from regstruct.core.homogeneity import Homogeneity
 from regstruct.equation.dsl import build_context
 from regstruct.trees.tree import red_node, tree

@@ -7,9 +7,10 @@ fail with a clear `ValueError` (not a wrong answer); each path is pinned here.
 import pytest
 from sympy import Derivative, Function, Rational, sin
 
-from regstruct import Noise, Parabolic, SPDE, Unknown, kappa
+from regstruct import FractionalHeat, Noise, Parabolic, SPDE, Unknown, kappa
 
 f = Function("f")
+g = Function("g")
 
 
 def _u_xi(reg=Rational(-1) - kappa):
@@ -34,6 +35,17 @@ def test_noise_must_appear_only_affinely():
     with pytest.raises(ValueError, match="noise-free part still has"):
         SPDE(noises=[xi], operator=Parabolic(dim=1), unknown=u,
              rhs=sin(xi.symbol)).renormalize()
+
+
+def test_runaway_tree_set_fails_fast():
+    # fractional order + quadratic-gradient nonlinearity makes the negative-tree set
+    # intractably large; the generator must raise (not hang) via the pool-size backstop.
+    u = Unknown("u", 1)
+    xi = Noise("xi", regularity=Rational(-1) - kappa)
+    rhs = f(u.field) * xi.symbol + g(u.field) * Derivative(u.field, u.x[0]) ** 2
+    with pytest.raises(RuntimeError, match="intractably large"):
+        SPDE(noises=[xi], operator=FractionalHeat(dim=1, sigma=Rational(3, 4)),
+             unknown=u, rhs=rhs).renormalize()
 
 
 def test_beta0_at_most_minus_two_rejected():

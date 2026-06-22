@@ -159,7 +159,24 @@ assert-based `demo()` per renderer is the backbone check.
 
 ---
 
-## Cross-cutting (ongoing) ⬜
+## Cross-cutting (ongoing) 🔨
 
-- [ ] Performance: memoize `F(τ*)` and `S(τ)` by canonical key once tree sets grow.
-- [ ] Packaging/CI: lockfile, lint, a CI run of `uv run pytest`.
+- [x] **Packaging/CI** — `.github/workflows/ci.yml` runs `ruff check regstruct` + `uv run
+      pytest` on push/PR; `ruff` pinned in the dev group (`E741` ignored — `l`/`r` are the
+      left/right tensor legs). Lockfile present.
+- [x] **Generator backstop** — `generate_trees` now **fails fast** with a clear `RuntimeError`
+      past `_MAX_POOL=5000` trees (largest legitimate case ≈191), replacing the silent
+      `assert guard<50` (stripped under `python -O`). Trips on the fractional/high-order +
+      quadratic-gradient blow-up (see below) instead of hanging.
+- [ ] **Performance: memoize `homogeneity` / `F(τ*)` / `S(τ)`** by canonical key. Would speed
+      large-but-tractable sets; will *not* tame the fractional-order explosion (≈25×/iteration —
+      genuinely astronomical, not a perf bug). Do when a real case needs the headroom.
+
+### Known limitation — fractional/high operator order
+
+A subcritical rule can still have an **intractably large** negative-tree set: at fractional or
+high operator order the Schauder gain `m−|p|_𝔰` shrinks, so many trees stay singular. gKPZ at
+order 3/2 (the `(∂u)²` term) explodes past the backstop in a couple of iterations. The engine now
+refuses it with a pointed error rather than hanging; mild nonlinearities (gPAM at order 3/2 → 5
+counterterms) are fine. Taming it for real (tighter `std<0` bound for counterterm-only runs,
+memoization) is deferred — see `notes/swapping_the_operator.md`.

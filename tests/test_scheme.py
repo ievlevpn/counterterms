@@ -7,7 +7,7 @@ trees while keeping the genuinely divergent (even-noise) ones.
 from math import factorial
 
 from regstruct.equation.dsl import build_context
-from regstruct.renorm.scheme import WHITE_NOISE, expectation, has_odd_noise, wick_pairings
+from regstruct.renorm.scheme import expectation, has_odd_noise, wick_pairings
 from regstruct.structures import build_renormalization
 from regstruct.trees.tree import tree
 

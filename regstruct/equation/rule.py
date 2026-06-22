@@ -16,7 +16,6 @@ rule-based check, not a hardcoded ``−2``.
 """
 from __future__ import annotations
 
-from fractions import Fraction
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:

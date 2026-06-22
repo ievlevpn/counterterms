@@ -55,12 +55,20 @@ class RenormalizationStructure:
             self._h[tree] = sympy.Symbol(f"h{len(self._h)}")
         return self._h[tree]
 
-    def bhz_character(self, t: DecoratedTree) -> sympy.Expr:
-        """k(τ) = h(S'₋(τ)), a symbolic expression in the (multiplicative) h-values."""
+    def bhz_character(self, t: DecoratedTree, parity: bool = False) -> sympy.Expr:
+        """k(τ) = h(S'₋(τ)), a symbolic expression in the (multiplicative) h-values.
+
+        With ``parity=True`` the centered-Gaussian mean-zero rule is applied: ``h(σ)=0``
+        whenever σ has an odd number of noise vertices, so odd-parity forests drop — see
+        `canonical_character`."""
+        from .renorm.scheme import has_odd_noise
         expr = sympy.Integer(0)
         for forest, coeff in self.twisted_antipode(t).items():
             term = sympy.Rational(coeff.numerator, coeff.denominator)
             for tr in forest:
+                if parity and has_odd_noise(tr, self.sig):
+                    term = sympy.Integer(0)
+                    break
                 term *= self.h_symbol(tr)
             expr += term
         return sympy.expand(expr)
@@ -72,17 +80,7 @@ class RenormalizationStructure:
         the surviving (even-noise) ``h``-symbols — many trees collapse to ``0`` (their
         canonical renormalisation constant vanishes).  The surviving symbols' explicit
         Wick-pairing integrals are `renorm.scheme.expectation`."""
-        from .renorm.scheme import has_odd_noise
-        expr = sympy.Integer(0)
-        for forest, coeff in self.twisted_antipode(t).items():
-            term = sympy.Rational(coeff.numerator, coeff.denominator)
-            for tr in forest:
-                if has_odd_noise(tr, self.sig):
-                    term = sympy.Integer(0)
-                    break
-                term *= self.h_symbol(tr)
-            expr += term
-        return sympy.expand(expr)
+        return self.bhz_character(t, parity=True)
 
 
 def build_renormalization(spde: SPDE) -> RenormalizationStructure:
