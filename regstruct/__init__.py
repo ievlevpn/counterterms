@@ -7,7 +7,8 @@ from .equation.dsl import SPDE, Noise, Parabolic, Unknown, kappa
 from .core.jets import jet
 
 __all__ = ["SPDE", "Noise", "Parabolic", "Unknown", "kappa", "jet", "renormalize",
-           "build_renormalization", "build_regularity_structure"]
+           "build_renormalization", "build_regularity_structure",
+           "build_renormalization_group"]
 
 
 def renormalize(spde):
@@ -25,3 +26,9 @@ def build_regularity_structure(spde, gamma=1):
     """The γ-truncated regularity structure (T, T⁺): graded model basis + Δ, Δ⁺."""
     from .structures import build_regularity_structure as _b
     return _b(spde, gamma)
+
+
+def build_renormalization_group(spde):
+    """The renormalization group G⁻: characters on U⁻ with the convolution group law."""
+    from .structures import build_renormalization_group as _b
+    return _b(spde)

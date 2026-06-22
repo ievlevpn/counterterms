@@ -19,10 +19,11 @@ from fractions import Fraction
 
 import sympy
 
+from .core.hopf import antipode, convolve, counit
 from .equation.dsl import build_context
 from .equation.generate import generate_counterterms, generate_trees
 from .trees.coproducts import (
-    delta_minus, delta_minus_group, delta_plus, twisted_antipode)
+    _delta_group_forest, delta_minus, delta_minus_group, delta_plus, twisted_antipode)
 
 
 @dataclass
@@ -128,3 +129,60 @@ def build_regularity_structure(spde, gamma=Fraction(1)) -> RegularityStructure:
     sig, _base, _unknowns = build_context(spde)
     basis = tuple(generate_trees(sig, gamma))
     return RegularityStructure(sig, Fraction(gamma), basis)
+
+
+@dataclass
+class RenormalizationGroup:
+    """The renormalization group ``G⁻`` of an SPDE — the character group of the negative
+    Hopf algebra ``U⁻``.
+
+    An element is a **character** ``k : U⁻ → ℝ`` (an algebra morphism), determined by its
+    free values ``c_τ`` on the negative-tree `generators` and extended multiplicatively
+    over forests.  The group law is convolution ``(f⋆g) = (f⊗g)δ⁻`` (`core.hopf.convolve`),
+    the unit is the counit ``ε⁻``, and the inverse is ``f ↦ f∘S⁻`` with ``S⁻`` the antipode
+    of ``U⁻``.  The renormalized **family** of the equation is the orbit under this group;
+    its canonical (BPHZ) element is `RenormalizationStructure.bhz_character`.
+
+    The admissible subgroup ``G⁻_ad ⊂ G⁻`` is a K-admissibility (analytic model) notion —
+    it depends on the kernel's vanishing moments and the Π-map — so it is deferred to the
+    model layer (Phase 4); a symbolic-only reduction would be unsound.
+    """
+
+    sig: object
+    generators: tuple                       # the negative-tree free parameters c_τ
+
+    def _coproduct(self, forest):
+        return _delta_group_forest(forest, self.sig)
+
+    @staticmethod
+    def _mul(a, b):                         # the algebra product on U⁻ (forest concat)
+        return tuple(sorted(a + b, key=lambda t: t._sortkey()))
+
+    def identity(self):
+        """The neutral element ``ε⁻`` (no renormalisation)."""
+        return counit(())
+
+    def character(self, values: dict):
+        """The character with free constants `values` (``tree → scalar``), extended as an
+        algebra morphism ``U⁻ → ℝ`` (a product over the forest, ``1`` on the unit)."""
+        def chi(forest):
+            out = 1
+            for t in forest:
+                out = out * values.get(t, 0)
+            return out
+        return chi
+
+    def convolve(self, f, g):
+        """The group product ``(f⋆g)(τ) = (f⊗g)δ⁻τ``."""
+        return convolve(f, g, self._coproduct)
+
+    def inverse(self, f):
+        """The group inverse ``f⋆⁻¹ = f∘S⁻`` (valid for characters)."""
+        S = antipode(self._coproduct, self._mul, ())
+        return lambda forest: sum((c * f(g) for g, c in S(forest).items()), 0)
+
+
+def build_renormalization_group(spde) -> RenormalizationGroup:
+    """Build the renormalization group ``G⁻`` for `spde` (free constant per negative tree)."""
+    sig, _base, _unknowns = build_context(spde)
+    return RenormalizationGroup(sig, tuple(generate_counterterms(sig)))

@@ -84,10 +84,16 @@ Modules: `trees/coproducts.py`, `structures.py`, `core/hopf.py` (the basis-agnos
       enumeration of `𝓑_{<0}`.
 - [ ] **Formal rule completion** (BHZ Prop 5.21) — the smallest complete rule closed under `Δ⁻`;
       needed only for hand-supplied/adversarial rules (the derived `(f,g)`-rules saturate correctly).
-- [ ] **`G⁻` vs `G⁻_ad` toggle** (moved from Phase 2) — reduce the free family to `G⁻_ad`.
+- [x] **Renormalization group `G⁻`** — the character group of `U⁻` as a first-class object
+      (`structures.py`): convolution group law (via `core/hopf`), counit unit, antipode inverse;
+      a character carries the free constants `c_τ`, the renormalized family is its orbit, and
+      `bhz_character` is the canonical element. Group axioms tested. `build_renormalization_group`.
+- [ ] **`G⁻_ad` reduction** *(→ Phase 4)* — the admissible subgroup is a K-admissibility (analytic
+      model) notion (kernel vanishing moments + the Π-map), not symbolic; a symbolic-only filter
+      would be unsound (CLAUDE.md warning), so it is deferred to the model layer.
 
 **Acceptance:** coassociativities + cointeraction (incl. singular β₀=−3/2) green as property
-tests over the SPDE corpus; `S'₋` validated on small trees. **112 tests pass (~4s).**
+tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **132 tests pass (~4s).**
 
 ---
 
@@ -97,6 +103,8 @@ tests over the SPDE corpus; `S'₋` validated on small trees. **112 tests pass (
 
 - [ ] **`NoiseLaw` + canonical BPHZ values** — Gaussian/Wick expectations to evaluate
       `h^ζ(τ) = 𝔼[Π^ζ τ](0)` and hence the canonical `k_τ` (needs covariance kernels / integrals).
+- [ ] **`G⁻_ad` reduction** *(moved from Phase 3)* — the admissible subgroup `G⁻_ad ⊂ G⁻`; needs
+      K-admissibility (kernel vanishing moments + the Π-map), so it belongs with the model layer.
 - [ ] **da Prato–Debussche pre-pass** — handle `β₀ ≤ −2` (Φ⁴₂, Φ⁴₃, sine-Gordon) by introducing
       one noise symbol per power to lift into a `β₀ > −2` structure.
 - [ ] **Multi-index symbol basis** — a second `Symbol` implementation (Linares–Otto–Tempelmayr)

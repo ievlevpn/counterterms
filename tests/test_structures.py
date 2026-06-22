@@ -95,3 +95,38 @@ def test_structure_antipode_via_generic_hopf():
     unit = tree("bullet", (0,) * rs.sig.width, (), color="blue")
     assert S(unit) == {unit: Fraction(1)}          # S(𝟙₊) = 𝟙₊
     assert all(S(b) for b in rs.positive_basis())  # total & nonempty on T⁺
+
+
+# --------------------------------------------------------------------------- #
+# RenormalizationGroup G⁻ — the character group (group law via core/hopf)
+# --------------------------------------------------------------------------- #
+
+def test_renormalization_group_axioms():
+    from fractions import Fraction
+    from regstruct.structures import build_renormalization_group
+    G = build_renormalization_group(gkpz())
+    gens1 = [(t,) for t in G.generators]
+    eps = G.identity()
+    f = G.character({t: Fraction(i + 1, 2) for i, t in enumerate(G.generators)})
+    g = G.character({t: Fraction(i + 2, 3) for i, t in enumerate(G.generators)})
+    h = G.character({t: Fraction(i - 1, 5) for i, t in enumerate(G.generators)})
+
+    ef, fe = G.convolve(eps, f), G.convolve(f, eps)
+    assert all(ef(x) == f(x) == fe(x) for x in gens1)               # unit
+
+    ff = G.convolve(f, G.inverse(f))
+    assert all(ff(x) == eps(x) for x in gens1) and ff(()) == 1      # inverse
+
+    lhs = G.convolve(G.convolve(f, g), h)
+    rhs = G.convolve(f, G.convolve(g, h))
+    assert all(lhs(x) == rhs(x) for x in gens1)                     # associativity
+
+
+def test_character_is_multiplicative():
+    from fractions import Fraction
+    from regstruct.structures import build_renormalization_group
+    G = build_renormalization_group(gkpz())
+    chi = G.character({t: Fraction(i + 1) for i, t in enumerate(G.generators)})
+    t0, t1 = G.generators[0], G.generators[1]
+    assert chi((t0, t1)) == chi((t0,)) * chi((t1,))                 # χ(ab)=χ(a)χ(b)
+    assert chi(()) == 1                                             # χ(𝟙)=1

@@ -19,9 +19,11 @@ type; shared constants across components), **multiple noises**, and **general op
 Golden-tested: gKPZ (exact 5 counterterms, tex 6004–6012), KPZ/gPAM, decoupled/coupled systems,
 multi-noise, operator order, scope rejections. A `render/` package emits the full report (trees
 drawn as shorthand / ascii / LaTeX-`forest`) in text/markdown/json/latex — see `notes/output.md`.
-`uv run pytest` (112 tests, ~4s). Phase 3 (coproducts, structures, twisted antipode, BHZ
-character) is implemented and green, **including the cointeraction at β₀=−3/2** (rule completion
-and `G⁻_ad` remain). See `notes/architecture.md` §7 / `ROADMAP.md`.
+`uv run pytest` (132 tests, ~4s). Phase 3 is implemented and green: coproducts (cointeraction
+holds **including β₀=−3/2**), `RegularityStructure (T,T⁺)`, the generic `core/hopf` layer,
+subcriticality check, twisted antipode + BHZ character, and the renormalization group `G⁻`.
+Deferred to Phase 4: the `G⁻_ad` reduction (K-admissibility is a model notion) and formal rule
+completion. See `notes/architecture.md` §7 / `ROADMAP.md`.
 
 ## Layout
 
