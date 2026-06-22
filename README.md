@@ -52,6 +52,19 @@ print(spde.renormalize().summary())     # the five gKPZ counterterms
 
 More in [`examples/`](examples/) (`uv run python -u examples/01_renormalized_equation.py`).
 
+The same `spde` also yields the **canonical (BPHZ) character** — the symbolic constant
+`k_τ = h(S'₋ τ)` the twisted antipode prescribes, with the Gaussian parity rule applied
+(odd-noise trees vanish). The `h`-values stay free symbols; their numeric (Wick-integral)
+values are out of scope.
+
+```python
+from regstruct import build_renormalization
+
+rs = build_renormalization(spde)
+for t in rs.divergent:
+    print(rs.canonical_character(t))   # exact antipode combo in h-values; odd-noise τ → 0
+```
+
 ## Example output
 
 `eq.save()` writes the report as text / Markdown / JSON and a typeset LaTeX → PDF. Here is the
