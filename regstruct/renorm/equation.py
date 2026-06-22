@@ -146,8 +146,10 @@ class RenormalizedEquation:
                 subprocess.run(
                     ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", f"{stem}.tex"],
                     cwd=d, capture_output=True)
-            for junk in (f"{stem}.aux", f"{stem}.log"):    # keep output/ tidy
-                (d / junk).unlink(missing_ok=True)
+            for ext in ("aux", "log", "out", "toc", "lof", "lot", "fls",     # tidy up:
+                        "fdb_latexmk", "synctex.gz", "nav", "snm", "vrb",     # drop every
+                        "bbl", "blg", "idx", "ilg", "ind", "spl"):            # LaTeX aux file
+                (d / f"{stem}.{ext}").unlink(missing_ok=True)
             if (d / f"{stem}.pdf").exists():
                 written.append(d / f"{stem}.pdf")
         return written
