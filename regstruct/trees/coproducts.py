@@ -115,6 +115,33 @@ def _build(root_id, node_overrides, child_map):
     return tree(nt, nd, children, color=color, o=o)
 
 
+def _block_tops(phi, eint, nodes):
+    """Union-find on φ via the internal edges; each block's representative is its
+    top node (the one whose parent lies outside the block)."""
+    par = {i: i for i in phi}
+
+    def find(x):
+        r = x
+        while par[r] != r:
+            r = par[r]
+        while par[x] != r:
+            par[x], x = r, par[x]
+        return r
+
+    for (a, b) in eint:
+        par[find(a)] = find(b)
+    groups = defaultdict(list)
+    for i in phi:
+        groups[find(i)].append(i)
+    comp_id = {}
+    for members in groups.values():
+        mset = set(members)
+        top = next(i for i in members if nodes[i].parent not in mset)
+        for i in members:
+            comp_id[i] = top
+    return comp_id
+
+
 # --------------------------------------------------------------------------- #
 # the coproduct
 # --------------------------------------------------------------------------- #
@@ -144,56 +171,53 @@ def delta_minus(t: DecoratedTree, sig, root_disjoint: bool = False) -> TensorSum
             out[((), t)] += Fraction(1)
             continue
 
-        # connected components of the induced subgraph on φ
-        comp_id = {}
-        for i in sorted(phi):
-            par = nodes[i].parent
-            comp_id[i] = comp_id[par] if (par in phi) else i  # parent processed first (pre-order ids)
-        comps = defaultdict(list)
-        for i in phi:
-            comps[comp_id[i]].append(i)
-
-        # boundary edges ∂φ: (x∈φ) → (y∉φ)
+        # ∂φ (boundary) and the within-φ edges. A subforest also chooses, for each
+        # within-φ edge, INTERNAL (same subtree) vs BETWEEN (separate subtrees):
+        # adjacent nodes may be extracted as distinct components (tex 5549, the
+        # decisive subtlety for the cointeraction).
         boundary = [(a, b, comp, p) for (a, b, comp, p) in edges if a in phi and b not in phi]
-
-        # node-decoration split n_φ ≤ n on φ-nodes
+        within = [(a, b) for (a, b, comp, p) in edges if a in phi and b in phi]
         dec_choices = {i: list(_submultiindices(nodes[i].node_dec)) for i in phi}
-        # boundary-edge decoration e' choices
         edge_choices = list(_edge_decs(width, sig.scaling, _E_CAP))
 
-        for nphi in product(*(dec_choices[i] for i in sorted(phi))):
-            nphi_map = dict(zip(sorted(phi), nphi))
-            binom = 1
+        for eint_mask in range(1 << len(within)):
+            eint = [within[j] for j in range(len(within)) if eint_mask & (1 << j)]
+            comp_id = _block_tops(phi, eint, nodes)
+            comps = defaultdict(list)
             for i in phi:
-                binom *= _mi_binom(nodes[i].node_dec, nphi_map[i])
-            if binom == 0:
-                continue
-            for eprime in product(edge_choices, repeat=len(boundary)):
-                ep_map = {k: eprime[k] for k in range(len(boundary))}
-                efact = 1
-                for ev in eprime:
-                    efact *= _mi_fact(ev)
-                coeff = Fraction(binom, efact)
+                comps[comp_id[i]].append(i)
 
-                term = _assemble(t, nodes, children_of, phi, comps, comp_id,
-                                 boundary, nphi_map, ep_map, sig, width)
-                if term is None:
+            for nphi in product(*(dec_choices[i] for i in sorted(phi))):
+                nphi_map = dict(zip(sorted(phi), nphi))
+                binom = 1
+                for i in phi:
+                    binom *= _mi_binom(nodes[i].node_dec, nphi_map[i])
+                if binom == 0:
                     continue
-                forest, right = term
-                # p₋ on the left factor (tex 5760): a bare red node ●^{0,α} → 𝟙₋,
-                # an SC⁻ tree (naive |·|' < 0) is kept, anything else kills the term.
-                kept, killed = [], False
-                for c in forest:
-                    if c.nodes() == 1 and c.color == "red" and not any(c.node_dec):
-                        continue                      # ●^{0,α} → 𝟙₋
-                    if c.homogeneity(sig).is_negative():
-                        kept.append(c)
-                    else:
-                        killed = True
-                        break
-                if killed:
-                    continue
-                out[(tuple(kept), right)] += coeff
+                for eprime in product(edge_choices, repeat=len(boundary)):
+                    ep_map = {k: eprime[k] for k in range(len(boundary))}
+                    efact = 1
+                    for ev in eprime:
+                        efact *= _mi_fact(ev)
+                    coeff = Fraction(binom, efact)
+                    term = _assemble(t, nodes, children_of, phi, comps, comp_id,
+                                     boundary, nphi_map, ep_map, sig, width)
+                    if term is None:
+                        continue
+                    forest, right = term
+                    # p₋ on the left (tex 5760): ●^{0,α} → 𝟙₋, SC⁻ kept, else 0.
+                    kept, killed = [], False
+                    for c in forest:
+                        if c.nodes() == 1 and c.color == "red" and not any(c.node_dec):
+                            continue
+                        if c.homogeneity(sig).is_negative():
+                            kept.append(c)
+                        else:
+                            killed = True
+                            break
+                    if killed:
+                        continue
+                    out[(tuple(kept), right)] += coeff
 
     return {k: v for k, v in out.items() if v != 0}
 

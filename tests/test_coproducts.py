@@ -110,11 +110,6 @@ def test_delta_plus_co_terminates():
             assert delta_minus(b, sig, root_disjoint=True)
 
 
-@pytest.mark.xfail(reason="WIP: the projected cointeraction (Id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ "
-                          "(tex 5717) over-produces on ∘—I₀—∘ — δ⁺ on a recentered branch "
-                          "must reconcile with δ on the connected whole. Both coproducts' "
-                          "own coassociativities pass; this coupling is the next fix.",
-                   strict=True)
 def test_cointeraction():
     from collections import defaultdict
     from fractions import Fraction
