@@ -10,8 +10,48 @@ from __future__ import annotations
 import json
 
 import sympy
+from sympy.core.function import AppliedUndef
+from sympy.printing.latex import LatexPrinter
+from sympy.printing.str import StrPrinter
 
 from .tree import ascii_art, coord_names, edge_glyph_text, shorthand, _node_glyph
+
+
+# --------------------------------------------------------------------------- #
+# prime notation:  Derivative(f(u), u)  →  f'(u)   (f''(u), f'''(u), f^{(4)}(u))
+# Only single-argument applied functions differentiated in that argument; partial
+# derivatives of multi-arg g(u,∂u) fall back to SymPy's default ∂-notation.
+# --------------------------------------------------------------------------- #
+
+def _prime(expr, base_print, sup):
+    f = expr.expr
+    if isinstance(f, AppliedUndef) and len(f.args) == 1:
+        (var,) = f.args
+        if all(v == var for v, _ in expr.variable_count):
+            n = sum(int(c) for _, c in expr.variable_count)
+            mark = "'" * n if n <= 3 else sup(n)
+            return f.func.__name__ + mark + "(" + base_print(var) + ")"
+    return None
+
+
+class _PrimeLatex(LatexPrinter):
+    def _print_Derivative(self, expr):
+        return (_prime(expr, self._print, lambda n: f"^{{({n})}}")
+                or super()._print_Derivative(expr))
+
+
+class _PrimeStr(StrPrinter):
+    def _print_Derivative(self, expr):
+        return (_prime(expr, self._print, lambda n: f"^({n})")
+                or super()._print_Derivative(expr))
+
+
+def flatex(expr) -> str:
+    return _PrimeLatex().doprint(expr)
+
+
+def fstr(expr) -> str:
+    return _PrimeStr().doprint(expr)
 
 
 def render(eq, fmt: str = "text", sections="all") -> str:

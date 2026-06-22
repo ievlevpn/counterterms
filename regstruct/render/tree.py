@@ -106,21 +106,20 @@ def _walk(t, sig, coords, prefix, lines):
 
 
 # --------------------------------------------------------------------------- #
-# LaTeX forest
+# LaTeX forest  — the paper's glyph convention (tourist_guide.tex 329–337):
+#   noise = open circle ○ , integration node = filled dot ● , kernel edge = solid
+#   line, derivative kernel ∂I = dotted line.  Node decorations / coordinate /
+#   component disambiguation appear as small labels only when needed.
 # --------------------------------------------------------------------------- #
+
+# Fill styles per noise index (matches the paper's noise / noisegray / noiseblue).
+_NOISE_STYLE = ("noise", "noisegray", "noiseblue")
+
 
 def forest(t, sig) -> str:
     coords = coord_names(sig.width)
-    return "\\begin{forest} rstree\n" + _forest_node(t, sig, coords, 1) + "\n\\end{forest}"
-
-
-def _node_latex(t, sig, coords) -> str:
-    if t.node_type == "bullet":
-        sym = "\\bullet"
-    else:
-        sym = "\\Xi" if len(_noises(sig)) == 1 else "\\Xi_{" + t.node_type + "}"
-    poly = _poly_latex(t.node_dec, coords)
-    return (poly + " " + sym) if poly else sym
+    return ("\\begin{forest} baseline=(current bounding box.center), rstree\n"
+            + _forest_node(t, sig, coords, 1) + "\n\\end{forest}")
 
 
 def _poly_latex(n, coords) -> str:
@@ -134,28 +133,43 @@ def _poly_latex(n, coords) -> str:
     return "".join(parts)
 
 
-def _edge_latex(c, p, sig, coords) -> str:
-    s = "\\mathcal{I}"
-    if sig.n_components > 1:
-        s += "^{(" + str(c) + ")}"
-    deriv = "".join(coords[i] for i, e in enumerate(p) for _ in range(e))
-    if deriv:
-        s += "_{" + deriv + "}"
-    return s
+def _node_opts(t, sig, coords) -> list[str]:
+    if t.node_type == "bullet":
+        opts = ["vertex"]
+    else:
+        noises = _noises(sig)
+        i = noises.index(t.node_type)
+        opts = [_NOISE_STYLE[i] if i < len(_NOISE_STYLE) else "noise"]
+        if i >= len(_NOISE_STYLE):                         # too many noises to colour
+            opts.append("label={[font=\\tiny]below:$\\Xi_{" + t.node_type + "}$}")
+    poly = _poly_latex(t.node_dec, coords)
+    if poly:
+        opts.append("label={[font=\\tiny,inner sep=1.5pt]above right:$" + poly + "$}")
+    return opts
 
 
-def _forest_node(t, sig, coords, depth, edge=None) -> str:
+def _edge_opts(c, p, sig, coords) -> list[str]:
+    deriv = any(p)
+    opts = ["edge={densely dotted,thick}"] if deriv else []
+    labels = []
+    if sig.n_components > 1:                               # which kernel/component
+        labels.append("(" + str(c) + ")")
+    if deriv and sig.dim > 1:                              # which derivative direction
+        labels.append("".join(coords[i] for i, e in enumerate(p) for _ in range(e)))
+    if labels:
+        opts.append("edge label={node[midway,fill=white,inner sep=1pt,font=\\tiny]"
+                    "{$" + ",".join(labels) + "$}}")
+    return opts
+
+
+def _forest_node(t, sig, coords, depth, edge_opts=None) -> str:
     pad = "  " * depth
-    line = pad + "[{$" + _node_latex(t, sig, coords) + "$}"
-    if edge is not None:
-        # forest's `edge label` needs a TikZ node, not bare text; white fill so the
-        # kernel label sits cleanly on the edge.
-        line += ("," + " edge label={node[midway,fill=white,inner sep=1pt,"
-                 "font=\\scriptsize]{$" + edge + "$}}")
+    opts = _node_opts(t, sig, coords) + (edge_opts or [])
+    head = pad + "[{}, " + ", ".join(opts)
     if not t.children:
-        return line + "]"
-    out = [line]
+        return head + "]"
+    out = [head]
     for (c, p, sub) in t.children:
-        out.append(_forest_node(sub, sig, coords, depth + 1, _edge_latex(c, p, sig, coords)))
+        out.append(_forest_node(sub, sig, coords, depth + 1, _edge_opts(c, p, sig, coords)))
     out.append(pad + "]")
     return "\n".join(out)
