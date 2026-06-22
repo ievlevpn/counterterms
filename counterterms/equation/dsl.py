@@ -232,11 +232,16 @@ def build_context(spde: SPDE) -> tuple[Signature, dict[int, dict[str, sympy.Expr
     # structural rule: per node type, the child edges (component, p) the nonlinearity
     # depends on, unioned over equations; cap = degree for derivative slots, None for fields.
     allowed: dict[str, tuple[EdgeRule, ...]] = {}
+    grad_budget: dict[str, int] = {}
     for b in node_types:
         caps: dict[tuple[int, MultiIndex], int | None] = {}
+        gbud = 0
         for a in range(ncomp):
             fb = base[a][b]
-            for s in fb.free_symbols:
+            gjets_b = [s for s in fb.free_symbols if is_jet(s) and any(jet_parts(s)[1])]
+            if gjets_b:                       # total degree in ∂u — the D2 bound (≤2),
+                gbud = max(gbud, sympy.Poly(fb, *gjets_b).total_degree())  # caps the
+            for s in fb.free_symbols:          # TOTAL gradient edges, not each direction.
                 if not is_jet(s):
                     continue
                 comp, p = jet_parts(s)
@@ -246,6 +251,7 @@ def build_context(spde: SPDE) -> tuple[Signature, dict[int, dict[str, sympy.Expr
                 else:
                     caps[(comp, p)] = None
         allowed[b] = tuple((comp, p, cap) for (comp, p), cap in caps.items())
+        grad_budget[b] = gbud
 
     sig = Signature(
         dim=equations[0][0].dim,
@@ -255,6 +261,7 @@ def build_context(spde: SPDE) -> tuple[Signature, dict[int, dict[str, sympy.Expr
         noise_homog={nz.name: nz.homogeneity for nz in noises},
         node_types=node_types,
         allowed=allowed,
+        grad_budget=grad_budget,
     )
     check_subcritical(sig)        # rule must be subcritical, else 𝓑_{<0} is infinite
     unknowns = [eqn[0] for eqn in equations]

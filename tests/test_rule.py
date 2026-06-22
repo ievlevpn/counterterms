@@ -6,12 +6,13 @@ latent over-restriction).
 import warnings
 
 import pytest
-from sympy import Function, Rational
+from sympy import Derivative, Function, Rational
 
 from counterterms import Noise, Parabolic, SPDE, Unknown, kappa
 from counterterms.equation.dsl import build_context
+from counterterms.equation.generate import generate_counterterms
 
-f = Function("f")
+f, g = Function("f"), Function("g")
 
 
 def _build(order, beta0_std):
@@ -43,6 +44,28 @@ def test_phi43_reported_as_supercritical():
     with pytest.raises(ValueError, match="da Prato"):
         build_context(SPDE(noises=[xi], operator=Parabolic(dim=3), unknown=u,
                            rhs=-u.field ** 3 + xi.symbol))
+
+
+def test_d2_total_gradient_bound_in_dim2():
+    """Assumption D2 bounds a node by TOTAL degree 2 in ∂u (tex 5337-5340: at most two
+    gradient edges I_{e_i}, I_{e_j}).  In d≥2 a direction-mixing nonlinearity g(u)(∂₁u+∂₂u)²
+    has per-direction caps that sum to 4; only the total `grad_budget` enforces the real
+    bound.  Without it, generation over-produced trees with 3–4 gradient edges (all Υ-zero,
+    so the renormalised equation was unaffected, but the raw basis was wrong)."""
+    u = Unknown("u", 2)
+    xi = Noise("xi", regularity=Rational(-1) - kappa)
+    rhs = g(u.field) * (Derivative(u.field, u.x[0]) + Derivative(u.field, u.x[1])) ** 2
+    sig, _b, _u = build_context(
+        SPDE(noises=[xi], operator=Parabolic(dim=2), unknown=u, rhs=rhs))
+    assert sig.grad_budget["bullet"] == 2
+
+    def max_grad_edges(t):
+        here = sum(1 for (_c, p, _s) in t.children if any(p))
+        return max([here, *(max_grad_edges(s) for (_c, _p, s) in t.children)])
+
+    trees = generate_counterterms(sig)
+    assert all(max_grad_edges(t) <= 2 for t in trees)   # no node exceeds 2 gradient edges
+    assert len(trees) == 8                              # was 11 (3 spurious) before the fix
 
 
 def test_nonsingular_noise_rejected():

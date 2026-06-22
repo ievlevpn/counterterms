@@ -89,7 +89,8 @@ def generate_trees(sig: Signature, bound: Fraction = _BOUND) -> list[DecoratedTr
                 # once β₀ < −(m−|p|), e.g. β₀=−3/2) can pull the full tree below the bound.
                 # The DFS rejects the bare node and the budget `break` still terminates it
                 # (negative-contribution children are derivative slots with a finite cap).
-                changed |= _emit(b, n, base_h, atoms, caps, add, bound)
+                changed |= _emit(b, n, base_h, atoms, caps, add, bound,
+                                 sig.grad_budget.get(b))
 
     return list(pool.values())
 
@@ -107,8 +108,13 @@ def _emit(
     caps: dict[tuple[int, MultiIndex], int | None],
     add: Callable[[DecoratedTree], bool],
     bound: Fraction = _BOUND,
+    grad_budget: int | None = None,
 ) -> bool:
-    """DFS over child multisets with homogeneity budget; returns whether pool grew."""
+    """DFS over child multisets with homogeneity budget; returns whether pool grew.
+
+    ``grad_budget`` caps the TOTAL number of gradient (``p≠0``) children of the node by the
+    nonlinearity's total degree in ∂u (Assumption D2 ⇒ ≤2) — the paper's rule admits at most
+    ``I_{e_i}, I_{e_j}`` gradient edges (tex 5337-5340).  ``None`` ⇒ unbounded."""
     grew = False
     counts: Counter[tuple[int, MultiIndex]] = Counter()
 
@@ -116,6 +122,7 @@ def _emit(
         start: int,
         chosen: list[tuple[int, MultiIndex, DecoratedTree]],
         h: Homogeneity,
+        grad_used: int,
     ) -> None:
         nonlocal grew
         if add(tree(b, n, chosen)):
@@ -124,12 +131,15 @@ def _emit(
             comp, p, sub, contrib = atoms[idx]
             if caps[(comp, p)] is not None and counts[(comp, p)] >= caps[(comp, p)]:
                 continue
+            is_grad = any(p)
+            if is_grad and grad_budget is not None and grad_used >= grad_budget:
+                continue                  # D2: ≤ grad_budget gradient edges per node
             nh = h + contrib
             if nh.std >= bound:           # atoms sorted ascending ⇒ rest overshoot too
                 break
             counts[(comp, p)] += 1
-            dfs(idx, chosen + [(comp, p, sub)], nh)
+            dfs(idx, chosen + [(comp, p, sub)], nh, grad_used + int(is_grad))
             counts[(comp, p)] -= 1
 
-    dfs(0, [], base_h)
+    dfs(0, [], base_h, 0)
     return grew

@@ -20,8 +20,9 @@ from fractions import Fraction
 
 from counterterms.core.homogeneity import Homogeneity
 from counterterms.equation.dsl import build_context
+from counterterms.equation.generate import generate_trees
 from counterterms.trees.coproducts import (
-    coassoc_lhs, coassoc_rhs, delta_minus, delta_plus, twisted_antipode)
+    _delta_group_forest, coassoc_lhs, coassoc_rhs, delta_minus, delta_plus, twisted_antipode)
 from counterterms.trees.tree import red_node, tree
 
 from tests.conftest import gkpz
@@ -153,6 +154,38 @@ def test_delta_plus_plus_coassociative(ctx):
                 o[(L, R1, R2)] += c * c2
         return {k: v for k, v in o.items() if v}
 
+    for b in tplus:
+        assert lhs(b) == rhs(b)
+
+
+def test_delta_plus_comodule(ctx):
+    """(δ⁻⊗Id)δ⁺ = (Id⊗δ⁺)δ⁺: T⁺ is a left U⁻-comodule (compatibility condition (b),
+    tourist_guide.tex 3452 / 5711) — over the T⁺ basis, incl. the singular β₀=−3/2 (`kpz`).
+    Distinct from the cointeraction (c) below; guards the `coproducts.py` between-edge
+    convention (the dropped "force internal under red" rule used to break this law)."""
+    sig = ctx.sig
+
+    def dplus(b):                      # δ⁺ = (p₋⊗Id)D̄⁻ : T⁺ → U⁻ ⊗ T⁺
+        return delta_minus(b, sig, root_disjoint=True)
+
+    def lhs(b):                        # (δ⁻ ⊗ Id) δ⁺
+        o = defaultdict(Fraction)
+        for (A, B), c in dplus(b).items():
+            for (A1, A2), c2 in _delta_group_forest(A, sig).items():
+                o[(A1, A2, B)] += c * c2
+        return {k: v for k, v in o.items() if v}
+
+    def rhs(b):                        # (Id ⊗ δ⁺) δ⁺
+        o = defaultdict(Fraction)
+        for (A, B), c in dplus(b).items():
+            for (B1, B2), c2 in dplus(B).items():
+                o[(A, B1, B2)] += c * c2
+        return {k: v for k, v in o.items() if v}
+
+    # T⁺ basis from the full (positive-sector) model basis, not just the divergent trees —
+    # the failing elements are *planted* trees I(σ), which have positive homogeneity.
+    model = [t for t in generate_trees(sig, Fraction(2)) if t.nodes() <= 4]
+    tplus = {r for t in model for (_l, r), _c in delta_plus(t, sig).items()}
     for b in tplus:
         assert lhs(b) == rhs(b)
 

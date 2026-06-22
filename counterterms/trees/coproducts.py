@@ -192,11 +192,15 @@ def delta_minus(t: DecoratedTree, sig: Signature, root_disjoint: bool = False) -
         boundary = [(a, b, comp, p) for (a, b, comp, p) in edges if a in phi and b not in phi]
         within = [(a, b, comp, p) for (a, b, comp, p) in edges if a in phi and b in phi]
         # A within-φ edge is INTERNAL (same subtree) or BETWEEN (separate subtrees,
-        # joined by a contracted edge) — EXCEPT an edge below a pre-existing red node,
-        # a contracted placeholder, which stays internal so its extracted children
-        # merge into it rather than splitting off as sibling red nodes.
-        forced = [e for e in within if nodes[e[0]].color == "red"]
-        choice = [e for e in within if nodes[e[0]].color != "red"]
+        # joined by a contracted edge) — adjacent extracted nodes may split into distinct
+        # components (tex 5549).  EVERY within-φ edge is a free choice: the subforest
+        # combinatorics treat red (contracted) nodes like ordinary nodes (tex 5471), so
+        # edges below a red node split too.  (An earlier "force internal under red" rule
+        # was redundant once between-edges carry e' recentering — see `recenter` below —
+        # and it broke the δ⁺ comodule law, compatibility condition (b), tex 3452/5711;
+        # dropping it makes (b) hold while the cointeraction (c) still passes.)
+        forced: list[Edge] = []
+        choice = list(within)
         dec_choices = {i: list(_submultiindices(nodes[i].node_dec)) for i in phi}
         edge_choices = list(_edge_decs(width, sig.scaling, _E_CAP))
 
@@ -360,7 +364,7 @@ def _p_minus(t: DecoratedTree, sig: Signature) -> tuple[str, DecoratedTree] | tu
     """p₋ on a single tree: keep if divergent; ● and red ●^{0,α} → 𝟙₋; else 0."""
     if t.homogeneity(sig).is_negative():
         return ("keep", t)
-    if t.nodes() == 1 and not any(t.node_dec) and (t.color == "red" or t.node_type == "bullet"):
+    if t.nodes() == 1 and t.color == "red" and not any(t.node_dec):
         return ("unit",)
     return ("zero",)
 

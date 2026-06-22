@@ -14,7 +14,7 @@ Node types stay ``{● , ∘_j}``.  The scaling is global; per-component operato
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from fractions import Fraction
 
 from .homogeneity import Homogeneity, MultiIndex, Scaling
@@ -32,6 +32,10 @@ class Signature:
     noise_homog: dict[str, Homogeneity]
     node_types: tuple[str, ...]               # ('bullet',) + noise names
     allowed: dict[str, tuple[EdgeRule, ...]]  # node_type -> allowed (component, p, cap)
+    # max total number of gradient (p≠0) child edges a node type admits — the nonlinearity's
+    # total degree in ∂u (Assumption D2 ⇒ ≤2).  Per-edge caps alone don't bound this across
+    # mixed directions (g(u)(∂₁u+∂₂u)² in d≥2).  Missing key ⇒ unbounded.  (tex 5337-5340)
+    grad_budget: dict[str, int] = field(default_factory=dict)
 
     @property
     def width(self) -> int:
