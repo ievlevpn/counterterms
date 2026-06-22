@@ -101,8 +101,11 @@ tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **132 t
 
 **Goal:** the boundaries we intentionally left without implementations.
 
-- [ ] **`NoiseLaw` + canonical BPHZ values** — Gaussian/Wick expectations to evaluate
-      `h^ζ(τ) = 𝔼[Π^ζ τ](0)` and hence the canonical `k_τ` (needs covariance kernels / integrals).
+- [~] **`NoiseLaw` + canonical BPHZ values** — *B1 done* (`renorm/scheme.py`): the Wick-pairing
+      *combinatorics* of `h^ζ(τ)=𝔼[Π^ζτ](0)` (Isserlis), the mean-zero **parity** rule, and
+      `RenormalizationStructure.canonical_character` (parity-reduced `h∘S'₋` — odd-noise trees'
+      constants vanish; gKPZ: 3 of 5 are canonically 0). **B2 (evaluating the divergent
+      integrals) remains** — the analysis wall.
 - [ ] **`G⁻_ad` reduction** *(moved from Phase 3)* — the admissible subgroup `G⁻_ad ⊂ G⁻`; needs
       K-admissibility (kernel vanishing moments + the Π-map), so it belongs with the model layer.
 - [x] **da Prato–Debussche pre-pass** (`equation/daprato.py`, `daprato_lift`) — lift a

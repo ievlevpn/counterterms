@@ -56,6 +56,25 @@ class RenormalizationStructure:
             expr += term
         return sympy.expand(expr)
 
+    def canonical_character(self, t, law=None):
+        """The canonical (Gaussian) BHZ constant ``k(τ) = h(S'₋τ)`` with the parity rule
+        of a centered Gaussian noise applied: ``h(σ)=0`` whenever σ has an odd number of
+        noise vertices (mean zero).  Returns the parity-reduced symbolic combination in
+        the surviving (even-noise) ``h``-symbols — many trees collapse to ``0`` (their
+        canonical renormalisation constant vanishes).  The surviving symbols' explicit
+        Wick-pairing integrals are `renorm.scheme.expectation`."""
+        from .renorm.scheme import has_odd_noise
+        expr = sympy.Integer(0)
+        for forest, coeff in self.twisted_antipode(t).items():
+            term = sympy.Rational(coeff.numerator, coeff.denominator)
+            for tr in forest:
+                if has_odd_noise(tr, self.sig):
+                    term = sympy.Integer(0)
+                    break
+                term *= self.h_symbol(tr)
+            expr += term
+        return sympy.expand(expr)
+
 
 def build_renormalization(spde) -> RenormalizationStructure:
     sig, _base, _unknowns = build_context(spde)
