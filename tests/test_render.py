@@ -21,7 +21,7 @@ def test_text_report_has_all_trees():
         assert f"τ = {sh} " in txt, f"missing tree {sh}\n{txt}"
     # exact-5 sanity + the placeholder frontier is honest
     assert "5 trees, 5 counterterms, 0 dropped" in txt
-    assert "Phase 3" in txt and "Phase 4" in txt
+    assert "ALGEBRA" in txt and "Phase 4" in txt
 
 
 def test_trees_sorted_by_homogeneity():

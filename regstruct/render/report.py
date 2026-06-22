@@ -125,7 +125,7 @@ def text_report(eq) -> str:
 
     out.append(_sec("EQUATION"))
     for a, (u, op, _r) in enumerate(eq.spde.equations):
-        out.append(f"  {operator_str(op)} {u.name} = {sympy.sstr(eq.original_rhs(a))}")
+        out.append(f"  {operator_str(op)} {u.name} = {fstr(eq.original_rhs(a))}")
 
     out.append(_sec("DOMAIN & NOISE"))
     out.append(f"  d = {sig.dim}   scaling 𝔰 = {tuple(sig.scaling.weights)}   "
@@ -154,21 +154,22 @@ def text_report(eq) -> str:
                    f"|τ| = {t.homogeneity(sig)}   S = {t.symmetry_factor()}   [{tag}]")
         out += ["      " + ln for ln in ascii_art(t, sig).splitlines()]
         if k is not None and sig.n_components == 1:
-            out.append(f"      F(τ*) = {sympy.sstr(eq._pretty(emap[t]))}")
+            out.append(f"      F(τ*) = {fstr(eq._pretty(emap[t]))}")
         out.append("")
 
     out.append(_sec("RENORMALIZED FAMILY"))
     for a in range(eq.n_components):
         u, op = eq.unknowns[a], eq.spde.equations[a][1]
-        out.append(f"  {operator_str(op)} {u.name} = {sympy.sstr(eq.original_rhs(a))}")
+        out.append(f"  {operator_str(op)} {u.name} = {fstr(eq.original_rhs(a))}")
         for ct in sorted(eq.per_component[a], key=lambda c: c.homogeneity._key()):
             term = sympy.expand(ct.coefficient * eq._pretty(ct.elem_diff))
-            out.append(f"      + {sympy.sstr(term)}      "
+            out.append(f"      + {fstr(term)}      "
                        f"[τ={shorthand(ct.tree, sig, coords)}, |τ|={ct.homogeneity}]")
         out.append("")
 
-    out.append(_sec("ALGEBRA (Phase 3 — not yet computed)"))
-    out.append("  Δτ, Δ⁻τ, twisted antipode S'₋τ, BHZ character — see ROADMAP O3.")
+    out.append(_sec("ALGEBRA"))
+    out.append("  Δτ, Δ⁻τ, twisted antipode S'₋τ, symbolic BHZ character: built in "
+               "structures.py (not yet rendered in this report).")
     out.append(_sec("CANONICAL VALUES (Phase 4 — needs a NoiseLaw)"))
     out.append("  numeric c_τ via BPHZ  k^ζ = h^ζ ∘ S'₋  — see ROADMAP O4.")
     return "\n".join(out)
@@ -187,7 +188,7 @@ def markdown_report(eq) -> str:
     scalar = sig.n_components == 1
     L = ["# Renormalized equation", "", "## Equation", ""]
     for a, (u, op, _r) in enumerate(eq.spde.equations):
-        L.append(f"`{operator_str(op)} {u.name} = {sympy.sstr(eq.original_rhs(a))}`")
+        L.append(f"`{operator_str(op)} {u.name} = {fstr(eq.original_rhs(a))}`")
         L.append("")
 
     L += ["## Domain & noise", ""]
@@ -207,7 +208,7 @@ def markdown_report(eq) -> str:
         row = f"| `{shorthand(t, sig, coords)}` | `{t.homogeneity(sig)}` | " \
               f"{t.symmetry_factor()} | `{kc}` |"
         if scalar:
-            f = sympy.sstr(eq._pretty(emap[t])) if k is not None else "0"
+            f = fstr(eq._pretty(emap[t])) if k is not None else "0"
             row += f" `{f}` |"
         L.append(row)
 
@@ -215,10 +216,10 @@ def markdown_report(eq) -> str:
     for a in range(eq.n_components):
         u, op = eq.unknowns[a], eq.spde.equations[a][1]
         L.append("```")
-        L.append(f"{operator_str(op)} {u.name} = {sympy.sstr(eq.original_rhs(a))}")
+        L.append(f"{operator_str(op)} {u.name} = {fstr(eq.original_rhs(a))}")
         for ct in sorted(eq.per_component[a], key=lambda c: c.homogeneity._key()):
             term = sympy.expand(ct.coefficient * eq._pretty(ct.elem_diff))
-            L.append(f"   + {sympy.sstr(term)}   [τ={shorthand(ct.tree, sig, coords)}]")
+            L.append(f"   + {fstr(term)}   [τ={shorthand(ct.tree, sig, coords)}]")
         L.append("```")
 
     L += ["", "## Tree drawings", ""]
@@ -253,13 +254,13 @@ def json_report(eq) -> str:
             "nodes": t.nodes(),
             "contributes": k is not None,
             "constant": str(k) if k is not None else None,
-            "F_latex": (sympy.latex(eq._pretty(emap[t]))
+            "F_latex": (flatex(eq._pretty(emap[t]))
                         if (k is not None and scalar) else None),
         })
 
     data = {
         "equations": [{"unknown": u.name, "lhs": operator_str(op),
-                       "rhs": sympy.sstr(eq.original_rhs(a))}
+                       "rhs": fstr(eq.original_rhs(a))}
                       for a, (u, op, _r) in enumerate(eq.spde.equations)],
         "domain": {"dim": sig.dim, "scaling": list(sig.scaling.weights)},
         "noises": [{"name": nz.name, "homogeneity": hom_d(nz.homogeneity)}
@@ -268,7 +269,7 @@ def json_report(eq) -> str:
                      for (c, p, cap) in sig.allowed[b]] for b in sig.node_types},
         "n_components": eq.n_components,
         "trees": trees,
-        "family_latex": {eq.unknowns[a].name: sympy.latex(eq.counterterm_rhs(a))
+        "family_latex": {eq.unknowns[a].name: flatex(eq.counterterm_rhs(a))
                          for a in range(eq.n_components)},
     }
     return json.dumps(data, indent=2, ensure_ascii=False)
