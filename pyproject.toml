@@ -13,4 +13,8 @@ build-backend = "hatchling.build"
 packages = ["regstruct"]
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.ruff]
+# E741 (ambiguous name l/r) is intentional: l/r = left/right tensor legs in the coproducts.
+lint.ignore = ["E741"]
