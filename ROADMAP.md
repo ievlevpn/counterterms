@@ -50,29 +50,33 @@ single-noise results are unchanged (regression green).
 
 ---
 
-## Phase 3 — the algebraic-renormalization core ⬜
+## Phase 3 — the algebraic-renormalization core 🔨
 
 **Goal:** build the genuine regularity-structures machinery. This is the famous-hard part.
-New modules: `core/hopf.py`, `trees/coproducts.py`, `structures/`.
+Modules: `trees/coproducts.py`, `structures.py` (`core/hopf.py` generic layer still TODO).
 
-- [ ] **Extended-decoration trees** — red nodes with `𝔬 : N^red → ℤ[β₀]`; the contraction
-      `τ /^red φ`.
-- [ ] **Coproducts** — `Δ`, `Δ⁺` (recentering) and `Δ⁻`, `δ` (extraction/contraction), built as
-      `Coproduct` objects over trees; the cointeraction.
-- [ ] **Generic Hopf machinery** (`core/hopf.py`, written against the `Symbol` protocol) —
-      character convolution, the connected-graded antipode, the comodule action `k̃`, and the
-      **negative twisted antipode `S'₋`** recursion (BPHZ).
-- [ ] **Structures** — `RegularityStructure (T, T⁺, Δ, Δ⁺)` and
-      `RenormalizationStructure (U, U⁻, δ, δ⁻)`; the (symbolic) **BHZ character** `k^ζ = h^ζ∘S'₋`.
-- [ ] **Rule completion** (BHZ Prop 5.21) — close the structural rule under the contractions
-      `Δ⁻` performs (replacing the current generate-then-filter shortcut).
-- [ ] **`G⁻` vs `G⁻_ad` toggle** (moved from Phase 2) — impose admissibility (`k(I_p τ)=0`,
-      `k(X^n⋆τ)=0` in the precise model sense) to reduce the free family to `G⁻_ad`.
-- [ ] Test invariants: coassociativity and cointeraction of the coproducts; homogeneity tables
-      reproduced (e.g. the full KPZ basis count, not just the negative rows).
+- [x] **Extended-decoration trees** — red nodes with `𝔬 ∈ ℤ[β₀]` (reusing `Homogeneity`); the
+      contraction `τ /^red φ`, `extended_homogeneity`. (`trees/tree.py`)
+- [x] **Extraction-contraction `δ⁻`** (`Δ⁻`, tex 5636) + the group coproduct, **coassociative**
+      (`(δ⁻⊗id)δ⁻ = (id⊗δ⁻)δ⁻`). Golden `δ∘ = 𝟙₋⊗∘ + ∘⊗●(β₀)`; stability invariants.
+- [x] **Recentering `Δ`/`Δ⁺`** (tex 5613) + **comodule coassociativity**
+      `(Δ⊗id)Δ = (id⊗Δ⁺)Δ`, `Δ⁺` coassociativity, counits, homogeneity stability.
+- [x] **Negative twisted antipode `S'₋`** (tex 5034); `S'₋(∘) = −∘`.
+- [x] **`δ⁺` (`D̄⁻`)** + the **cointeraction** `(id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ` — **holds for the gKPZ
+      class (β₀=−1)**.
+- [x] **Structures** — `RenormalizationStructure` (`δ`, `δ⁻`, `S'₋`) + the **symbolic BHZ
+      character** `k = h∘S'₋` (`h` left symbolic). (`structures.py`)
+- [ ] 🔨 **Cointeraction for more singular noise** — residual bug at β₀=−3/2 (the e'-recentering
+      coupling of `δ⁺` with `δ`; not a truncation artifact). `xfail` in tests. **Next task.**
+- [ ] **Generic Hopf layer** (`core/hopf.py`, over the `Symbol` protocol) — character
+      convolution, connected-graded antipode, comodule action `k̃`. (currently tree-specific)
+- [ ] **`RegularityStructure (T, T⁺)`** — needs γ-bounded basis generation (positive trees), a
+      small extension of `generate_counterterms`.
+- [ ] **Rule completion** (BHZ Prop 5.21) — replace the generate-then-filter shortcut.
+- [ ] **`G⁻` vs `G⁻_ad` toggle** (moved from Phase 2) — reduce the free family to `G⁻_ad`.
 
-**Acceptance:** the regularity structure for KPZ/Φ⁴₃-after-DPD is built and its coproducts satisfy
-coassociativity/cointeraction; `S'₋` reproduces known forest formulas on small trees.
+**Acceptance:** coassociativities + cointeraction green as property tests (✅ except the singular-
+noise cointeraction); `S'₋` validated on small trees. **30+ tests pass, 1 xfail (the residual).**
 
 ---
 
