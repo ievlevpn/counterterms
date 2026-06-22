@@ -255,7 +255,7 @@ def _assemble(t, nodes, children_of, phi, comps, comp_id, boundary,
         if nd.id not in phi:
             ov[nd.id] = (nd.node_type, nd.node_dec, nd.color, nd.o)
     for top, members in comps.items():
-        # contracted node decoration  [n − n_φ]_φ  (summed over the component)
+        # leftover polynomial decoration  [n − n_φ]_φ  (summed over the component)
         ndec = zero
         o_acc = Homogeneity(0)
         for i in members:
