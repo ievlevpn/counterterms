@@ -4,6 +4,11 @@ Symbolic **renormalization of singular SPDEs**, following Bailleul & Hoshino,
 *"A tourist's guide to regularity structures and singular stochastic PDEs"*
 ([arXiv:2006.03524](https://arxiv.org/abs/2006.03524)).
 
+> ⚠️ **Personal research library — no guarantees.** This is a one-person research project,
+> not production software. It's validated against the paper where it can be (see [Validation](#validation)),
+> but it may well be wrong, incomplete, or break on inputs it hasn't seen. No warranty, no
+> stability promises, no support. Check the output against the mathematics before you trust it.
+
 You give it a subcritical singular SPDE; it gives you the **family of renormalized equations**
 (the BCCH / `ThmRenormPDEs` formula) — the original PDE plus one tree-indexed counterterm per
 negative-homogeneity decorated tree, with free renormalization constants:
