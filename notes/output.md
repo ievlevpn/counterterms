@@ -1,4 +1,4 @@
-# `regstruct` — output & rendering design
+# `counterterms` — output & rendering design
 
 A plan for **what we can emit and how to make it pretty**. Companion to
 `architecture.md` §3.11/§5 (which already reserves a `render/` package and a
@@ -267,7 +267,7 @@ Until then each renders the one-line placeholder of §6.
 Smallest surface that covers §1–§6 (`architecture.md` §5 already lists the dir):
 
 ```
-regstruct/render/
+counterterms/render/
   tree.py     # shorthand(tree,sig)  · ascii(tree,sig)  · forest(tree,sig)
   report.py   # render(eq, fmt, sections) dispatcher + the §6 assembler
               #   text/markdown inline; latex via latex.py

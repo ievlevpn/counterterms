@@ -3,7 +3,7 @@ Run:  uv run python -u examples/03_systems_and_noises.py
 """
 from sympy import Derivative, Function, Rational
 
-from regstruct import SPDE, Noise, Parabolic, Unknown, kappa
+from counterterms import SPDE, Noise, Parabolic, Unknown, kappa
 
 a, b, g = Function("a"), Function("b"), Function("g")
 u, v = Unknown("u", 1), Unknown("v", 1)

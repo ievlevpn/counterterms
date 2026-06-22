@@ -5,7 +5,7 @@ Run:  uv run python -u examples/01_renormalized_equation.py
 """
 from sympy import Derivative, Function, Rational
 
-from regstruct import SPDE, Noise, Parabolic, Unknown, kappa
+from counterterms import SPDE, Noise, Parabolic, Unknown, kappa
 
 # generalized KPZ:  (∂_t − Δ + 1)u = f(u)ζ + g(u)(∂_x u)²,  d=1,  ζ ∈ C^{−1−κ}
 u = Unknown("u", dim=1)

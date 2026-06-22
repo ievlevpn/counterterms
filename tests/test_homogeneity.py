@@ -5,7 +5,7 @@ exactly at homogeneity ``−kκ`` (tourist_guide.tex 6066), so the sign decision
 """
 from fractions import Fraction
 
-from regstruct.core.homogeneity import Homogeneity, Scaling
+from counterterms.core.homogeneity import Homogeneity, Scaling
 
 
 def test_is_negative_at_the_kappa_boundary():

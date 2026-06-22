@@ -1,4 +1,4 @@
-"""regstruct — symbolic renormalized equations for singular SPDEs.
+"""counterterms — symbolic renormalized equations for singular SPDEs.
 
 Phase 1: SPDE → family of renormalized equations with free constants.
 See notes/architecture.md and notes/initial_plan.md.

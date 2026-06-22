@@ -1,4 +1,4 @@
-# `regstruct` — architecture
+# `counterterms` — architecture
 
 High-level structure of a **modular, extensible, general** library for regularity structures.
 Companion to `notes/initial_plan.md` (which fixes the mathematics, conventions, and golden tests).
@@ -280,7 +280,7 @@ needed only for the canonical (BPHZ) character — exactly the deferred path.
 ## 5. Module layout
 
 ```
-regstruct/
+counterterms/
   core/
     homogeneity.py     scaling.py     signature.py
     symbol.py          module.py      hopf.py            # hopf.py: Phase 3

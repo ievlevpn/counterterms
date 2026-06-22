@@ -18,11 +18,11 @@ divergent tree the corpus actually produces at the stated β₀.
 from collections import defaultdict
 from fractions import Fraction
 
-from regstruct.core.homogeneity import Homogeneity
-from regstruct.equation.dsl import build_context
-from regstruct.trees.coproducts import (
+from counterterms.core.homogeneity import Homogeneity
+from counterterms.equation.dsl import build_context
+from counterterms.trees.coproducts import (
     coassoc_lhs, coassoc_rhs, delta_minus, delta_plus, twisted_antipode)
-from regstruct.trees.tree import red_node, tree
+from counterterms.trees.tree import red_node, tree
 
 from tests.conftest import gkpz
 

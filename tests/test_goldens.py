@@ -11,8 +11,8 @@ import warnings
 
 from sympy import Derivative, Rational, simplify
 
-from regstruct import Noise, Parabolic, SPDE, Unknown, jet, kappa
-from regstruct.core.homogeneity import Homogeneity
+from counterterms import Noise, Parabolic, SPDE, Unknown, jet, kappa
+from counterterms.core.homogeneity import Homogeneity
 
 from tests.conftest import a_coef, b_coef, f, g, gkpz, gpam2, h, multinoise
 

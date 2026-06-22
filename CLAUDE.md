@@ -34,7 +34,7 @@ reduction, formal rule completion. See `notes/architecture.md` §7 / `ROADMAP.md
   golden tests, reuse).
 - `notes/architecture.md` — authoritative for the **module structure** (layered stack, the
   `Signature`-parametric design, interfaces, extension cookbook, phasing).
-- `regstruct/` — package (Phase 1 modules populated): `core/{homogeneity,jets,signature}`,
+- `counterterms/` — package (Phase 1 modules populated): `core/{homogeneity,jets,signature}`,
   `trees/tree`, `equation/{dsl,generate}`, `renorm/{nonlinearity,equation}`, `render/{tree,report,latex}`, `api`. Phase-3
   modules (`core/{module,hopf,symbol}`, `trees/coproducts`, `structures/`) not yet created.
   `tests/` — layered by concern: `conftest.py` (the SPDE corpus + `ctx` fixture), `test_{homogeneity,
@@ -103,7 +103,7 @@ table (tex 6028–6063). See plan §9. Build these as tests before trusting the 
   `test_*.py`). The golden tests above are the backbone.
 - This is research math: precision over speed. When unsure about a formula, **grep the `.tex`**
   and cite the line — don't guess.
-- **Type annotations are required.** Every function/method in `regstruct/` carries full type
+- **Type annotations are required.** Every function/method in `counterterms/` carries full type
   hints — all parameters (except `self`/`cls`) and the return type (`-> None` for `__init__`);
   annotate dataclass fields too. Put `from __future__ import annotations` at the top of each
   module (annotations stay lazy strings) and import domain types under `if TYPE_CHECKING:` to

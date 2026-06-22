@@ -13,10 +13,10 @@ from fractions import Fraction
 
 from sympy import Rational, Symbol
 
-from regstruct import jet, kappa
-from regstruct.core.homogeneity import Homogeneity
-from regstruct.core.jets import is_jet, jet_parts
-from regstruct.equation.dsl import build_context
+from counterterms import jet, kappa
+from counterterms.core.homogeneity import Homogeneity
+from counterterms.core.jets import is_jet, jet_parts
+from counterterms.equation.dsl import build_context
 
 from tests.conftest import gkpz, gpam2, kpz
 

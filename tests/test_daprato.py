@@ -8,7 +8,7 @@ from fractions import Fraction
 import pytest
 from sympy import Function, Rational, sin
 
-from regstruct import Noise, Parabolic, SPDE, Unknown, daprato_lift, kappa
+from counterterms import Noise, Parabolic, SPDE, Unknown, daprato_lift, kappa
 
 
 def _phi4(d, beta0_std):

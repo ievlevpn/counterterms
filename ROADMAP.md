@@ -1,6 +1,6 @@
 # Roadmap
 
-Where `regstruct` is going. Phases mirror [`notes/architecture.md`](notes/architecture.md) §7;
+Where `counterterms` is going. Phases mirror [`notes/architecture.md`](notes/architecture.md) §7;
 the mathematics and conventions are fixed in [`notes/initial_plan.md`](notes/initial_plan.md).
 Legend: ✅ done · 🔨 in progress · ⬜ planned.
 
@@ -178,7 +178,7 @@ assert-based `demo()` per renderer is the backbone check.
 
 ## Cross-cutting (ongoing) 🔨
 
-- [x] **Packaging/CI** — `.github/workflows/ci.yml` runs `ruff check regstruct` + `uv run
+- [x] **Packaging/CI** — `.github/workflows/ci.yml` runs `ruff check counterterms` + `uv run
       pytest` on push/PR; `ruff` pinned in the dev group (`E741` ignored — `l`/`r` are the
       left/right tensor legs). Lockfile present.
 - [x] **Generator backstop** — `generate_trees` now **fails fast** with a clear `RuntimeError`

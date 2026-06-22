@@ -1,4 +1,4 @@
-# What `regstruct` can actually do — real use cases
+# What `counterterms` can actually do — real use cases
 
 An honest map of what this library computes and the genuine questions it answers.
 Every example below was verified by running it; outputs are real.

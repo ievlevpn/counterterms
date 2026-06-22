@@ -25,7 +25,7 @@ from ..trees.tree import DecoratedTree, tree as _build_tree
 if TYPE_CHECKING:
     from ..equation.dsl import SPDE
 
-SCHEMA = "regstruct/structure/v1"
+SCHEMA = "counterterms/structure/v1"
 
 
 # --------------------------------------------------------------------------- #
@@ -64,7 +64,7 @@ def _forest(f: Iterable[DecoratedTree]) -> list:
 
 def export_structure(spde: SPDE, gamma: Fraction = Fraction(1)) -> dict:
     """Build `spde`'s regularity/renormalization structure and return it as a
-    JSON-serializable dict (schema ``regstruct/structure/v1``)."""
+    JSON-serializable dict (schema ``counterterms/structure/v1``)."""
     from ..structures import build_regularity_structure, build_renormalization
     from ..trees.coproducts import delta_minus_group, delta_plus
     from ..renorm.nonlinearity import elem_diff

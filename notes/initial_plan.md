@@ -1,4 +1,4 @@
-# `regstruct` — symbolic renormalized equations for singular SPDEs
+# `counterterms` — symbolic renormalized equations for singular SPDEs
 
 **High-level plan.** A Python package that takes a *singular stochastic PDE* as input and
 returns the *family of renormalized equations* as output, following Bailleul & Hoshino,
@@ -200,7 +200,7 @@ A small **Python DSL on top of SymPy**. The user writes the equation almost as t
 paper; the package *derives* the rule from it (it does not ask the user to specify trees/rules).
 
 ```python
-from regstruct import Unknown, Noise, Parabolic, SPDE, kappa
+from counterterms import Unknown, Noise, Parabolic, SPDE, kappa
 from sympy import Function, Derivative, Symbol
 
 # --- symbols -------------------------------------------------------------
@@ -314,7 +314,7 @@ decision I'd like confirmed at approval — see §11.)*
 ## 7. Architecture & modules (lean)
 
 ```
-regstruct/
+counterterms/
   trees.py        # DecoratedTree, canonical form, S(τ), Homogeneity (ordered ring ℚ+ℚ·κ + β₀)
   rule.py         # SPDE-RHS → Rule; subcriticality check; SC-tree enumeration with cutoff
   elementary.py   # jet vars, ∂_p, D_i, base F(b*), the F(τ*) recursion (SymPy-backed)
@@ -401,7 +401,7 @@ Wick/Gaussian expectations — **explicitly out of scope** unless a noise-cumula
    free constants). Systems & multi-noise in v2. OK to defer?
 3. **Canonical constants** — confirm that computing the *numerical* BPHZ values (needs Gaussian/
    Wick expectations) is out of scope; the package emits free symbolic constants. OK?
-4. **Package name** — `regstruct`? (placeholder used throughout).
+4. **Package name** — `counterterms`? (placeholder used throughout).
 
 ---
 

@@ -3,8 +3,8 @@ Run:  uv run python -u examples/02_trees_and_structure.py
 """
 from sympy import Derivative, Function, Rational
 
-from regstruct import SPDE, Noise, Parabolic, Unknown, kappa, build_regularity_structure
-from regstruct.render import shorthand
+from counterterms import SPDE, Noise, Parabolic, Unknown, kappa, build_regularity_structure
+from counterterms.render import shorthand
 
 u = Unknown("u", 1); xi = Noise("xi", regularity=Rational(-1) - kappa)
 f, g = Function("f"), Function("g")

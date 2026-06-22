@@ -1,10 +1,10 @@
-# Does `regstruct` do justice to the *Tourist's Guide*? — coverage report
+# Does `counterterms` do justice to the *Tourist's Guide*? — coverage report
 
 **Date:** 2026-06-22
 **Question asked:** does the codebase cover everything in the paper (arXiv:2006.03524 v3),
 or what's missing?
 **Method:** mapped every `\section`/`\subsection` of `references/tourist_guide.tex` against
-the modules in `regstruct/`. Read-only; nothing implemented. Cross-checked against
+the modules in `counterterms/`. Read-only; nothing implemented. Cross-checked against
 `notes/{initial_plan,architecture}.md`, `ROADMAP.md`, `notes/validation.md`.
 
 This is a **paper-coverage** map, complementary to `notes/audit.md` (which is code-quality only).
@@ -17,7 +17,7 @@ The paper has two halves: an **algebraic/combinatorial** half (rules → decorat
 homogeneities → coproducts → twisted antipode → BHZ character → the BCCH renormalized-equation
 formula) and an **analytic/probabilistic** half (models, modelled distributions, the
 reconstruction theorem, Schauder estimates, the fixed-point solver, and the *numeric* values of
-the BPHZ constants via Wick integrals). **`regstruct` implements the algebraic half essentially
+the BPHZ constants via Wick integrals). **`counterterms` implements the algebraic half essentially
 in full, and the analytic half essentially not at all — by deliberate, documented design.**
 The project's stated goal — *SPDE in → family of renormalized equations with free constants out*
 (`ThmRenormPDEs`, the §5 / §6 material) — is met and golden-tested. Everything missing is either
@@ -113,6 +113,6 @@ can't supply. None is a defect; each is named in `ROADMAP.md` / CLAUDE.md scope.
 > require probabilistic/analytic input outside a symbolic engine's reach, and each is left as an
 > honest, named socket rather than a silent omission.
 
-The honest one-line scope statement: *`regstruct` computes **which** counterterms appear and
+The honest one-line scope statement: *`counterterms` computes **which** counterterms appear and
 **what** their vector fields are (symbolically, with free constants); it does not compute the
 **numeric** constants, nor does it solve or analyze the resulting SPDE.*

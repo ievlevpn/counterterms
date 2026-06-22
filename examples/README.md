@@ -18,7 +18,7 @@ uv run python -u examples/01_renormalized_equation.py
 
 ```python
 from sympy import Derivative, Function, Rational
-from regstruct import SPDE, Noise, Parabolic, Unknown, kappa
+from counterterms import SPDE, Noise, Parabolic, Unknown, kappa
 
 u  = Unknown("u", dim=1)
 xi = Noise("xi", regularity=Rational(-1) - kappa)        # ζ ∈ C^{−1−κ}

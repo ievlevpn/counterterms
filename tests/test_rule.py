@@ -8,8 +8,8 @@ import warnings
 import pytest
 from sympy import Function, Rational
 
-from regstruct import Noise, Parabolic, SPDE, Unknown, kappa
-from regstruct.equation.dsl import build_context
+from counterterms import Noise, Parabolic, SPDE, Unknown, kappa
+from counterterms.equation.dsl import build_context
 
 f = Function("f")
 

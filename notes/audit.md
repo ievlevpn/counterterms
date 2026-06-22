@@ -1,7 +1,7 @@
-# Code Quality Audit — `regstruct/`
+# Code Quality Audit — `counterterms/`
 
 **Date:** 2026-06-22
-**Scope:** All of `regstruct/` **except** `render/` and `tests/` (per request). Code quality only —
+**Scope:** All of `counterterms/` **except** `render/` and `tests/` (per request). Code quality only —
 **not** mathematical correctness, **not** test coverage. Read-only: no code was changed.
 **Method:** four parallel readers (core+structures, equation, trees, renorm) plus cross-cutting
 static checks (`pyflakes`, `radon`, grep). Each finding below was spot-verified against the source.

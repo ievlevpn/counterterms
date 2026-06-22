@@ -8,8 +8,8 @@ the *symbolic* combination the twisted antipode prescribes.
 """
 import pytest
 
-from regstruct.structures import build_regularity_structure, build_renormalization
-from regstruct.trees.tree import tree
+from counterterms.structures import build_regularity_structure, build_renormalization
+from counterterms.trees.tree import tree
 
 from tests.conftest import CORPUS, gkpz
 
@@ -61,7 +61,7 @@ def test_regularity_structure_is_graded_and_bounded_below():
 
 
 def test_divergent_subspace_matches_counterterms():
-    from regstruct.equation.generate import generate_counterterms
+    from counterterms.equation.generate import generate_counterterms
     rs = build_regularity_structure(gkpz())
     assert set(rs.divergent) == set(generate_counterterms(rs.sig))
     assert len(rs.divergent) == 5            # the five gKPZ counterterms live inside T
@@ -103,7 +103,7 @@ def test_structure_antipode_via_generic_hopf():
 
 def test_renormalization_group_axioms():
     from fractions import Fraction
-    from regstruct.structures import build_renormalization_group
+    from counterterms.structures import build_renormalization_group
     G = build_renormalization_group(gkpz())
     gens1 = [(t,) for t in G.generators]
     eps = G.identity()
@@ -124,7 +124,7 @@ def test_renormalization_group_axioms():
 
 def test_character_is_multiplicative():
     from fractions import Fraction
-    from regstruct.structures import build_renormalization_group
+    from counterterms.structures import build_renormalization_group
     G = build_renormalization_group(gkpz())
     chi = G.character({t: Fraction(i + 1) for i, t in enumerate(G.generators)})
     t0, t1 = G.generators[0], G.generators[1]

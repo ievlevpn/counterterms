@@ -4,8 +4,8 @@ Run:  uv run python -u examples/05_bhz_and_export.py
 import json
 from sympy import Derivative, Function, Rational
 
-from regstruct import SPDE, Noise, Parabolic, Unknown, kappa, build_renormalization
-from regstruct.render import shorthand, structure_json
+from counterterms import SPDE, Noise, Parabolic, Unknown, kappa, build_renormalization
+from counterterms.render import shorthand, structure_json
 
 u = Unknown("u", 1); xi = Noise("xi", regularity=Rational(-1) - kappa)
 f, g = Function("f"), Function("g")

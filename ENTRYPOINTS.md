@@ -1,10 +1,10 @@
 # ENTRYPOINTS — how to read this code
 
-A guided reading order for understanding `regstruct` in detail. Each file has a single job;
+A guided reading order for understanding `counterterms` in detail. Each file has a single job;
 this is the order that makes them click. (For "what can I *do*, and which module?", see the
 capability map in [`README.md`](README.md); this doc is for reading the *code*.)
 
-If you only read two things: **`regstruct/api.py`** (the whole Phase-1 pipeline in ~25 lines) and
+If you only read two things: **`counterterms/api.py`** (the whole Phase-1 pipeline in ~25 lines) and
 **`tests/test_goldens.py`** (the input/output contract on the paper's worked examples).
 
 For the mathematics behind any file, see [`notes/initial_plan.md`](notes/initial_plan.md); for
@@ -34,12 +34,12 @@ see the **input format** and the **exact expected output**. The assertions encod
 things every counterterm carries: homogeneity `|τ|`, symmetry factor `S(τ)`, and the elementary
 differential `F(τ*)`.
 
-### 2. `regstruct/api.py` — the pipeline spine
+### 2. `counterterms/api.py` — the pipeline spine
 `renormalize(spde)` is the whole thing: parse → generate trees → for each, compute `F(τ*)` and
 `S(τ)` → package. Twenty lines; everything else is a subroutine called here. Note the one
 non-obvious line: trees with `F(τ*) = 0` are dropped (Assumption D2 safety).
 
-### 3. `regstruct/equation/dsl.py` — input and parsing
+### 3. `counterterms/equation/dsl.py` — input and parsing
 The user-facing classes (`Unknown`, `Noise`, `Parabolic`, `SPDE`) and `build_context`, which
 turns the SymPy right-hand side into (a) the **base nonlinearities** `F(∘_j*) = f_j`,
 `F(●*) = g` in jet variables, and (b) the structural **rule** (which child edges each node type
@@ -47,19 +47,19 @@ admits, with caps). This is also where **scope is enforced** — read the `raise
 lines to see exactly what is in and out of scope (affine-in-noise, `g` ≤ quadratic in `∂u`,
 `β₀ ∈ (−2,0)`, `|p|_𝔰 ≤ 1`).
 
-### 4. `regstruct/core/signature.py` — the vocabulary
+### 4. `counterterms/core/signature.py` — the vocabulary
 The `Signature` is the single object every algorithm is parametric over: dimension, scaling,
 the integration operator's Schauder order, the noise regularities, and the rule. Crucially,
 `node_homogeneity`, `edge_gain` (`= m − |p|_𝔰`) and `scaled` live here — the homogeneity bookkeeping.
 Read this to see how "scalar vs system" and "one vs many noises" become *data*, not code branches.
 
-### 5. `regstruct/core/homogeneity.py` — the ordered ring
+### 5. `counterterms/core/homogeneity.py` — the ordered ring
 `Homogeneity` is `std + kap·κ` with `κ` a positive infinitesimal; `is_negative()` and the
 ordering are the load-bearing detail (critical trees sit at homogeneity `−kκ`, so comparisons
 must not use floats). `Scaling` gives the scaled degree `|k|_𝔰`. Small file, but understanding
 `is_negative` is essential — it decides which trees become counterterms.
 
-### 6. `regstruct/trees/tree.py` — the central datatype
+### 6. `counterterms/trees/tree.py` — the central datatype
 `DecoratedTree` (`τ = b^n ⋆ ⨉ᵢ I_{p_i}(τ_i)`): node type + decoration, and a canonically-sorted
 multiset of child edges. The three methods to study:
 - `_sortkey` / the `tree()` builder — **canonicalisation**, on which equality, hashing and
@@ -67,25 +67,25 @@ multiset of child edges. The three methods to study:
 - `homogeneity(sig)` — the recursion `|τ| = |b| + |n|_𝔰 + Σ (edge_gain + |subtree|)`;
 - `symmetry_factor()` — `S(τ) = n!·Πⱼ S(σⱼ)^{mⱼ}·mⱼ!` (tex 3982).
 
-### 7. `regstruct/core/jets.py` — jet variables (tiny)
+### 7. `counterterms/core/jets.py` — jet variables (tiny)
 `jet(k)` maps a spacetime multi-index to a SymPy symbol `u_k`; `u_(0,…,0)` is the unknown,
 `u_{e_i}` its `∂_{x_i}` derivative. These are the variables the nonlinearities and `F(τ*)` are
 written in. Read it right before §8–9.
 
-### 8. `regstruct/equation/generate.py` — which trees exist
+### 8. `counterterms/equation/generate.py` — which trees exist
 `generate_counterterms(sig)` enumerates the strongly-conforming trees with `|τ| < 0` by a
 **budget-pruned fixpoint DFS**. The comments explain termination: every uncapped edge (`I_0`)
 adds positive homogeneity when `β₀ > −2`, so it is bounded by the budget; every edge that can
 add `≤ 0` is a derivative edge with a finite cap (this is the "`g` quadratic in `∂u`" cutoff).
 The `break` in `_emit` relies on the child atoms being sorted by homogeneity contribution.
 
-### 9. `regstruct/renorm/nonlinearity.py` — the counterterm engine (Υ map)
+### 9. `counterterms/renorm/nonlinearity.py` — the counterterm engine (Υ map)
 `elem_diff(τ, base_F, width)` computes `F(τ*) = (Πᵢ F(τ_i*))·(D^n Πᵢ ∂_{p_i}) F(b*)`
 (tex 4524 / 4915). The two operators to understand: `∂_p` (a plain slot derivative) and the
 total derivative `D_i = Σ_k u_{k+e_i} ∂_k` (`_D`). Order matters: the `∂_{p_i}` are applied
 *before* `D^n`, and they hit **all** slots of `g`. This is the only place SymPy does real work.
 
-### 10. `regstruct/renorm/equation.py` — the output
+### 10. `counterterms/renorm/equation.py` — the output
 `Counterterm` (tree, `|τ|`, `S(τ)`, `F(τ*)`, free constant `k_τ`; `.coefficient = k_τ/S(τ)`)
 and `RenormalizedEquation` (`.counterterms`, `.summary()`, `.counterterm_rhs()`). `summary()`
 renders jet variables back to `u` and its derivatives for display.

@@ -10,11 +10,11 @@
 """
 from sympy import Derivative, simplify
 
-from regstruct import jet
-from regstruct.equation.dsl import build_context
-from regstruct.equation.generate import generate_counterterms
-from regstruct.renorm.nonlinearity import elem_diff
-from regstruct.trees.tree import tree
+from counterterms import jet
+from counterterms.equation.dsl import build_context
+from counterterms.equation.generate import generate_counterterms
+from counterterms.renorm.nonlinearity import elem_diff
+from counterterms.trees.tree import tree
 
 from tests.conftest import gkpz, gpam2, system
 

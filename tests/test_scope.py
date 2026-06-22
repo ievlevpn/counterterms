@@ -7,7 +7,7 @@ fail with a clear `ValueError` (not a wrong answer); each path is pinned here.
 import pytest
 from sympy import Derivative, Function, Rational, sin
 
-from regstruct import FractionalHeat, Noise, Parabolic, SPDE, Unknown, kappa
+from counterterms import FractionalHeat, Noise, Parabolic, SPDE, Unknown, kappa
 
 f = Function("f")
 g = Function("g")

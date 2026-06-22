@@ -7,9 +7,9 @@
 
 Plus the homogeneity recursion (naive vs extended, the `o`-decoration on red nodes).
 """
-from regstruct.core.homogeneity import Homogeneity
-from regstruct.equation.dsl import build_context
-from regstruct.trees.tree import red_node, tree
+from counterterms.core.homogeneity import Homogeneity
+from counterterms.equation.dsl import build_context
+from counterterms.trees.tree import red_node, tree
 
 from tests.conftest import gkpz
 

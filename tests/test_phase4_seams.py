@@ -4,11 +4,11 @@ clear errors. No analysis/numerics implemented — just the contracts.
 """
 import pytest
 
-from regstruct.core.symbol import Symbol
-from regstruct.renorm.scheme import (
+from counterterms.core.symbol import Symbol
+from counterterms.renorm.scheme import (
     BPHZ, FreeConstants, UnbuiltEvaluator, WHITE_NOISE, expectation)
-from regstruct.structures import build_renormalization, build_renormalization_group
-from regstruct.trees.tree import tree
+from counterterms.structures import build_renormalization, build_renormalization_group
+from counterterms.trees.tree import tree
 
 from tests.conftest import gkpz
 

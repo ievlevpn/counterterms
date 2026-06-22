@@ -6,10 +6,10 @@ trees while keeping the genuinely divergent (even-noise) ones.
 """
 from math import factorial
 
-from regstruct.equation.dsl import build_context
-from regstruct.renorm.scheme import expectation, has_odd_noise, wick_pairings
-from regstruct.structures import build_renormalization
-from regstruct.trees.tree import tree
+from counterterms.equation.dsl import build_context
+from counterterms.renorm.scheme import expectation, has_odd_noise, wick_pairings
+from counterterms.structures import build_renormalization
+from counterterms.trees.tree import tree
 
 from tests.conftest import gkpz, multinoise
 
@@ -66,9 +66,9 @@ def test_expectation_red_ok_refuses_only_decorations():
     # ONLY thing that breaks the naive integral is a non-zero X^n node-decoration (Π(X^n)(y)=y^n).
     import pytest
     from fractions import Fraction
-    from regstruct.core.homogeneity import Homogeneity
-    from regstruct.renorm.scheme import is_bare, is_extended
-    from regstruct.trees.tree import red_node, tree
+    from counterterms.core.homogeneity import Homogeneity
+    from counterterms.renorm.scheme import is_bare, is_extended
+    from counterterms.trees.tree import red_node, tree
     red = red_node(Homogeneity(Fraction(-1)), width=SIG.width)      # ■(red), n=0
     contracted = tree("bullet", (0, 0), [(0, (0, 1), red)])         # ●—∂I—■: red, yet bare (all n=0)
     decorated = tree("bullet", (0, 1), [(0, (0, 1), CIRC), (0, (0, 1), CIRC)])  # X_x·●·∂I[∘]²

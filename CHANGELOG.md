@@ -35,7 +35,7 @@ All notable changes to this project are documented here. The format follows
   because the twisted antipode explodes for deep trees (KPZ: 144 `h`-terms). The forest drawer
   now renders **red contraction nodes** (square, with their `o`-decoration) and blue `T⁺` roots.
   The raw coproducts/antipode stay programmatic (`structures.py`) — the BHZ character distils them.
-- **Output & rendering** (`regstruct/render/`, see `notes/output.md`). A full report of the
+- **Output & rendering** (`counterterms/render/`, see `notes/output.md`). A full report of the
   renormalized family in four formats via `eq.render(fmt)` / `eq.report()` /
   `eq.latex_document()` / `eq.to_json()`: echoed equation(s), domain/noise, the derived rule,
   **every** divergent tree (`𝓑_<0`, including `F(τ*)=0` non-contributors) with homogeneity,

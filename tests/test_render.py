@@ -2,7 +2,7 @@
 divergent trees, in homogeneity order, across every output format."""
 import json
 
-from regstruct.render import ascii_art, forest, shorthand
+from counterterms.render import ascii_art, forest, shorthand
 from tests.conftest import gkpz
 
 
@@ -62,8 +62,8 @@ def test_canonical_shows_epsilon_regularized_integrals():
 def test_forest_draws_red_contraction_node():
     # the drawer renders Phase-3 red (contraction) nodes distinctly + their o-decoration
     from fractions import Fraction
-    from regstruct.core.homogeneity import Homogeneity
-    from regstruct.trees.tree import red_node
+    from counterterms.core.homogeneity import Homogeneity
+    from counterterms.trees.tree import red_node
     from tests.conftest import gkpz
     sig = gkpz().renormalize().sig
     tex = forest(red_node(Homogeneity(Fraction(-1)), width=sig.width), sig)
@@ -104,7 +104,7 @@ def test_json_and_other_formats():
 
 def test_markdown_table_well_formed():
     import re
-    from regstruct.render.report import _md_cell
+    from counterterms.render.report import _md_cell
     assert _md_cell("a|b") == "a\\|b"          # a literal pipe is escaped for GFM
     md = _build().render("markdown")
     # in the divergent-trees table every row must have the same number of *unescaped*

@@ -7,11 +7,11 @@ convolution-unit and comodule-counit laws.
 """
 from fractions import Fraction
 
-from regstruct.core.hopf import antipode, comodule_action, convolve, counit
-from regstruct.equation.dsl import build_context
-from regstruct.equation.generate import generate_counterterms
-from regstruct.trees.coproducts import _delta_group_forest, delta_minus, delta_plus
-from regstruct.trees.tree import tree
+from counterterms.core.hopf import antipode, comodule_action, convolve, counit
+from counterterms.equation.dsl import build_context
+from counterterms.equation.generate import generate_counterterms
+from counterterms.trees.coproducts import _delta_group_forest, delta_minus, delta_plus
+from counterterms.trees.tree import tree
 
 from tests.conftest import gkpz
 

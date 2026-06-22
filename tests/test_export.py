@@ -4,11 +4,11 @@ divergent trees, the coproducts as tensor sums, the BHZ character)."""
 import json
 from fractions import Fraction
 
-from regstruct.core.homogeneity import Homogeneity
-from regstruct.render.export import (
+from counterterms.core.homogeneity import Homogeneity
+from counterterms.render.export import (
     export_structure, structure_json, tree_from_dict, tree_to_dict)
-from regstruct.trees.coproducts import delta_plus
-from regstruct.trees.tree import red_node, tree
+from counterterms.trees.coproducts import delta_plus
+from counterterms.trees.tree import red_node, tree
 
 from tests.conftest import gkpz
 
@@ -33,7 +33,7 @@ def test_tree_roundtrip_is_exact():
 
 def test_structure_document_shape():
     doc = export_structure(gkpz())
-    assert doc["schema"] == "regstruct/structure/v1"
+    assert doc["schema"] == "counterterms/structure/v1"
     assert doc["signature"]["dim"] == 1 and doc["signature"]["scaling"] == [2, 1]
     assert "xi" in doc["signature"]["noises"]
     assert len(doc["divergent"]) == 5                       # gKPZ counterterms
@@ -45,13 +45,13 @@ def test_structure_document_shape():
 
 def test_structure_json_is_valid_and_parses_back():
     doc = json.loads(structure_json(gkpz()))
-    assert doc["schema"] == "regstruct/structure/v1"
+    assert doc["schema"] == "counterterms/structure/v1"
 
 
 def test_exported_coproduct_reconstructs_to_the_real_one():
     # take a recentering entry from the export, rebuild the trees, and check it equals
     # the in-memory Δ of that tree (coeffs + tree⊗tree pairs).
-    from regstruct.equation.dsl import build_context
+    from counterterms.equation.dsl import build_context
     sig = build_context(gkpz())[0]
     doc = export_structure(gkpz())
     entry = next(e for e in doc["coproducts"]["recentering"]

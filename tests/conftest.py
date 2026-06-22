@@ -24,9 +24,9 @@ from dataclasses import dataclass, field
 import pytest
 from sympy import Derivative, Function, Rational
 
-from regstruct import Noise, Parabolic, SPDE, Unknown, kappa
-from regstruct.equation.dsl import build_context
-from regstruct.equation.generate import generate_counterterms
+from counterterms import Noise, Parabolic, SPDE, Unknown, kappa
+from counterterms.equation.dsl import build_context
+from counterterms.equation.generate import generate_counterterms
 
 f, g, h = Function("f"), Function("g"), Function("h")
 a_coef, b_coef = Function("a"), Function("b")

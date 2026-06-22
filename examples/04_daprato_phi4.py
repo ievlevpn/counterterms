@@ -3,7 +3,7 @@ Run:  uv run python -u examples/04_daprato_phi4.py
 """
 from sympy import Rational
 
-from regstruct import SPDE, Noise, Parabolic, Unknown, daprato_lift, kappa
+from counterterms import SPDE, Noise, Parabolic, Unknown, daprato_lift, kappa
 
 # Φ⁴₃ :  (∂_t − Δ)u = −u³ + ξ,  d=3,  β₀ = −5/2 − κ  (supercritical → rejected directly)
 u = Unknown("u", 3); xi = Noise("xi", regularity=Rational(-5, 2) - kappa)

@@ -13,7 +13,7 @@ Run:  uv run python -u examples/06_fractional_heat.py
 """
 from sympy import Function, Rational
 
-from regstruct import SPDE, FractionalHeat, Noise, Parabolic, Unknown, kappa
+from counterterms import SPDE, FractionalHeat, Noise, Parabolic, Unknown, kappa
 
 # gPAM-type:  L u = g(u) ξ,   d=1,   ξ ∈ C^{−1−κ}
 # (Heat → 3 counterterms; fractional σ=3/4 → 5, with shifted homogeneities.)

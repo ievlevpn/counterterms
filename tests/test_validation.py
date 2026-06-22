@@ -17,9 +17,9 @@ from math import factorial
 import pytest
 from sympy import Derivative, Function, Rational
 
-from regstruct import Noise, Parabolic, SPDE, Unknown, daprato_lift, kappa
-from regstruct.equation.dsl import build_context
-from regstruct.equation.generate import generate_counterterms
+from counterterms import Noise, Parabolic, SPDE, Unknown, daprato_lift, kappa
+from counterterms.equation.dsl import build_context
+from counterterms.equation.generate import generate_counterterms
 
 f, g = Function("f"), Function("g")
 

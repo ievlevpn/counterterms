@@ -1,4 +1,4 @@
-# regstruct
+# counterterms
 
 Symbolic **renormalization of singular SPDEs**, following Bailleul & Hoshino,
 *"A tourist's guide to regularity structures and singular stochastic PDEs"*
@@ -38,7 +38,7 @@ uv run pytest          # 163 tests, ~5s
 
 ```python
 from sympy import Derivative, Function, Rational
-from regstruct import SPDE, Noise, Parabolic, Unknown, kappa
+from counterterms import SPDE, Noise, Parabolic, Unknown, kappa
 
 u  = Unknown("u", dim=1)
 xi = Noise("xi", regularity=Rational(-1) - kappa)              # ζ ∈ C^{−1−κ}
@@ -58,7 +58,7 @@ The same `spde` also yields the **canonical (BPHZ) character** — the symbolic 
 values are out of scope.
 
 ```python
-from regstruct import build_renormalization
+from counterterms import build_renormalization
 
 rs = build_renormalization(spde)
 for t in rs.divergent:
@@ -80,7 +80,7 @@ BPHZ section `k_τ = h(S'₋τ)` with the parity-vanishing constants.)*
 
 ## What you can do — and which module handles it
 
-Everything public is re-exported from the top-level `regstruct` package.
+Everything public is re-exported from the top-level `counterterms` package.
 
 ### Input & the renormalized equation
 | You want… | Call | Module |
