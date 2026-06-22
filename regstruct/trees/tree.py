@@ -69,6 +69,10 @@ class DecoratedTree:
     def nodes(self) -> int:
         return 1 + sum(sub.nodes() for (_, _, sub) in self.children)
 
+    def canonical_key(self):
+        """The canonical isomorphism key (satisfies the `core.symbol.Symbol` protocol)."""
+        return self._sortkey()
+
 
 def tree(node_type: str, node_dec: MultiIndex, children=(),
          color: str = "black", o: Homogeneity = _ZERO) -> DecoratedTree:

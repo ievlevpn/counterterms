@@ -193,3 +193,28 @@ constants reduced to explicit renormalised integrals (B1) and, where evaluable, 
 **A1 (da Prato–Debussche, polynomial nonlinearities).** It is the one Phase-4 item that
 delivers new *user-facing* capability (Φ⁴₂/Φ⁴₃ — the equations everyone actually asks
 about), stays entirely symbolic, reuses the whole existing engine, and carries low risk.
+
+---
+
+## Phase 4 infrastructure — the sockets (installed; meat deferred)
+
+The seams are now in place: real Phase-1–3/B1 pieces are wired *through* them, and the
+unbuilt meat is stubbed with errors that point here. "All sockets installed, microwave
+not yet built."
+
+| Socket | File | Status | What plugs in |
+|---|---|---|---|
+| `Symbol` protocol | `core/symbol.py` | **wired** (`DecoratedTree.canonical_key`) | A3 multi-index basis |
+| `NoiseLaw` | `renorm/scheme.py` | **wired** (centered Gaussian, white-noise default) | concrete covariances |
+| `wick_pairings` / `expectation` | `renorm/scheme.py` | **real (B1)** | — |
+| `RenormalizationScheme` / `Character` | `renorm/scheme.py` | **wired** | — |
+| `FreeConstants` scheme | `renorm/scheme.py` | **real** (free `c_τ`) | — |
+| `BPHZ.character` (symbolic) | `renorm/scheme.py` | **real** (parity-reduced `h∘S'₋`) | — |
+| `BPHZ.numeric_character` | `renorm/scheme.py` | **stub** → `NotImplementedError(B2)` | B2 evaluator |
+| `IntegralEvaluator` / `UnbuiltEvaluator` | `renorm/scheme.py` | **stub** → `NotImplementedError(B2)` | **B2** divergent integrals |
+| `RenormalizationGroup.admissible()` | `structures.py` | **stub** → `NotImplementedError(B3)` | **B3** `G⁻_ad` |
+
+So the only things that *raise* are exactly the three unbuilt analysis/model pieces
+(B2 numeric integrals, B3 `G⁻_ad`). Everything symbolic flows through the seams today;
+building B2 means writing one `IntegralEvaluator`, B3 one `admissible()`, A3 one `Symbol`
+implementation — no re-architecting. Contracts pinned in `tests/test_phase4_seams.py`.

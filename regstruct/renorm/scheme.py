@@ -16,6 +16,7 @@ parity rule alone already determines which canonical renormalisation constants a
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol
 
 import sympy
 
@@ -97,3 +98,87 @@ def expectation(tree, sig, law: NoiseLaw = WHITE_NOISE) -> Expectation:
             cov *= C(z[i] - z[j])
         terms.append((sympy.expand(kernels * cov), intvars))
     return Expectation(terms)
+
+
+# --------------------------------------------------------------------------- #
+# the renormalization-scheme seam (architecture §3.10)
+#
+# The renormalized *family* is, by definition, the orbit of the equation under a choice
+# of renormalization character.  A `RenormalizationScheme` makes that choice: it turns a
+# `RenormalizationStructure` into a `Character` (the constants c_τ).  Two schemes:
+#   FreeConstants — the default: each c_τ a free symbol (what `renormalize` emits today).
+#   BPHZ          — the canonical k^ζ = h^ζ∘S'₋: symbolic (parity-reduced) now; the
+#                   *numeric* values need an `IntegralEvaluator` (Track B2 — not built).
+# --------------------------------------------------------------------------- #
+
+@dataclass
+class Character:
+    """A choice of renormalization constants — ``τ ↦ value`` (a free symbol, a symbolic
+    expression in the elementary expectations, or — once Track B2 exists — a number)."""
+
+    values: dict
+
+    def __call__(self, tree):
+        return self.values[tree]
+
+
+class RenormalizationScheme(Protocol):
+    """Turn a built `RenormalizationStructure` into a `Character`."""
+
+    def character(self, structure) -> Character:
+        ...
+
+
+class FreeConstants:
+    """The default scheme: each ``c_τ`` is a free symbol (the safe, complete answer — a
+    solution *is* the family indexed by these)."""
+
+    def character(self, structure) -> Character:
+        return Character({t: sympy.Symbol(f"c_{i}")
+                          for i, t in enumerate(structure.divergent)})
+
+
+class BPHZ:
+    """The canonical scheme ``k^ζ = h^ζ ∘ S'₋``.
+
+    `character` gives the **symbolic, parity-reduced** constant per tree (via
+    `RenormalizationStructure.canonical_character`) — odd-noise trees vanish.  The
+    surviving constants are polynomials in the elementary expectations ``h(σ)``; turning
+    those into *numbers* needs an `IntegralEvaluator` (Track B2).  [SOCKET: the numeric
+    path is wired but unbuilt — `numeric_character` raises until B2 lands.]
+    """
+
+    def __init__(self, noise: NoiseLaw = WHITE_NOISE, evaluator=None):
+        self.noise = noise
+        self.evaluator = evaluator
+
+    def character(self, structure) -> Character:
+        return Character({t: structure.canonical_character(t, self.noise)
+                          for t in structure.divergent})
+
+    def numeric_character(self, structure) -> Character:
+        """The canonical constants as numbers — requires an `IntegralEvaluator` (B2)."""
+        ev = self.evaluator or UnbuiltEvaluator()
+        return Character({t: ev.evaluate(expectation(t, structure.sig, self.noise),
+                                         noise=self.noise)
+                          for t in structure.divergent})
+
+
+class IntegralEvaluator(Protocol):
+    """[SOCKET — Track B2] Evaluate a Wick-pairing `Expectation` to a value, given the
+    concrete kernel and covariance.  The singular/divergent integrals (and their
+    regularised renormalisation) live behind this seam — the analysis wall."""
+
+    def evaluate(self, expectation: Expectation, *, noise: NoiseLaw):
+        ...
+
+
+class UnbuiltEvaluator:
+    """Placeholder `IntegralEvaluator` — Track B2 is not implemented (the analysis wall)."""
+
+    def evaluate(self, expectation: Expectation, *, noise: NoiseLaw = WHITE_NOISE):
+        raise NotImplementedError(
+            "evaluating the divergent Wick-pairing integrals is Phase 4 / Track B2 — it "
+            "needs singular-integral machinery (closed forms / regularised numerics); "
+            "see notes/phase4_plan.md B2.")
+

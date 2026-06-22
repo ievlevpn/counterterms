@@ -200,6 +200,18 @@ class RenormalizationGroup:
         S = antipode(self._coproduct, self._mul, ())
         return lambda forest: sum((c * f(g) for g, c in S(forest).items()), 0)
 
+    def admissible(self):
+        """[SOCKET — Track B3] The admissible subgroup ``G⁻_ad ⊂ G⁻``.
+
+        K-admissibility (``Π(I_nτ)=∂^nK∗Πτ``) constrains which renormalisation characters
+        a model admits; it is an *analytic model* notion (kernel vanishing moments + the
+        Π-map), not symbolic. Deferred to the model layer — see notes/phase4_plan.md B3.
+        """
+        raise NotImplementedError(
+            "G⁻_ad reduction is Phase 4 / Track B3 — admissibility is a K-admissibility "
+            "(model) notion (kernel vanishing moments + the Π-map), not a symbolic filter; "
+            "see notes/phase4_plan.md B3.")
+
 
 def build_renormalization_group(spde) -> RenormalizationGroup:
     """Build the renormalization group ``G⁻`` for `spde` (free constant per negative tree)."""
