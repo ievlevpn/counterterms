@@ -130,6 +130,35 @@ Estimated effort: a focused re-implementation of `coproducts.py`'s decoration
 handling around the `(𝔻𝔽)(*D)` factorisation — moderate, but it touches the
 load-bearing core, so it should be done test-first (keep all current invariants).
 
+## 4b. Update — second attempt + the decisive-check result
+
+Two further things were established:
+
+- **The "absorb into o" lever is confirmed wrong** by experiment: making red nodes
+  `●^{0,α}` (absorb the leftover `[n−n_φ]` into `o`) *does* fix the singular
+  cointeraction but **breaks `δ⁻` coassociativity** (a coefficient goes 1→2). The
+  appendix's proven construction keeps `●^{[n−n_φ],α}` **distinct**, so absorption
+  is provably incorrect. A targeted variant (absorb only on `Δ`'s push onto red
+  nodes) fixes the *trunk* discrepancy but not the *branch* one. Neither is right.
+
+- **The reduced (`*D`, no-`o`, no-projection) cointeraction test is inconclusive.**
+  The reduced `°D` maps are genuinely *infinite* sums (the boundary-edge `e'`
+  Taylor sum is unbounded; they are triangular/bigraded — tex 5656 Remark). A naive
+  degree-truncation makes both sides finite but introduces boundary mismatches that
+  *grow* with the cutoff, so it cannot localise the bug. The only **finite** tests
+  are the *projected* ones (`δ`,`δ⁻`,`Δ` with `p±`), which is why `δ⁻`
+  coassociativity and `Δ` comodule pass cleanly but the projected cointeraction
+  (the one three-way coupling) fails.
+
+**Conclusion on effort.** A correct fix is **not** a localized patch. It requires
+implementing the construction the way BHZ actually proves it: the single master
+coproduct `Δ_i` on coloured decorated forests over **bigraded spaces** (so the
+infinite `e'` sums are well-defined triangular maps), with the corrected `T⁻_ex`
+basis (footnote-3), then deriving `Δ⁺/Δ⁻/δ⁺` as projections. That is a research-
+grade, multi-session rebuild of the algebraic core — its payoff is a *structural-
+consistency* property that feeds **no** library output (see §5). Recommended
+either as a dedicated effort or to stand as a documented limitation.
+
 ## 5. Why this is not on the critical path (scope note)
 
 The cointeraction is the **structural compatibility** check between `𝒯` and `𝒰`. It
