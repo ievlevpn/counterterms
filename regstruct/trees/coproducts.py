@@ -209,7 +209,22 @@ def delta_minus(t: DecoratedTree, sig, root_disjoint: bool = False) -> TensorSum
                     binom *= _mi_binom(nodes[i].node_dec, nphi_map[i])
                 if binom == 0:
                     continue
-                for eprime in product(edge_choices, repeat=len(recenter)):
+                # Prune the e' Taylor sum by the p₋ budget: πe' only RAISES the
+                # homogeneity of the component holding the edge's parent, and p₋ keeps
+                # a component only while |·|'_std ≤ 0.  So per ∂(A,F) edge allow e'=0
+                # and only those e' that keep that component's std ≤ 0 — the actual
+                # bound the _E_CAP comment refers to, here made effective (turns a
+                # |edge_decs|^(#edges) blow-up into a few choices per edge).  The exact
+                # p₋ filter below is unchanged; this just skips doomed e'-tuples.
+                zero = (0,) * width
+                base_std = {top: _component_naive_homog(
+                                members, nodes, nphi_map, defaultdict(lambda: zero),
+                                children_of, sig).std
+                            for top, members in comps.items()}
+                allowed = [[d for d in edge_choices
+                            if d == zero or base_std[comp_id[a]] + sig.scaled(d) <= 0]
+                           for (a, b, comp, p) in recenter]
+                for eprime in product(*allowed):
                     ep_map = {k: eprime[k] for k in range(len(recenter))}
                     efact = 1
                     for ev in eprime:
@@ -450,6 +465,21 @@ def delta_plus(t: DecoratedTree, sig, project_left: bool = False):
         children_of[a].append((b, comp, p))
         parent_of[b] = a
 
+    # extended homogeneity of the subtree rooted at each node (for the e' prune below)
+    sub_ext: dict[int, Homogeneity] = {}
+
+    def _subext(i):
+        if i not in sub_ext:
+            nd = nodes[i]
+            h = (Homogeneity(0) if nd.color == "red" else sig.node_homogeneity(nd.node_type))
+            h = h + Homogeneity(sig.scaled(nd.node_dec)) + (nd.o if nd.color == "red" else Homogeneity(0))
+            for (cid, comp, p) in children_of[i]:
+                h = h + sig.edge_gain(comp, p) + _subext(cid)
+            sub_ext[i] = h
+        return sub_ext[i]
+    for i in range(n):
+        _subext(i)
+
     out = defaultdict(Fraction)
     for mask in range(1 << n):
         mu = {i for i in range(n) if mask & (1 << i)}
@@ -468,7 +498,19 @@ def delta_plus(t: DecoratedTree, sig, project_left: bool = False):
                 binom *= _mi_binom(nodes[i].node_dec, nmu_map[i])
             if binom == 0:
                 continue
-            for eprime in product(edge_choices, repeat=len(boundary)):
+            # Prune the e' Taylor sum by the p₊ budget: e' only LOWERS the planted
+            # branch I_{p+e'}(σ_b) (the Schauder gain m−|p+e'|_𝔰 shrinks), and p₊ keeps
+            # a branch only while |·|>0. So per ∂μ edge, keep only e' for which the
+            # branch stays positive (the exact p₊ filter still runs below).
+            allowed = []
+            for (a, b, comp, p) in boundary:
+                lst = []
+                for d in edge_choices:
+                    bh = sig.edge_gain(comp, _mi_add(p, d)) + sub_ext[b]
+                    if bh.std > 0 or (bh.std == 0 and bh.kap > 0):
+                        lst.append(d)
+                allowed.append(lst)
+            for eprime in product(*allowed):
                 efact = 1
                 for ev in eprime:
                     efact *= _mi_fact(ev)
