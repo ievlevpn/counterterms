@@ -21,7 +21,21 @@ def test_text_report_has_all_trees():
         assert f"τ = {sh} " in txt, f"missing tree {sh}\n{txt}"
     # exact-5 sanity + the placeholder frontier is honest
     assert "5 trees, 5 counterterms, 0 dropped" in txt
-    assert "ALGEBRA" in txt and "Phase 4" in txt
+    assert "CANONICAL" in txt and "Phase 4" in txt
+    assert "canonical=True" in txt           # default report points to the opt-in section
+
+
+def test_canonical_bhz_section():
+    eq = _build()
+    txt = eq.report(canonical=True)
+    # the bare-noise counterterm renormalizes to k = -h(∘)  (S'₋∘ = -∘)
+    assert "k_0 = -h0" in txt
+    # the h-legend distinguishes a contracted (red) node from its black twin
+    assert "[contracted node, o=" in txt
+    import json
+    data = json.loads(eq.render("json", canonical=True))
+    assert data["bhz"][0]["value"] == "-h0"
+    assert any(h["contracted"] for h in data["h_legend"])
 
 
 def test_trees_sorted_by_homogeneity():

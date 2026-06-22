@@ -7,6 +7,13 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Canonical (BHZ) renormalization in the report** (`render(..., canonical=True)`,
+  `eq.report/latex_document/to_json/save(canonical=True)`). Wires Phase 3 to the renderer: each
+  free constant printed as its exact canonical value `k_τ = h(S'₋τ)` — a symbolic polynomial in
+  the elementary expectations `h(σ) = 𝔼[Πσ](0)` — with an `h`-legend drawing every `σ`. Opt-in
+  because the twisted antipode explodes for deep trees (KPZ: 144 `h`-terms). The forest drawer
+  now renders **red contraction nodes** (square, with their `o`-decoration) and blue `T⁺` roots.
+  The raw coproducts/antipode stay programmatic (`structures.py`) — the BHZ character distils them.
 - **Output & rendering** (`regstruct/render/`, see `notes/output.md`). A full report of the
   renormalized family in four formats via `eq.render(fmt)` / `eq.report()` /
   `eq.latex_document()` / `eq.to_json()`: echoed equation(s), domain/noise, the derived rule,

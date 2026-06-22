@@ -10,7 +10,8 @@ from __future__ import annotations
 
 import sympy
 
-from .report import const_map, elem_map, flatex, hom_latex, op_latex, _sorted_trees
+from .report import (canonical_data, const_map, elem_map, flatex, hom_latex, op_latex,
+                     _sorted_trees)
 from .tree import forest
 
 # Node/edge styles match tourist_guide.tex 329–337 (noise / noisegray / noiseblue,
@@ -30,9 +31,11 @@ _PREAMBLE = r"""\documentclass[11pt]{article}
   noisegray/.style={circle, draw=black, fill=black!35, inner sep=0pt, minimum size=4.4pt},
   noiseblue/.style={circle, draw=black, fill=blue!45, inner sep=0pt, minimum size=4.4pt},
   vertex/.style={circle, draw=black, fill=black, inner sep=0pt, minimum size=3.6pt},
+  redvertex/.style={rectangle, draw=red!70!black, fill=red!30, inner sep=0pt, minimum size=4pt},
+  bluevertex/.style={circle, draw=blue!60!black, fill=blue!20, inner sep=0pt, minimum size=3.6pt},
 }
 \forestset{rstree/.style={for tree={grow'=north, parent anchor=north,
-  child anchor=south, s sep=9pt, l sep=11pt, edge={semithick}}}}
+  child anchor=south, s sep=14pt, l sep=14pt, edge={semithick}}}}
 \setlength{\parindent}{0pt}
 \begin{document}
 \thispagestyle{empty}"""
@@ -57,7 +60,7 @@ def _legend(eq) -> str:
     return r"{\footnotesize Legend:\; " + r",\quad ".join(parts) + ".}"
 
 
-def latex_document(eq) -> str:
+def latex_document(eq, canonical: bool = False) -> str:
     sig = eq.sig
     cmap = const_map(eq)
     emap = elem_map(eq)
@@ -117,9 +120,29 @@ def latex_document(eq) -> str:
             P.append(r"  &\quad + " + flatex(term) + r" \\")
         P.append(r"\end{align*}")
 
-    P.append(r"\bigskip")
-    P.append(r"{\itshape The algebraic data ($\Delta\tau$, $\Delta^-\tau$, $S'_-\tau$, "
-             r"symbolic BHZ character) is available via \texttt{structures.py}; rendering it "
-             r"here and the canonical numeric constants (Phase~4) are pending.}")
+    # canonical (BHZ) renormalization — symbolic in the elementary expectations h(σ)
+    if canonical:
+        rows, legend = canonical_data(eq)
+        P.append(r"\section*{Canonical (BHZ) renormalization}")
+        P.append(r"Each free constant at its canonical (BPHZ) value $k_\tau = h(S'_-\tau)$, "
+                 r"symbolic in the elementary expectations $h(\sigma)=\mathbb E[\Pi\sigma](0)$ "
+                 r"(numeric values: Phase~4).")
+        P.append(r"\begin{align*}")
+        for t, k_free, k_bhz in rows:
+            P.append(f"  {sympy.latex(k_free)} &= {flatex(k_bhz)} \\\\")
+        P.append(r"\end{align*}")
+        P.append(r"where each elementary expectation is $h(\sigma)$ for the tree $\sigma$:")
+        P.append(r"\begin{center}")
+        for sym, tr in legend:
+            note = (r"\quad{\footnotesize(contraction node, $o=" + hom_latex(tr.o) + "$)}"
+                    if tr.color == "red" else "")
+            P.append(f"${sympy.latex(sym)} = h\\bigl({{}}$ {forest(tr, sig)} $\\bigr)$"
+                     f"{note}\\par\\bigskip")
+        P.append(r"\end{center}")
+    else:
+        P.append(r"\bigskip")
+        P.append(r"{\itshape Pass \texttt{canonical=True} for the BHZ renormalization "
+                 r"$k_\tau=h(S'_-\tau)$ (symbolic in $h(\sigma)$; heavy for deep trees). "
+                 r"Numeric constants need a noise law (Phase~4).}")
     P.append(r"\end{document}")
     return "\n".join(P)

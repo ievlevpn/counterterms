@@ -54,17 +54,18 @@ def fstr(expr) -> str:
     return _PrimeStr().doprint(expr)
 
 
-def render(eq, fmt: str = "text", sections="all") -> str:
-    # ponytail: `sections` accepted for API stability; full report is cheap, no slicing yet.
+def render(eq, fmt: str = "text", canonical: bool = False) -> str:
+    # `canonical` adds the Phase-3 BHZ section (k_τ = h(S'₋τ)); off by default
+    # because the twisted antipode blows up for deep trees (e.g. KPZ).
     if fmt == "text":
-        return text_report(eq)
+        return text_report(eq, canonical)
     if fmt == "markdown":
-        return markdown_report(eq)
+        return markdown_report(eq, canonical)
     if fmt == "json":
-        return json_report(eq)
+        return json_report(eq, canonical)
     if fmt == "latex":
         from .latex import latex_document
-        return latex_document(eq)
+        return latex_document(eq, canonical)
     raise ValueError(f"unknown render format {fmt!r} (text/markdown/json/latex)")
 
 
@@ -108,6 +109,28 @@ def _sorted_trees(eq):
 
 
 # --------------------------------------------------------------------------- #
+# Phase-3 bridge: the canonical (BHZ) renormalization, symbolic in h(σ).
+# --------------------------------------------------------------------------- #
+
+def canonical_data(eq):
+    """Build the renormalization structure and return
+    ``(rows, legend)`` where ``rows = [(tree, free_const k_τ, bhz_expr)]`` over the
+    counterterm trees (homogeneity order) and ``legend = [(h_symbol, σ)]`` for every
+    elementary expectation ``h(σ)`` appearing.  Heavy for deep trees (KPZ)."""
+    from ..structures import build_renormalization
+    rs = build_renormalization(eq.spde)
+    cmap = const_map(eq)
+    rows = [(t, cmap[t], rs.bhz_character(t)) for t in _sorted_trees(eq) if t in cmap]
+    legend = sorted(((sym, tr) for tr, sym in rs._h.items()),
+                    key=lambda x: int(str(x[0])[1:]))
+    return rows, legend
+
+
+def _h_annotation(tr) -> str:
+    return f"  [contracted node, o={tr.o}]" if tr.color == "red" else ""
+
+
+# --------------------------------------------------------------------------- #
 # text
 # --------------------------------------------------------------------------- #
 
@@ -115,7 +138,7 @@ def _sec(title: str) -> str:
     return f"\n── {title} " + "─" * max(2, 64 - len(title))
 
 
-def text_report(eq) -> str:
+def text_report(eq, canonical: bool = False) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
     cmap = const_map(eq)
@@ -167,11 +190,22 @@ def text_report(eq) -> str:
                        f"[τ={shorthand(ct.tree, sig, coords)}, |τ|={ct.homogeneity}]")
         out.append("")
 
-    out.append(_sec("ALGEBRA"))
-    out.append("  Δτ, Δ⁻τ, twisted antipode S'₋τ, symbolic BHZ character: built in "
-               "structures.py (not yet rendered in this report).")
-    out.append(_sec("CANONICAL VALUES (Phase 4 — needs a NoiseLaw)"))
-    out.append("  numeric c_τ via BPHZ  k^ζ = h^ζ ∘ S'₋  — see ROADMAP O4.")
+    if canonical:
+        rows, legend = canonical_data(eq)
+        out.append(_sec("CANONICAL (BHZ) RENORMALIZATION  k_τ = h(S'₋τ)"))
+        out.append("  Each free constant, set to its canonical (BPHZ) value — symbolic in the")
+        out.append("  elementary expectations h(σ) = 𝔼[Π σ](0) (numeric values: Phase 4).")
+        for t, k_free, k_bhz in rows:
+            out.append(f"  {k_free} = {fstr(k_bhz)}      [τ={shorthand(t, sig, coords)}]")
+        out.append("  where")
+        for sym, tr in legend:
+            out.append(f"    {sym} = h({shorthand(tr, sig, coords)}){_h_annotation(tr)}")
+    else:
+        out.append(_sec("CANONICAL (BHZ) RENORMALIZATION"))
+        out.append("  k_τ = h(S'₋τ), symbolic in h(σ): pass canonical=True "
+                   "(heavy for deep trees, e.g. KPZ).")
+        out.append(_sec("CANONICAL VALUES (Phase 4 — needs a NoiseLaw)"))
+        out.append("  numeric h(σ) = 𝔼[Π σ](0) via Wick — see ROADMAP O4.")
     return "\n".join(out)
 
 
@@ -179,7 +213,7 @@ def text_report(eq) -> str:
 # markdown
 # --------------------------------------------------------------------------- #
 
-def markdown_report(eq) -> str:
+def markdown_report(eq, canonical: bool = False) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
     cmap = const_map(eq)
@@ -227,6 +261,17 @@ def markdown_report(eq) -> str:
         L.append("```")
         L.append(ascii_art(t, sig))
         L.append("```")
+
+    if canonical:
+        rows, legend = canonical_data(eq)
+        L += ["", "## Canonical (BHZ) renormalization", "",
+              "Each free constant at its canonical (BPHZ) value, symbolic in the elementary "
+              "expectations `h(σ) = 𝔼[Π σ](0)` (numeric values: Phase 4).", ""]
+        for t, k_free, k_bhz in rows:
+            L.append(f"- `{k_free} = {fstr(k_bhz)}`   (τ = `{shorthand(t, sig, coords)}`)")
+        L += ["", "where", ""]
+        for sym, tr in legend:
+            L.append(f"- `{sym} = h({shorthand(tr, sig, coords)})`{_h_annotation(tr)}")
     return "\n".join(L)
 
 
@@ -234,7 +279,7 @@ def markdown_report(eq) -> str:
 # json
 # --------------------------------------------------------------------------- #
 
-def json_report(eq) -> str:
+def json_report(eq, canonical: bool = False) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
     cmap = const_map(eq)
@@ -272,4 +317,12 @@ def json_report(eq) -> str:
         "family_latex": {eq.unknowns[a].name: flatex(eq.counterterm_rhs(a))
                          for a in range(eq.n_components)},
     }
+    if canonical:
+        rows, legend = canonical_data(eq)
+        data["bhz"] = [{"tree": shorthand(t, sig, coords), "constant": str(kf),
+                        "value": str(kb), "value_latex": flatex(kb)}
+                       for t, kf, kb in rows]
+        data["h_legend"] = [{"symbol": str(sym), "tree": shorthand(tr, sig, coords),
+                             "contracted": tr.color == "red", "o": str(tr.o)}
+                            for sym, tr in legend]
     return json.dumps(data, indent=2, ensure_ascii=False)

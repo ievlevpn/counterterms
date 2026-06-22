@@ -133,8 +133,21 @@ def _poly_latex(n, coords) -> str:
     return "".join(parts)
 
 
+def _o_latex(o) -> str:
+    return str(o).replace("κ", r"\kappa")
+
+
 def _node_opts(t, sig, coords) -> list[str]:
-    if t.node_type == "bullet":
+    # Phase-3 extended decoration: red = contraction node (square, carries o),
+    # blue = T⁺ root.  Black nodes keep the paper's circle/dot convention.
+    if t.color == "red":
+        opts = ["redvertex"]
+        if t.o.std != 0 or t.o.kap != 0:
+            opts.append("label={[font=\\tiny,fill=white,fill opacity=0.7,text opacity=1,"
+                        "inner sep=0.8pt]left:$o{=}" + _o_latex(t.o) + "$}")
+    elif t.color == "blue":
+        opts = ["bluevertex"]
+    elif t.node_type == "bullet":
         opts = ["vertex"]
     else:
         noises = _noises(sig)

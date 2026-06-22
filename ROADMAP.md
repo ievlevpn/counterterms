@@ -131,10 +131,16 @@ dep (`forest` is a `.tex` concern; ANSI colour is `isatty`-gated; `rich` only if
       current scope, so "0 dropped" — the slot is wired and labelled for when red nodes arrive.)*
 - [x] **O2:** `render/latex.py` — standalone `pdflatex`-ready document; JSON export (`to_json`,
       the clean handoff at the symbolic boundary).
-- [ ] **O3 (with Phase 3):** wire the algebra section — pretty-print `Δτ`, `Δ⁻τ`, `S'₋τ` as
-      tree⊗tree sums (pure reuse of the O1 tree drawer) and the structure's homogeneity spectrum.
-- [ ] **O4 (with Phase 4):** the canonical-values column — replace each free `k_τ` with its BPHZ
-      value once a `NoiseLaw` exists.
+- [x] **O3 (with Phase 3):** the **canonical (BHZ) renormalization** section (`canonical=True`,
+      opt-in — heavy for deep trees): each free `k_τ` as its exact symbolic value `k_τ = h(S'₋τ)`,
+      a polynomial in the elementary expectations `h(σ)`, plus an `h`-legend that draws every `σ`
+      (the tree drawer now renders **red contraction nodes** with their `o`-decoration and blue
+      `T⁺` roots). *Deliberately not rendered:* the raw `Δτ`/`Δ⁻τ`/`S'₋τ` tree⊗tree expansions —
+      the BHZ character already distills them, and they explode (KPZ: 144 `h`-terms). They stay
+      programmatic (`structures.py`). The model-space homogeneity spectrum is likewise available
+      via `RegularityStructure.grades()` but not auto-rendered.
+- [ ] **O4 (with Phase 4):** the numeric column — substitute the `h(σ)` values from a `NoiseLaw`
+      (Wick) so `k_τ` becomes a number, not a symbol.
 
 **Acceptance:** the gKPZ report reproduces the five trees and their homogeneity ordering; one
 assert-based `demo()` per renderer is the backbone check.

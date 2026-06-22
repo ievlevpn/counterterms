@@ -99,22 +99,23 @@ class RenormalizedEquation:
 
     # --- rendering (notes/output.md) ------------------------------------------ #
 
-    def render(self, fmt: str = "text", sections="all") -> str:
+    def render(self, fmt: str = "text", canonical: bool = False) -> str:
         from ..render.report import render as _render
-        return _render(self, fmt, sections)
+        return _render(self, fmt, canonical)
 
-    def report(self) -> str:
-        return self.render("text")
+    def report(self, canonical: bool = False) -> str:
+        return self.render("text", canonical)
 
-    def latex_document(self) -> str:
+    def latex_document(self, canonical: bool = False) -> str:
         from ..render.latex import latex_document
-        return latex_document(self)
+        return latex_document(self, canonical)
 
-    def to_json(self) -> str:
-        return self.render("json")
+    def to_json(self, canonical: bool = False) -> str:
+        return self.render("json", canonical)
 
     def save(self, stem: str = "equation", outdir: str = "output",
-             formats=("text", "markdown", "json", "latex"), pdf: bool = True) -> list:
+             formats=("text", "markdown", "json", "latex"), pdf: bool = True,
+             canonical: bool = False) -> list:
         """Write the exports to ``outdir/`` (default ``output/``); compile the PDF
         if ``pdflatex`` is on PATH.  Returns the paths written."""
         import shutil
@@ -127,7 +128,7 @@ class RenormalizedEquation:
         written = []
         for fmt in formats:
             p = d / f"{stem}.{ext[fmt]}"
-            p.write_text(self.render(fmt), encoding="utf-8")
+            p.write_text(self.render(fmt, canonical), encoding="utf-8")
             written.append(p)
         if pdf and "latex" in formats and shutil.which("pdflatex"):
             subprocess.run(
