@@ -171,4 +171,9 @@ bug. Plus an independent symmetry-factor cross-check and benchmark counts. See
 - [`notes/architecture.md`](notes/architecture.md) — the module structure and design.
 - [`notes/cointeraction_singular_noise.md`](notes/cointeraction_singular_noise.md),
   [`notes/phase4_plan.md`](notes/phase4_plan.md), [`notes/validation.md`](notes/validation.md) — deep dives.
-- [`references/`](references/) — the source paper (PDF + LaTeX), cited by line number.
+- [`references/`](references/) — pointer to the source paper ([arXiv:2006.03524](https://arxiv.org/abs/2006.03524)), cited by line number throughout.
+
+## License
+
+[MIT](LICENSE) © 2026 Pavel Ievlev. The Bailleul–Hoshino paper is *not* included (it is the
+authors' copyright) — see [`references/`](references/) for the arXiv link.
