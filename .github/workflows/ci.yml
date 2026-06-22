@@ -11,6 +11,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - name: Lint the library (ruff)
-        run: uv run ruff check regstruct
+        run: uv run ruff check counterterms
       - name: Run tests
         run: uv run pytest -q
