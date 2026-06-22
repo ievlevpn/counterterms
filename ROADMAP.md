@@ -151,8 +151,17 @@ dep (`forest` is a `.tex` concern; ANSI colour is `isatty`-gated; `rich` only if
       (`structures.py`, and the machine-readable `render/export.py`). The model-space spectrum is
       likewise available
       via `RegularityStructure.grades()` but not auto-rendered.
+- [x] **O3.5 (B1 integrals):** the `h`-legend now spells out each surviving expectation as its
+      **explicit (divergent) Wick integral** `h_ε(σ) = 𝔼[Π^ε σ](0) = Σ ∫ ∏∂^pK · ∏C_ε dz` (built
+      by `renorm.scheme.expectation`, typeset by `render.report.expectation_latex`/`_str`) — the
+      precise objects Track B2 must evaluate, with the **ε-regularization explicit** (`ξ_ε`, `C_ε`,
+      constants diverging as `ε→0`). Text / markdown / LaTeX (`pdflatex`-verified). `K` is the
+      abstract **singular kernel** of `L⁻¹` (Hairer's `K` in `K̄ = K + R`: the diagonal-singular,
+      compactly-supported part of the Green's function `K̄`; it explodes on the diagonal, which is
+      why the integrals diverge — tex 2105, 5683), *not* the Green's function itself.
 - [ ] **O4 (with Phase 4):** the numeric column — substitute the `h(σ)` values from a `NoiseLaw`
-      (Wick) so `k_τ` becomes a number, not a symbol.
+      (Wick) so `k_τ` becomes a number, not a symbol. **Needs Track B2** (evaluating the O3.5
+      integrals).
 
 **Acceptance:** the gKPZ report reproduces the five trees and their homogeneity ordering; one
 assert-based `demo()` per renderer is the backbone check.

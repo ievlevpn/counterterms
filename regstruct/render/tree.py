@@ -161,8 +161,9 @@ def _node_opts(t: DecoratedTree, sig: Signature, coords: tuple[str, ...]) -> lis
     if t.color == "red":
         opts = ["redvertex"]
         if t.o.std != 0 or t.o.kap != 0:
+            # 'above' (over its own node), not 'left' (which collides for sibling red nodes)
             opts.append("label={[font=\\tiny,fill=white,fill opacity=0.7,text opacity=1,"
-                        "inner sep=0.8pt]left:$o{=}" + _o_latex(t.o) + "$}")
+                        "inner sep=0.8pt]above:$o{=}" + _o_latex(t.o) + "$}")
     elif t.color == "blue":
         opts = ["bluevertex"]
     elif t.node_type == "bullet":

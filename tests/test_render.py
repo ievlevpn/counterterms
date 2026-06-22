@@ -45,6 +45,20 @@ def test_canonical_bphz_section():
     assert "h_{0}" in fam and "h_{1}" in fam and "k_" not in fam
 
 
+def test_canonical_shows_epsilon_regularized_integrals():
+    # the surviving h_ε(σ) must be spelled out as the explicit (divergent) Wick integral,
+    # with the ε-regularization made explicit (ξ_ε, C_ε), in text and LaTeX.
+    eq = _build()
+    txt = eq.report(canonical=True)
+    assert "ξ_ε" in txt and "DIVERGE as ε→0" in txt
+    # gKPZ h0 = ∫ C_ε(z1−z2)·∂^(0,1)K(−z1)·∂^(0,1)K(−z2) dz1 dz2
+    assert "∫ C_ε(z1 - z2)·∂^(0,1)K(-z1)·∂^(0,1)K(-z2) dz1 dz2" in txt
+    assert "h_ε(" in txt
+    tex = eq.latex_document(canonical=True)
+    assert r"\xi_\varepsilon" in tex and r"C_\varepsilon" in tex
+    assert r"\int_{(\mathbb R^{2})^{2}}" in tex and r"\partial^{(0,1)}K" in tex
+
+
 def test_forest_draws_red_contraction_node():
     # the drawer renders Phase-3 red (contraction) nodes distinctly + their o-decoration
     from fractions import Fraction

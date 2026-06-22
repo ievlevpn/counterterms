@@ -15,6 +15,7 @@ from sympy.core.function import AppliedUndef
 from sympy.printing.latex import LatexPrinter
 from sympy.printing.str import StrPrinter
 
+from ..renorm.scheme import WHITE_NOISE, Expectation, expectation, is_extended
 from .tree import ascii_art, coord_names, edge_glyph_text, shorthand, _node_glyph
 
 if TYPE_CHECKING:
@@ -147,6 +148,72 @@ def _h_annotation(tr: DecoratedTree) -> str:
     return f"  [contracted node, o={tr.o}]" if tr.color == "red" else ""
 
 
+# --------------------------------------------------------------------------- #
+# the elementary integrals h_ε(σ) = 𝔼[Π^ε σ](0) — the objects Track B2 must
+# evaluate.  Already built (unevaluated) by `renorm.scheme.expectation`: a sum
+# over Wick pairings of  ∏ ∂^p K (tree edges) · ∏ C_ε (matched noise pairs),
+# integrated over the internal vertices (root at 0).  We only typeset them.  K is
+# the (abstract) singular kernel of L⁻¹ — Hairer's K in K̄ = K + R, the
+# diagonal-singular, compactly-supported part of the Green's function K̄ (it
+# *explodes on the diagonal*, which is why these integrals diverge; tex 2105, 5683).
+# C_ε is the regularized covariance.
+# --------------------------------------------------------------------------- #
+
+def _kernel_p(name: str) -> tuple[int, ...]:
+    """``"K_0_1"`` → ``(0, 1)`` (the edge's derivative multi-index p)."""
+    return tuple(int(x) for x in name[2:].split("_"))
+
+
+def expectation_latex(e: Expectation, width: int) -> str:
+    """LaTeX for ``h_ε(σ)`` as a sum of unevaluated Wick-pairing integrals (``ε`` explicit)."""
+    if e.is_zero:
+        return "0"
+
+    def fac(f: sympy.Expr) -> str:
+        if isinstance(f, sympy.Pow):
+            return fac(f.base) + "^{" + sympy.latex(f.exp) + "}"
+        name, arg = f.func.__name__, sympy.latex(f.args[0])
+        if name.startswith("K_"):
+            p = _kernel_p(name)
+            k = "K" if not any(p) else r"\partial^{(" + ",".join(map(str, p)) + ")}K"
+            return k + r"\!\left(" + arg + r"\right)"
+        return r"C_\varepsilon\!\left(" + arg + r"\right)"     # regularized covariance
+
+    parts = []
+    for integrand, intvars in e.terms:
+        body = " ".join(fac(f) for f in sympy.Mul.make_args(integrand))
+        if intvars:
+            dom = r"\int_{(\mathbb R^{%d})^{%d}}" % (width, len(intvars))
+            meas = r"\,".join(r"\mathrm d" + sympy.latex(v) for v in intvars)
+            parts.append(dom + " " + body + r"\," + meas)
+        else:
+            parts.append(body)
+    return " + ".join(parts)
+
+
+def expectation_str(e: Expectation, width: int) -> str:
+    """Plain-text counterpart of `expectation_latex` (for the txt/markdown reports)."""
+    if e.is_zero:
+        return "0"
+
+    def fac(f: sympy.Expr) -> str:
+        if isinstance(f, sympy.Pow):
+            return fac(f.base) + f"^{f.exp}"
+        name, arg = f.func.__name__, str(f.args[0])
+        if name.startswith("K_"):
+            p = _kernel_p(name)
+            k = "K" if not any(p) else "∂^(" + ",".join(map(str, p)) + ")K"
+            return k + f"({arg})"
+        return f"C_ε({arg})"
+
+    parts = []
+    for integrand, intvars in e.terms:
+        body = "·".join(fac(f) for f in sympy.Mul.make_args(integrand))
+        parts.append(f"∫ {body} " + " ".join("d" + str(v) for v in intvars)
+                     if intvars else body)
+    return " + ".join(parts)
+
+
 def canonical_family_rhs(eq: RenormalizedEquation, comp: int, rows: list):
     """The canonically renormalized RHS of component ``comp``: the original equation plus
     each surviving counterterm with its free constant replaced by the canonical (BPHZ)
@@ -227,7 +294,9 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
         out.append("  Each free constant at its canonical value for a centered Gaussian noise.")
         out.append(f"  Mean-zero parity ⇒ trees with odd noise count vanish "
                    f"({nzero}/{len(rows)} here); survivors are polynomials in the elementary")
-        out.append("  expectations h(σ) = 𝔼[Π σ](0) (numeric h(σ): Phase 4).")
+        out.append("  expectations hᵢ ≡ h_ε(σ) = 𝔼[Π^ε σ](0) of the ε-regularized noise ξ_ε.")
+        out.append("  These constants are ε-dependent and DIVERGE as ε→0; evaluating the")
+        out.append("  integrals below (their ε→0 renormalization) is Phase 4 / Track B2.")
         for t, k_free, v in rows:
             rhs = "0   (vanishes — odd noise parity)" if v == 0 else fstr(v)
             out.append(f"  {k_free} = {rhs}      [τ={shorthand(t, sig, coords)}]")
@@ -237,9 +306,18 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
             out.append(f"    {operator_str(op)} {u.name} = "
                        f"{fstr(canonical_family_rhs(eq, a, rows))}")
         if legend:
-            out.append("  where")
+            out.append("  where, for the ε-regularized noise ξ_ε (covariance C_ε), each")
+            out.append("  elementary expectation is the divergent integral (K = singular kernel of")
+            out.append("  L⁻¹ — the diagonal-singular part of the Green's fn; it explodes on the diagonal).")
+            out.append("  Contracted (red-node) σ carry an extended o-decoration the naive integral")
+            out.append("  doesn't capture, so only ordinary σ get an explicit integral:")
             for sym, tr in legend:
-                out.append(f"    {sym} = h({shorthand(tr, sig, coords)}){_h_annotation(tr)}")
+                out.append(f"    {sym} = h_ε({shorthand(tr, sig, coords)}){_h_annotation(tr)}")
+                if is_extended(tr):
+                    out.append("       = (contracted tree — value involves the extended o-decoration, "
+                               "not a naive Wick integral)")
+                else:
+                    out.append(f"       = {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}")
     else:
         out.append(_sec("CANONICAL (BPHZ) RENORMALIZATION"))
         out.append("  k_τ = h(S'₋τ) for centered Gaussian noise (parity-reduced; many vanish):")
@@ -313,7 +391,9 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
               "Each free constant at its canonical value for a centered Gaussian noise. "
               f"Mean-zero parity ⇒ odd-noise trees vanish ({nzero}/{len(rows)} here); "
               "survivors are polynomials in the elementary expectations "
-              "`h(σ) = 𝔼[Π σ](0)` (numeric h(σ): Phase 4).", ""]
+              "`hᵢ ≡ h_ε(σ) = 𝔼[Π^ε σ](0)` of the **ε-regularized noise ξ_ε**. These "
+              "constants are ε-dependent and **diverge as ε→0**; evaluating the integrals "
+              "below (their ε→0 renormalization) is Phase 4 / Track B2.", ""]
         for t, k_free, v in rows:
             rhs = "0  *(vanishes — odd noise parity)*" if v == 0 else f"`{fstr(v)}`"
             L.append(f"- `{k_free}` = {rhs}   (τ = `{shorthand(t, sig, coords)}`)")
@@ -322,9 +402,18 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
             L.append(f"{operator_str(op)} {u.name} = {fstr(canonical_family_rhs(eq, a, rows))}")
         L.append("```")
         if legend:
-            L += ["", "where", ""]
+            L += ["", "where, for the ε-regularized noise `ξ_ε` (covariance `C_ε`), each "
+                  "elementary expectation is the divergent integral (`K` = the singular kernel of "
+                  "`L⁻¹` — the diagonal-singular part of the Green's function, which explodes on "
+                  "the diagonal). Contracted (red-node) σ carry an extended `o`-decoration the "
+                  "naive integral doesn't capture, so only ordinary σ get an explicit integral:", ""]
             for sym, tr in legend:
-                L.append(f"- `{sym} = h({shorthand(tr, sig, coords)})`{_h_annotation(tr)}")
+                head = f"- `{sym} = h_ε({shorthand(tr, sig, coords)})`{_h_annotation(tr)}"
+                if is_extended(tr):
+                    L.append(head + "  *(contracted — value involves the extended `o`-decoration, "
+                             "not a naive Wick integral)*")
+                else:
+                    L.append(head + f"  `= {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}`")
     return "\n".join(L)
 
 

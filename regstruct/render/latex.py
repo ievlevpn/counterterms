@@ -133,8 +133,11 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
         P.append(r"Each free constant at its canonical value $k_\tau = h(S'_-\tau)$ for a "
                  r"centered Gaussian noise.  Mean-zero parity makes trees with an odd number of "
                  f"noise vertices vanish ({nzero} of {len(rows)} below); the survivors are "
-                 r"polynomials in the elementary expectations $h(\sigma)=\mathbb E[\Pi\sigma](0)$ "
-                 r"(numeric $h(\sigma)$: Phase~4).")
+                 r"polynomials in the elementary expectations "
+                 r"$h_i \equiv h_\varepsilon(\sigma)=\mathbb E[\Pi^\varepsilon\sigma](0)$ of the "
+                 r"$\varepsilon$-regularized noise $\xi_\varepsilon$.  These constants are "
+                 r"$\varepsilon$-dependent and \emph{diverge as} $\varepsilon\to0$; evaluating "
+                 r"the integrals below is Phase~4 / Track~B2.")
         P.append(r"\begin{align*}")
         for t, k_free, v in rows:
             rhs = (r"0 && \text{(vanishes: odd noise parity)}" if v == 0
@@ -154,14 +157,25 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
                     P.append(r"  &\quad + " + flatex(term) + r" \\")
             P.append(r"\end{align*}")
         if legend:
-            P.append(r"where each surviving elementary expectation is $h(\sigma)$ for $\sigma$:")
-            P.append(r"\begin{center}")
+            from ..renorm.scheme import WHITE_NOISE, expectation, is_extended
+            from .report import expectation_latex
+            P.append(r"where, for the $\varepsilon$-regularized noise $\xi_\varepsilon$ "
+                     r"(covariance $C_\varepsilon$; $K$ the \emph{singular kernel} of $L^{-1}$ "
+                     r"--- Hairer's $K$ in $\bar K = K + R$, the diagonal-singular part of the "
+                     r"Green's function $\bar K$, which explodes on the diagonal), each surviving "
+                     r"\emph{ordinary} expectation is the divergent integral below.  A contracted "
+                     r"(red-node) $\sigma$ carries an extended $o$-decoration the naive integral "
+                     r"does not capture, so it is left as $h_\varepsilon(\sigma)$.")
             for sym, tr in legend:
                 note = (r"\quad{\footnotesize(contraction node, $o=" + hom_latex(tr.o) + "$)}"
                         if tr.color == "red" else "")
-                P.append(f"${sympy.latex(sym)} = h\\bigl({{}}$ {forest(tr, sig)} $\\bigr)$"
-                         f"{note}\\par\\bigskip")
-            P.append(r"\end{center}")
+                P.append(r"\begin{center}")
+                P.append(f"${sympy.latex(sym)} = h_\\varepsilon\\bigl({{}}$ {forest(tr, sig)} "
+                         f"$\\bigr)$ {note}")
+                P.append(r"\end{center}")
+                if not is_extended(tr):
+                    e = expectation(tr, sig, WHITE_NOISE)
+                    P.append(r"\[" + sympy.latex(sym) + r" = " + expectation_latex(e, sig.width) + r"\]")
     else:
         P.append(r"\bigskip")
         P.append(r"{\itshape Pass \texttt{canonical=True} for the canonical (BPHZ) "
