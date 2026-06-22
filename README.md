@@ -52,6 +52,19 @@ print(spde.renormalize().summary())     # the five gKPZ counterterms
 
 More in [`examples/`](examples/) (`uv run python -u examples/01_renormalized_equation.py`).
 
+## Example output
+
+`eq.save()` writes the report as text / Markdown / JSON and a typeset LaTeX → PDF. Here is the
+PDF for the gKPZ equation above — the parsed equation, every divergent tree `τ` (drawn in the
+paper's convention: ○ noise, ● integration node, dotted = derivative kernel) with its
+homogeneity `|τ|`, symmetry factor `S(τ)`, free constant `k_τ` and elementary differential
+`F(τ*)`, and the assembled renormalized family:
+
+![gKPZ renormalized equation — what the engine produces](docs/example_gkpz.png)
+
+*(rendered from [`docs/example_gkpz.pdf`](docs/example_gkpz.pdf); `canonical=True` adds the
+BPHZ section `k_τ = h(S'₋τ)` with the parity-vanishing constants.)*
+
 ## What you can do — and which module handles it
 
 Everything public is re-exported from the top-level `regstruct` package.
