@@ -13,13 +13,11 @@ You give it a subcritical singular SPDE; it gives you the **family of renormaliz
 (the BCCH / `ThmRenormPDEs` formula) — the original PDE plus one tree-indexed counterterm per
 negative-homogeneity decorated tree, with free renormalization constants:
 
-```
-(∂_t − Δ + 1) u⁽ᵏ⁾ = f(u⁽ᵏ⁾)ζ + g(u⁽ᵏ⁾,∂u⁽ᵏ⁾) + Σ_{τ∈𝓑, |τ|<0} (k_τ / S(τ)) F(τ*)(u⁽ᵏ⁾,∂u⁽ᵏ⁾)
-```
+$$(\partial_t - \Delta + 1)\,u^{(k)} = f(u^{(k)})\,\zeta + g\big(u^{(k)}, \partial u^{(k)}\big) + \sum_{\tau \in \mathcal{B},\; |\tau| < 0} \frac{k_\tau}{S(\tau)}\, F(\tau^*)\big(u^{(k)}, \partial u^{(k)}\big)$$
 
-— and, underneath, the full algebraic machinery (the regularity structure `(T, T⁺)`, the
+— and, underneath, the full algebraic machinery (the regularity structure $(T, T^+)$, the
 extraction/recentering coproducts, the twisted antipode, the BHZ character, the renormalization
-group `G⁻`).
+group $G^-$).
 
 **It is a *symbolic* engine.** It computes *what* to renormalize and the *structure* of the
 renormalization. It does **not** compute the *numeric* values of the constants (those need
@@ -31,7 +29,7 @@ Gaussian/Wick integrals — out of scope), nor analytic estimates, convergence, 
 
 ```sh
 uv sync
-uv run pytest          # 169 tests, ~5s
+uv run pytest          # 176 tests, ~5s
 ```
 
 ## 30-second quickstart
@@ -53,8 +51,8 @@ print(spde.renormalize().summary())     # the five gKPZ counterterms
 More in [`examples/`](examples/) (`uv run python -u examples/01_renormalized_equation.py`).
 
 The same `spde` also yields the **canonical (BPHZ) character** — the symbolic constant
-`k_τ = h(S'₋ τ)` the twisted antipode prescribes, with the Gaussian parity rule applied
-(odd-noise trees vanish). The `h`-values stay free symbols; their numeric (Wick-integral)
+$k_\tau = h(S'_- \tau)$ the twisted antipode prescribes, with the Gaussian parity rule applied
+(odd-noise trees vanish). The $h$-values stay free symbols; their numeric (Wick-integral)
 values are out of scope.
 
 ```python
@@ -68,15 +66,15 @@ for t in rs.divergent:
 ## Example output
 
 `eq.save()` writes the report as text / Markdown / JSON and a typeset LaTeX → PDF. Here is the
-PDF for the gKPZ equation above — the parsed equation, every divergent tree `τ` (drawn in the
+PDF for the gKPZ equation above — the parsed equation, every divergent tree $\tau$ (drawn in the
 paper's convention: ○ noise, ● integration node, dotted = derivative kernel) with its
-homogeneity `|τ|`, symmetry factor `S(τ)`, free constant `k_τ` and elementary differential
-`F(τ*)`, and the assembled renormalized family:
+homogeneity $|\tau|$, symmetry factor $S(\tau)$, free constant $k_\tau$ and elementary differential
+$F(\tau^*)$, and the assembled renormalized family:
 
 ![gKPZ renormalized equation — what the engine produces](docs/example_gkpz.png)
 
 *(rendered from [`docs/example_gkpz.pdf`](docs/example_gkpz.pdf); `canonical=True` adds the
-BPHZ section `k_τ = h(S'₋τ)` with the parity-vanishing constants.)*
+BPHZ section $k_\tau = h(S'_-\tau)$ with the parity-vanishing constants.)*
 
 ## What you can do — and which module handles it
 
@@ -87,29 +85,29 @@ Everything public is re-exported from the top-level `counterterms` package.
 |---|---|---|
 | Write the SPDE (DSL) | `Unknown`, `Noise`, `Parabolic`, `SPDE` | `equation/dsl.py` |
 | Derive the renormalized family | `SPDE(...).renormalize()` → `RenormalizedEquation` | `api.py`, `renorm/equation.py` |
-| Access each counterterm (tree, `\|τ\|`, `S(τ)`, `F(τ*)`, `k_τ`) | `eq.counterterms`, `eq.per_component` | `renorm/equation.py` |
+| Access each counterterm (tree, $\lvert\tau\rvert$, $S(\tau)$, $F(\tau^*)$, $k_\tau$) | `eq.counterterms`, `eq.per_component` | `renorm/equation.py` |
 | Render the report (text / markdown / json / latex) | `eq.summary()`, `eq.render(fmt)`, `eq.save()` | `render/report.py`, `render/latex.py` |
-| **Φ⁴₂/Φ⁴₃** (supercritical, β₀≤−order) | `daprato_lift(spde).renormalize()` | `equation/daprato.py` |
+| **Φ⁴₂/Φ⁴₃** (supercritical, $\beta_0 \le -\text{order}$) | `daprato_lift(spde).renormalize()` | `equation/daprato.py` |
 
 ### The trees and the rule
 | You want… | Call | Module |
 |---|---|---|
-| The divergent trees `𝓑_{<0}` | `generate_counterterms(sig)` | `equation/generate.py` |
+| The divergent trees $\mathcal{B}_{<0}$ | `generate_counterterms(sig)` | `equation/generate.py` |
 | The structural rule from the nonlinearity | `build_context(spde)` → `(sig, base, unknowns)` | `equation/dsl.py` |
-| Subcriticality check (`β₀ > −order`) | `check_subcritical(sig)` (auto in `build_context`) | `equation/rule.py` |
-| Decorated trees: canonical form, `S(τ)`, homogeneity | `DecoratedTree`, `tree`, `red_node` | `trees/tree.py` |
-| The elementary differential `F(τ*)` (Υ-map) | `elem_diff(t, comp, base, sig)` | `renorm/nonlinearity.py` |
+| Subcriticality check ($\beta_0 > -\text{order}$) | `check_subcritical(sig)` (auto in `build_context`) | `equation/rule.py` |
+| Decorated trees: canonical form, $S(\tau)$, homogeneity | `DecoratedTree`, `tree`, `red_node` | `trees/tree.py` |
+| The elementary differential $F(\tau^*)$ ($\Upsilon$-map) | `elem_diff(t, comp, base, sig)` | `renorm/nonlinearity.py` |
 | Draw a single tree (shorthand / ascii / `forest`) | `shorthand`, `ascii_art`, `forest` | `render/tree.py` |
 
 ### The algebraic structure (regularity structure & renormalization)
 | You want… | Call | Module |
 |---|---|---|
-| The regularity structure `(T, T⁺)`, graded basis | `build_regularity_structure(spde)` | `structures.py` |
-| Recentering `Δ : T → T⊗T⁺`, structure coproduct `Δ⁺` | `delta_plus(t, sig[, project_left])` | `trees/coproducts.py` |
-| Extraction–contraction `δ` / `δ⁻` (and the cointeraction) | `delta_minus`, `delta_minus_group` | `trees/coproducts.py` |
-| Negative twisted antipode `S'₋` | `twisted_antipode(t, sig)` | `trees/coproducts.py` |
-| Renormalization structure + symbolic **BHZ character** `k=h∘S'₋` | `build_renormalization(spde)` → `.bhz_character`, `.canonical_character` | `structures.py` |
-| The renormalization **group `G⁻`** (convolution, antipode inverse) | `build_renormalization_group(spde)` | `structures.py` |
+| The regularity structure $(T, T^+)$, graded basis | `build_regularity_structure(spde)` | `structures.py` |
+| Recentering $\Delta : T \to T \otimes T^+$, structure coproduct $\Delta^+$ | `delta_plus(t, sig[, project_left])` | `trees/coproducts.py` |
+| Extraction–contraction $\delta$ / $\delta^-$ (and the cointeraction) | `delta_minus`, `delta_minus_group` | `trees/coproducts.py` |
+| Negative twisted antipode $S'_-$ | `twisted_antipode(t, sig)` | `trees/coproducts.py` |
+| Renormalization structure + symbolic **BHZ character** $k = h \circ S'_-$ | `build_renormalization(spde)` → `.bhz_character`, `.canonical_character` | `structures.py` |
+| The renormalization **group** $G^-$ (convolution, antipode inverse) | `build_renormalization_group(spde)` | `structures.py` |
 | Generic, basis-agnostic Hopf ops (convolve / antipode / comodule) | `convolve`, `antipode`, `comodule_action` | `core/hopf.py` |
 | Canonical (BPHZ) constants — Wick pairings & parity (symbolic) | `expectation`, `NoiseLaw`, `BPHZ`, `FreeConstants` | `renorm/scheme.py` |
 | Machine-readable export of the whole structure (JSON) | `structure_json(spde)`, `export_structure`, `tree_to_dict` | `render/export.py` |
@@ -117,27 +115,27 @@ Everything public is re-exported from the top-level `counterterms` package.
 ### Foundations
 | You want… | Call | Module |
 |---|---|---|
-| The ordered homogeneity ring `ℚ ⊕ ℚ·κ` | `Homogeneity`, `kappa`, `Scaling` | `core/homogeneity.py` |
-| Jet variables `u^c_k` | `jet`, `is_jet`, `jet_parts` | `core/jets.py` |
+| The ordered homogeneity ring $\mathbb{Q} \oplus \mathbb{Q}\cdot\kappa$ | `Homogeneity`, `kappa`, `Scaling` | `core/homogeneity.py` |
+| Jet variables $u^c_k$ | `jet`, `is_jet`, `jet_parts` | `core/jets.py` |
 | The `Signature` (the parametric vocabulary everything threads) | `Signature` | `core/signature.py` |
 | The `Symbol` protocol (basis seam) | `Symbol` | `core/symbol.py` |
 
 ## Scope
 
 **In scope:** scalar **or coupled systems**, single **or multiple** noises, 2nd-order parabolic
-`L` (general operator order with a warning), `β₀ > −order` (rule-based subcriticality), `g` at most
-quadratic in `∂u` (Assumption D2), `|p|_𝔰 ≤ 1`. Covers **gKPZ, KPZ, gPAM, PAM, coupled systems,
+$L$ (general operator order with a warning), $\beta_0 > -\text{order}$ (rule-based subcriticality), $g$ at most
+quadratic in $\partial u$ (Assumption D2), $\lvert p\rvert_\mathfrak{s} \le 1$. Covers **gKPZ, KPZ, gPAM, PAM, coupled systems,
 multi-noise**, and — via `daprato_lift` — **Φ⁴₂, Φ⁴₃**.
 
 **Rejected with clear errors:** non-polynomial supercritical equations (sine-Gordon needs Wick
-exponentials), noise nonlinearities not affine in the noise, `g` more than quadratic in `∂u`,
-singular derivative factors `|p|_𝔰 > 1`, quasilinear / non-parabolic operators.
+exponentials), noise nonlinearities not affine in the noise, $g$ more than quadratic in $\partial u$,
+singular derivative factors $\lvert p\rvert_\mathfrak{s} > 1$, quasilinear / non-parabolic operators.
 
 ## What it does *not* do (the analysis/probability wall)
 
 No **numeric** renormalization constants (no Gaussian/Wick integrals — `renorm/scheme.py`
 gives the symbolic Wick-pairing structure and the parity rule, but not the divergent integrals);
-no model construction, analytic estimates, convergence, or solving. The free constants `k_τ` are
+no model construction, analytic estimates, convergence, or solving. The free constants $k_\tau$ are
 the *complete* symbolic answer — a solution to a singular SPDE *is* the family indexed by the
 renormalization group. See [`notes/use_cases.md`](notes/use_cases.md) and
 [`notes/phase4_plan.md`](notes/phase4_plan.md).
@@ -147,8 +145,8 @@ renormalization group. See [`notes/use_cases.md`](notes/use_cases.md) and
 Phases 1–3 complete and green; Phase 4 partially built.
 
 - **Phase 1–2** — `SPDE → renormalized family` for scalar/systems, one/many noises, operator order.
-- **Phase 3** — coproducts (the cointeraction holds **including β₀=−3/2**), `RegularityStructure (T,T⁺)`,
-  the generic `core/hopf` layer, subcriticality, twisted antipode + BHZ character, the group `G⁻`.
+- **Phase 3** — coproducts (the cointeraction holds **including β₀=−3/2**), `RegularityStructure` $(T, T^+)$,
+  the generic `core/hopf` layer, subcriticality, twisted antipode + BHZ character, the group $G^-$.
 - **Phase 4 (partial)** — `daprato_lift` (Φ⁴₂/₃), the canonical-character *symbolic* half + Wick
   parity, the full-structure JSON export, and the seams (sockets) for the unbuilt analytic pieces.
 
