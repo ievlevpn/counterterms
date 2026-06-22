@@ -23,6 +23,7 @@ _PREAMBLE = r"""\documentclass[11pt]{article}
 \usepackage[margin=1.1in]{geometry}
 \usepackage{microtype}
 \usepackage{booktabs}
+\usepackage{longtable}                   % the trees table may span pages
 \usepackage{forest}
 \tikzset{
   noise/.style={circle, draw=black, fill=white, inner sep=0pt, minimum size=4.4pt},
@@ -81,15 +82,16 @@ def latex_document(eq) -> str:
         P.append(r"\\[2pt] \emph{Non-standard operator order: the theory is proven "
                  r"for 2nd-order parabolic $L$.}")
 
-    # divergent trees
+    # divergent trees — longtable so many-tree examples (KPZ, …) break across pages
     P.append(r"\section*{Divergent trees}")
-    P.append(r"\begin{center}")
     P.append(r"\renewcommand{\arraystretch}{1.2}")
-    P.append(r"\begin{tabular}{" + ("c c c c l" if scalar else "c c c c") + "}")
+    P.append(r"\begin{longtable}{@{}c c c c l@{}}" if scalar
+             else r"\begin{longtable}{@{}c c c c@{}}")
     P.append(r"\toprule")
     P.append(r"$\tau$ & $|\tau|$ & $S(\tau)$ & $k_\tau$"
              + (r" & $F(\tau^*)$ \\" if scalar else r" \\"))
-    P.append(r"\midrule")
+    P.append(r"\midrule\endhead")
+    P.append(r"\bottomrule\endfoot")
     for t in _sorted_trees(eq):
         k = cmap.get(t)
         kc = sympy.latex(k) if k is not None else r"\text{--}"
@@ -99,10 +101,10 @@ def latex_document(eq) -> str:
             fl = flatex(eq._pretty(emap[t])) if k is not None else "0"
             row += f" & ${fl}$"
         P.append(row + r" \\[4pt]")
-    P.append(r"\bottomrule")
-    P.append(r"\end{tabular}")
-    P.append(r"\end{center}")
+    P.append(r"\end{longtable}")
+    P.append(r"\begin{center}")
     P.append(_legend(eq))
+    P.append(r"\end{center}")
 
     # renormalized family
     P.append(r"\section*{Renormalized family}")
