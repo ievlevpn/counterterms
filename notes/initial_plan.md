@@ -401,7 +401,7 @@ Wick/Gaussian expectations — **explicitly out of scope** unless a noise-cumula
    free constants). Systems & multi-noise in v2. OK to defer?
 3. **Canonical constants** — confirm that computing the *numerical* BPHZ values (needs Gaussian/
    Wick expectations) is out of scope; the package emits free symbolic constants. OK?
-4. **Package name** — `counterterms`? (placeholder used throughout).
+4. **Package name** — resolved: the package is `counterterms`.
 
 ---
 

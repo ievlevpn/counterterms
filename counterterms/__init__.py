@@ -1,7 +1,8 @@
 """counterterms — symbolic renormalized equations for singular SPDEs.
 
-Phase 1: SPDE → family of renormalized equations with free constants.
-See notes/architecture.md and notes/initial_plan.md.
+SPDE → the family of renormalized equations with free constants, plus the full
+Hopf-algebraic renormalization machinery (coproducts, twisted antipode, BHZ
+character, regularity/renormalization structures). See notes/architecture.md.
 """
 from __future__ import annotations
 

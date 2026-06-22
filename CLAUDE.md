@@ -13,18 +13,20 @@ negative-homogeneity decorated tree, with free renormalization constants.
 (∂_t − Δ + 1)u⁽ᵏ⁾ = f(u⁽ᵏ⁾)ζ + g(u⁽ᵏ⁾,∂u⁽ᵏ⁾) + Σ_{τ∈𝓑, |τ|<0} (k(τ)/S(τ)) F(τ*)(u⁽ᵏ⁾,∂u⁽ᵏ⁾)
 ```
 
-**Status:** **Phases 1–2 implemented** — `SPDE → family of renormalized equations` with free
-constants (rule → trees → S(τ) → Υ-map → assembly), now for **systems** (component on the edge
-type; shared constants across components), **multiple noises**, and **general operator order**.
-Golden-tested: gKPZ (exact 5 counterterms, tex 6004–6012), KPZ/gPAM, decoupled/coupled systems,
-multi-noise, operator order, scope rejections. A `render/` package emits the full report (trees
-drawn as shorthand / ascii / LaTeX-`forest`) in text/markdown/json/latex — see `notes/output.md`.
-`uv run pytest` (163 tests, ~5s). Phase 3 complete & green: coproducts (cointeraction holds
-**including β₀=−3/2**), `RegularityStructure (T,T⁺)`, the generic `core/hopf` layer,
-subcriticality check, twisted antipode + BHZ character, renormalization group `G⁻`. Phase 4
-started: `daprato_lift` (da Prato–Debussche) unlocks polynomial Φ⁴₂/Φ⁴₃ — see
-`notes/phase4_plan.md`. Still deferred: canonical BPHZ *values* (Wick/integrals), `G⁻_ad`
-reduction, formal rule completion. See `notes/architecture.md` §7 / `ROADMAP.md`.
+**Status:** **Phases 1–3 complete; Phase 4 partial.** Phase 1–2: `SPDE → family of renormalized
+equations` with free constants (rule → trees → S(τ) → Υ-map → assembly), for **systems**
+(component on the edge type; shared constants across components), **multiple noises**, and
+**general operator order**. Golden-tested: gKPZ (exact 5 counterterms, tex 6004–6012), KPZ/gPAM,
+decoupled/coupled systems, multi-noise, operator order, scope rejections. A `render/` package
+emits the full report (trees drawn as shorthand / ascii / LaTeX-`forest`) in
+text/markdown/json/latex — see `notes/output.md`. `uv run pytest` (169 tests, ~5s). Phase 3
+complete & green: coproducts (cointeraction holds **including β₀=−3/2**), `RegularityStructure
+(T,T⁺)`, the generic `core/hopf` layer, subcriticality check, twisted antipode + BHZ character,
+renormalization group `G⁻`. Phase 4 in progress: `daprato_lift` (da Prato–Debussche) unlocks
+polynomial Φ⁴₂/Φ⁴₃; the BPHZ character renders as explicit ε-regularized Wick integrals for bare
+trees (`renorm/scheme.py`, see `notes/elementary_expectations.md`). Still deferred: canonical BPHZ
+*values* (evaluating the integrals), `G⁻_ad` reduction, formal rule completion. See
+`notes/phase4_plan.md`, `notes/architecture.md` §7 / `ROADMAP.md`.
 
 ## Layout
 
@@ -34,9 +36,10 @@ reduction, formal rule completion. See `notes/architecture.md` §7 / `ROADMAP.md
   golden tests, reuse).
 - `notes/architecture.md` — authoritative for the **module structure** (layered stack, the
   `Signature`-parametric design, interfaces, extension cookbook, phasing).
-- `counterterms/` — package (Phase 1 modules populated): `core/{homogeneity,jets,signature}`,
-  `trees/tree`, `equation/{dsl,generate}`, `renorm/{nonlinearity,equation}`, `render/{tree,report,latex}`, `api`. Phase-3
-  modules (`core/{module,hopf,symbol}`, `trees/coproducts`, `structures/`) not yet created.
+- `counterterms/` — package: `core/{homogeneity,jets,signature,hopf,symbol}`, `trees/{tree,
+  coproducts}`, `equation/{dsl,rule,generate,daprato}`, `renorm/{nonlinearity,equation,scheme}`,
+  `structures.py`, `render/{tree,report,latex,export}`, `api`. (Phase-3 algebra — `core/hopf`,
+  `trees/coproducts`, `structures` — is built and green.)
   `tests/` — layered by concern: `conftest.py` (the SPDE corpus + `ctx` fixture), `test_{homogeneity,
   core,trees}` (the non-negotiable conventions as unit tests), `test_pipeline` (generate + Υ-map),
   `test_coproducts` (the algebraic laws, parametrized over the corpus), `test_{structures,goldens,

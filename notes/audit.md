@@ -1,5 +1,12 @@
 # Code Quality Audit — `counterterms/`
 
+> **⚠ Superseded snapshot (2026-06-22).** Several of the findings below have since been
+> addressed — the `bhz_character`/`canonical_character` collapse, the dead-code removals
+> (`rule.py` `Fraction`, `dsl.py` `width`), the stripped `assert` generation guard (now a
+> `RuntimeError` backstop), and the package-wide type-annotation pass. Line numbers predate
+> those edits and the `regstruct→counterterms` rename, so they may have drifted. Keep this as a
+> historical record; treat `ROADMAP.md` as the current source of truth for open items.
+
 **Date:** 2026-06-22
 **Scope:** All of `counterterms/` **except** `render/` and `tests/` (per request). Code quality only —
 **not** mathematical correctness, **not** test coverage. Read-only: no code was changed.

@@ -31,7 +31,7 @@ Gaussian/Wick integrals — out of scope), nor analytic estimates, convergence, 
 
 ```sh
 uv sync
-uv run pytest          # 163 tests, ~5s
+uv run pytest          # 169 tests, ~5s
 ```
 
 ## 30-second quickstart
