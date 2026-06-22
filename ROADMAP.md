@@ -113,8 +113,10 @@ tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **132 t
       exponentials) remains out of scope.
 - [ ] **Multi-index symbol basis** — a second `Symbol` implementation (Linares–Otto–Tempelmayr)
       plugging into the same generic algebra, validating the basis seam.
-- [ ] **Analytic / numerical export** — emit a built structure (trees, homogeneities, coproducts)
-      for an external analytic or numerical consumer.
+- [x] **Full-structure export** (`render/export.py`) — reconstructible, versioned JSON of the whole
+      structure: canonical round-trippable trees (`tree_to_dict`/`tree_from_dict`), the graded `T`
+      basis, the divergent trees with `S(τ)`/`F(τ*)`, the coproducts `Δ`/`δ⁻` as tensor sums, the
+      signature/rule, and the BHZ character — for an external analytic/numerical consumer.
 
 ---
 
