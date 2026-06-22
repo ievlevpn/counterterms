@@ -1,4 +1,5 @@
 """Phase 3: the extraction-contraction coproduct δ (negative/renormalization side)."""
+import pytest
 from sympy import Function, Derivative, Rational
 
 from regstruct import Noise, Parabolic, SPDE, Unknown, kappa
@@ -96,6 +97,46 @@ def test_delta_plus_comodule_coassociative():
             for (B1, B2), c2 in delta_plus(B, sig, project_left=True).items():
                 out[(A, B1, B2)] += c * c2
         return {k: v for k, v in out.items() if v}
+
+    for t in generate_counterterms(sig):
+        assert lhs(t) == rhs(t)
+
+
+def test_delta_plus_co_terminates():
+    # δ⁺ = (p₋⊗Id)D̄⁻ on the T⁺ factors produced by Δ — terminates and is nonempty.
+    sig, _base, _u = _gkpz_ctx()
+    for t in generate_counterterms(sig):
+        for (_a, b), _c in delta_plus(t, sig).items():
+            assert delta_minus(b, sig, root_disjoint=True)
+
+
+@pytest.mark.xfail(reason="WIP: the projected cointeraction (Id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ "
+                          "(tex 5717) over-produces on ∘—I₀—∘ — δ⁺ on a recentered branch "
+                          "must reconcile with δ on the connected whole. Both coproducts' "
+                          "own coassociativities pass; this coupling is the next fix.",
+                   strict=True)
+def test_cointeraction():
+    from collections import defaultdict
+    from fractions import Fraction
+    sig, _base, _u = _gkpz_ctx()
+
+    def sf(fr):
+        return tuple(sorted(fr, key=lambda x: x._sortkey()))
+
+    def lhs(t):                                   # (Id⊗Δ)δ
+        o = defaultdict(Fraction)
+        for (phi, psi), c in delta_minus(t, sig).items():
+            for (p1, p2), c2 in delta_plus(psi, sig).items():
+                o[(phi, p1, p2)] += c * c2
+        return {k: v for k, v in o.items() if v}
+
+    def rhs(t):                                   # M¹³(δ⊗δ⁺)Δ
+        o = defaultdict(Fraction)
+        for (A, B), c in delta_plus(t, sig).items():
+            for (A1, A2), c2 in delta_minus(A, sig).items():
+                for (B1, B2), c3 in delta_minus(B, sig, root_disjoint=True).items():
+                    o[(sf(A1 + B1), A2, B2)] += c * c2 * c3
+        return {k: v for k, v in o.items() if v}
 
     for t in generate_counterterms(sig):
         assert lhs(t) == rhs(t)

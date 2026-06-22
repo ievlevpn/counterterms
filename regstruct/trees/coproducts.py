@@ -119,7 +119,9 @@ def _build(root_id, node_overrides, child_map):
 # the coproduct
 # --------------------------------------------------------------------------- #
 
-def delta_minus(t: DecoratedTree, sig) -> TensorSum:
+def delta_minus(t: DecoratedTree, sig, root_disjoint: bool = False) -> TensorSum:
+    """δ = (p₋⊗Id)D⁻ : U → U⁻⊗U.  ``root_disjoint=True`` gives δ⁺ = (p₋⊗Id)D̄⁻ :
+    T⁺ → U⁻⊗T⁺ (subforests φ disjoint from the root; the blue root is preserved)."""
     nodes, edges = _explode(t)
     width = sig.width
     n = len(nodes)
@@ -135,6 +137,8 @@ def delta_minus(t: DecoratedTree, sig) -> TensorSum:
     for mask in range(1 << n):
         phi = {i for i in range(n) if mask & (1 << i)}
         if not red_ids <= phi:        # φ must contain all red nodes
+            continue
+        if root_disjoint and 0 in phi:   # D̄⁻: φ disjoint from the root
             continue
         if not phi:                   # unit term 𝟙₋ ⊗ τ
             out[((), t)] += Fraction(1)
