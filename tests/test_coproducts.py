@@ -202,12 +202,15 @@ def test_delta_minus_coassoc_singular():
 
 
 @pytest.mark.xfail(strict=True,
-                   reason="residual: the cointeraction (Id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ holds for "
-                          "gKPZ (β₀=−1) but over-produces for β₀=−3/2 already on ∘—I₀—∘ — a "
-                          "bug in the e'-recentering coupling of δ⁺ with δ (NOT _E_CAP "
-                          "truncation: raising the cap does not help). The coproducts are "
-                          "individually coassociative; fixing this coupling for more singular "
-                          "noise is the next task.")
+                   reason="residual (diagnosed, unfixed): the cointeraction (Id⊗Δ)δ = "
+                          "M¹³(δ⊗δ⁺)Δ holds for gKPZ (β₀=−1) but fails at β₀=−3/2 on the "
+                          "decorated tree ∘—I₀—∘^{(0,1)}. A node decoration under an edge lands "
+                          "on different red nodes via recenter-then-extract (RHS: leftover on "
+                          "the branch, by δ⁺'s n_φ split) vs extract-then-recenter (LHS: on the "
+                          "trunk, by Δ's πe'; between-edges get no e' per the formula). Both "
+                          "δ,Δ match tex 5613/5636 and are coassociative; reconciling their "
+                          "coupling needs the full BHZ extended-decoration proof (arXiv:"
+                          "1610.08468), not a quick patch. NOT an _E_CAP truncation.")
 def test_cointeraction_singular():
     from collections import defaultdict
     from fractions import Fraction
