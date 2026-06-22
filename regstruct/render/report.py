@@ -15,7 +15,7 @@ from sympy.core.function import AppliedUndef
 from sympy.printing.latex import LatexPrinter
 from sympy.printing.str import StrPrinter
 
-from ..renorm.scheme import WHITE_NOISE, Expectation, expectation, is_extended
+from ..renorm.scheme import WHITE_NOISE, Expectation, expectation, is_bare
 from .tree import ascii_art, coord_names, edge_glyph_text, shorthand, _node_glyph
 
 if TYPE_CHECKING:
@@ -309,15 +309,16 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
             out.append("  where, for the ε-regularized noise ξ_ε (covariance C_ε), each")
             out.append("  elementary expectation is the divergent integral (K = singular kernel of")
             out.append("  L⁻¹ — the diagonal-singular part of the Green's fn; it explodes on the diagonal).")
-            out.append("  Contracted (red-node) σ carry an extended o-decoration the naive integral")
-            out.append("  doesn't capture, so only ordinary σ get an explicit integral:")
+            out.append("  Only BARE σ (all node decorations 0) get an explicit integral; red")
+            out.append("  contraction nodes are fine (Π^ζ(●^{n,α})=x^n, α-independent — tex 4003). A")
+            out.append("  non-zero X^n decoration breaks it (Π(X^n)(y)=y^n ⇒ root X^n gives 0):")
             for sym, tr in legend:
                 out.append(f"    {sym} = h_ε({shorthand(tr, sig, coords)}){_h_annotation(tr)}")
-                if is_extended(tr):
-                    out.append("       = (contracted tree — value involves the extended o-decoration, "
-                               "not a naive Wick integral)")
-                else:
+                if is_bare(tr):
                     out.append(f"       = {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}")
+                else:
+                    out.append("       = (σ has an X^n node-decoration — value needs the full Π^ζ, "
+                               "not the naive integral)")
     else:
         out.append(_sec("CANONICAL (BPHZ) RENORMALIZATION"))
         out.append("  k_τ = h(S'₋τ) for centered Gaussian noise (parity-reduced; many vanish):")
@@ -403,17 +404,18 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
         L.append("```")
         if legend:
             L += ["", "where, for the ε-regularized noise `ξ_ε` (covariance `C_ε`), each "
-                  "elementary expectation is the divergent integral (`K` = the singular kernel of "
-                  "`L⁻¹` — the diagonal-singular part of the Green's function, which explodes on "
-                  "the diagonal). Contracted (red-node) σ carry an extended `o`-decoration the "
-                  "naive integral doesn't capture, so only ordinary σ get an explicit integral:", ""]
+                  "elementary expectation is the integral (`K` = the singular kernel of `L⁻¹` — the "
+                  "diagonal-singular part of the Green's function, which explodes on the diagonal). "
+                  "Only **bare** σ (all node decorations 0) get an explicit integral; red "
+                  "contraction nodes are fine (`Π^ζ(●^{n,α})=x^n`, α-independent — tex 4003), but a "
+                  "non-zero `X^n` decoration breaks it (`Π(X^n)(y)=y^n` ⇒ root `X^n` gives 0):", ""]
             for sym, tr in legend:
                 head = f"- `{sym} = h_ε({shorthand(tr, sig, coords)})`{_h_annotation(tr)}"
-                if is_extended(tr):
-                    L.append(head + "  *(contracted — value involves the extended `o`-decoration, "
-                             "not a naive Wick integral)*")
-                else:
+                if is_bare(tr):
                     L.append(head + f"  `= {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}`")
+                else:
+                    L.append(head + "  *(σ has an `X^n` decoration — value needs the full `Π^ζ`, "
+                             "not the naive integral)*")
     return "\n".join(L)
 
 

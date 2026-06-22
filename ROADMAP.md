@@ -159,6 +159,14 @@ dep (`forest` is a `.tex` concern; ANSI colour is `isatty`-gated; `rich` only if
       abstract **singular kernel** of `L⁻¹` (Hairer's `K` in `K̄ = K + R`: the diagonal-singular,
       compactly-supported part of the Green's function `K̄`; it explodes on the diagonal, which is
       why the integrals diverge — tex 2105, 5683), *not* the Green's function itself.
+      **Validity domain (rigorous, not ad hoc):** `expectation` is the *complete* `𝔼[Π^ζσ](0)`
+      only for **bare** σ — no polynomial `X^n` node-decoration and no red contraction node —
+      because `Π(X^n)(y)=y^n` (tex 1809), so a root `X^n` forces `h=0`, internal `X^n` add
+      polynomial factors, and a red node is a contracted subtree carrying the extended
+      `o`-decoration; all three need the full canonical model `Π^ζ` (Track B). `expectation`
+      refuses non-bare σ (after the always-valid parity rule: odd noise count ⇒ 0), and the
+      render leaves them symbolic. So `S'₋(τ)∈ℝ[U]` (tex 5028) and `k^ζ=h^ζ∘S'₋` (tex 5060) stay
+      correct symbolically; only the *bare* h's get an explicit integral.
 - [ ] **O4 (with Phase 4):** the numeric column — substitute the `h(σ)` values from a `NoiseLaw`
       (Wick) so `k_τ` becomes a number, not a symbol. **Needs Track B2** (evaluating the O3.5
       integrals).

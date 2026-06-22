@@ -53,6 +53,11 @@ def _dot(fill: str, size: float) -> str:
             rf"minimum size={size}pt]{{}};")
 
 
+def _has_poly(t: object) -> bool:
+    """Does any node of the tree carry a polynomial ``X^n`` decoration?"""
+    return any(t.node_dec) or any(_has_poly(s) for (_c, _p, s) in t.children)
+
+
 def _legend(eq: RenormalizedEquation) -> str:
     parts = []
     noises = eq.spde.noises
@@ -62,6 +67,10 @@ def _legend(eq: RenormalizedEquation) -> str:
         parts.append(f"{_dot(fill, 4.4)}\\,= {label}")
     parts.append(_dot("black", 3.6) + r"\,= integration node")
     parts.append(r"solid edge $=\mathcal I$,\; dotted edge $=\partial\mathcal I$ (derivative)")
+    if any(_has_poly(t) for t in eq.all_trees):
+        # the polynomial (Taylor) node-decoration X^n, drawn as X_t / X_{x_i} above a node
+        parts.append(r"$X^{n}$ above a node $=$ polynomial (Taylor) decoration, "
+                     r"e.g. $X_{x}$; recall $(\Pi X^n)(y)=y^n$")
     return r"{\footnotesize Legend:\; " + r",\quad ".join(parts) + ".}"
 
 
@@ -157,15 +166,17 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
                     P.append(r"  &\quad + " + flatex(term) + r" \\")
             P.append(r"\end{align*}")
         if legend:
-            from ..renorm.scheme import WHITE_NOISE, expectation, is_extended
+            from ..renorm.scheme import WHITE_NOISE, expectation, is_bare
             from .report import expectation_latex
             P.append(r"where, for the $\varepsilon$-regularized noise $\xi_\varepsilon$ "
                      r"(covariance $C_\varepsilon$; $K$ the \emph{singular kernel} of $L^{-1}$ "
                      r"--- Hairer's $K$ in $\bar K = K + R$, the diagonal-singular part of the "
                      r"Green's function $\bar K$, which explodes on the diagonal), each surviving "
-                     r"\emph{ordinary} expectation is the divergent integral below.  A contracted "
-                     r"(red-node) $\sigma$ carries an extended $o$-decoration the naive integral "
-                     r"does not capture, so it is left as $h_\varepsilon(\sigma)$.")
+                     r"\emph{bare} expectation (all node decorations $0$) is the integral below.  A "
+                     r"red contraction node is fine ($\Pi^\zeta(\textcolor{red}{\bullet}^{n,\alpha})"
+                     r"(x)=x^n$, independent of the extended decoration $\alpha$, tex 4003); only a "
+                     r"non-zero $X^n$ decoration breaks it (recall $(\Pi X^n)(y)=y^n$, so a root "
+                     r"$X^n$ gives $0$), leaving $h_\varepsilon(\sigma)$ symbolic.")
             for sym, tr in legend:
                 note = (r"\quad{\footnotesize(contraction node, $o=" + hom_latex(tr.o) + "$)}"
                         if tr.color == "red" else "")
@@ -173,9 +184,14 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
                 P.append(f"${sympy.latex(sym)} = h_\\varepsilon\\bigl({{}}$ {forest(tr, sig)} "
                          f"$\\bigr)$ {note}")
                 P.append(r"\end{center}")
-                if not is_extended(tr):
+                if is_bare(tr):
                     e = expectation(tr, sig, WHITE_NOISE)
                     P.append(r"\[" + sympy.latex(sym) + r" = " + expectation_latex(e, sig.width) + r"\]")
+                else:
+                    P.append(r"\begin{center}{\footnotesize $" + sympy.latex(sym)
+                             + r"$ is left symbolic --- $\sigma$ has a non-zero $X^n$ decoration, "
+                             + r"so $h_\varepsilon(\sigma)$ needs the full $\Pi^\zeta$ "
+                             + r"(not the naive integral).}\end{center}")
     else:
         P.append(r"\bigskip")
         P.append(r"{\itshape Pass \texttt{canonical=True} for the canonical (BPHZ) "
