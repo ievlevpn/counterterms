@@ -3,7 +3,12 @@ divergent trees, in homogeneity order, across every output format."""
 import json
 
 from regstruct.render import ascii_art, forest, shorthand
-from tests.test_golden_gkpz import _build
+from tests.conftest import gkpz
+
+
+def _build():
+    """The gKPZ renormalized equation — the rendering fixture."""
+    return gkpz().renormalize()
 
 # The five gKPZ trees in canonical shorthand (notes/output.md §3a).
 GKPZ_SHORTHANDS = {"Ξ", "Xₓ·Ξ", "●·𝓘ₓ[Ξ]", "Ξ·𝓘[Ξ]", "●·𝓘ₓ[Ξ]²"}

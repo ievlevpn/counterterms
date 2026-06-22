@@ -19,9 +19,9 @@ type; shared constants across components), **multiple noises**, and **general op
 Golden-tested: gKPZ (exact 5 counterterms, tex 6004–6012), KPZ/gPAM, decoupled/coupled systems,
 multi-noise, operator order, scope rejections. A `render/` package emits the full report (trees
 drawn as shorthand / ascii / LaTeX-`forest`) in text/markdown/json/latex — see `notes/output.md`.
-`uv run pytest` (15 tests). Phase 3 (coproducts,
-structures, twisted antipode, BHZ character, rule completion, `G⁻_ad`) not yet started. See
-`notes/architecture.md` §7 / `ROADMAP.md`.
+`uv run pytest` (112 tests, ~4s). Phase 3 (coproducts, structures, twisted antipode, BHZ
+character) is implemented and green, **including the cointeraction at β₀=−3/2** (rule completion
+and `G⁻_ad` remain). See `notes/architecture.md` §7 / `ROADMAP.md`.
 
 ## Layout
 
@@ -34,9 +34,12 @@ structures, twisted antipode, BHZ character, rule completion, `G⁻_ad`) not yet
 - `regstruct/` — package (Phase 1 modules populated): `core/{homogeneity,jets,signature}`,
   `trees/tree`, `equation/{dsl,generate}`, `renorm/{nonlinearity,equation}`, `render/{tree,report,latex}`, `api`. Phase-3
   modules (`core/{module,hopf,symbol}`, `trees/coproducts`, `structures/`) not yet created.
-  `tests/` — golden + breadth tests. Full target layout: `architecture.md` §5.
-- Run: `uv run pytest`. Quick demo: `uv run python -u tests/test_golden_gkpz.py` (prints the
-  renormalized family).
+  `tests/` — layered by concern: `conftest.py` (the SPDE corpus + `ctx` fixture), `test_{homogeneity,
+  core,trees}` (the non-negotiable conventions as unit tests), `test_pipeline` (generate + Υ-map),
+  `test_coproducts` (the algebraic laws, parametrized over the corpus), `test_{structures,goldens,
+  scope,render}`. Full target layout: `architecture.md` §5.
+- Run: `uv run pytest`. Quick demo: `uv run python -u tests/test_render.py` (prints the
+  renormalized gKPZ report).
 
 ## Environment
 

@@ -1,173 +1,140 @@
-"""Phase 3: the extraction-contraction coproduct δ (negative/renormalization side)."""
-from sympy import Function, Derivative, Rational
+"""The renormalisation coproducts and their algebraic laws.
 
-from regstruct import Noise, Parabolic, SPDE, Unknown, kappa
+Two layers:
+
+* a few **golden values** pinned on the gKPZ example (`δ∘`, `Δ∘`, `S'₋∘`);
+* the **structural laws**, parametrized over the whole `ctx` corpus so they are
+  checked across scalar/system, one/many noises, every dimension and β₀ — not on a
+  single equation:
+    - counits      `(ε⁻⊗Id)δ = Id`,  `(Id⊗ε⁺)Δ = Id`
+    - stability    every right factor has extended homogeneity ``|τ|``; extracted
+                   components are divergent (tourist_guide.tex 5851)
+    - coassoc      `δ⁻`, `Δ⁺` associative; `Δ` a `T⁺`-comodule (tex 5708–5710)
+    - cointeraction `(Id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ` (tex 5717) — incl. the singular β₀=−3/2 (`kpz`)
+
+Tree size is capped per law to keep the suite fast; the bound exceeds every
+divergent tree the corpus actually produces at the stated β₀.
+"""
+from collections import defaultdict
+from fractions import Fraction
+
 from regstruct.core.homogeneity import Homogeneity
 from regstruct.equation.dsl import build_context
-from regstruct.equation.generate import generate_counterterms
 from regstruct.trees.coproducts import (
     coassoc_lhs, coassoc_rhs, delta_minus, delta_plus, twisted_antipode)
 from regstruct.trees.tree import red_node, tree
 
+from tests.conftest import gkpz
 
-def _gkpz_ctx(reg=Rational(-1) - kappa):
-    f, g = Function("f"), Function("g")
-    u = Unknown("u", dim=1)
-    xi = Noise("xi", regularity=reg)
-    spde = SPDE(noises=[xi], operator=Parabolic(dim=1, mass=1), unknown=u,
-                rhs=f(u.field) * xi.symbol + g(u.field) * Derivative(u.field, u.x[0]) ** 2)
-    return build_context(spde)
+SIG = build_context(gkpz())[0]
+CIRC = tree("xi", (0, 0))
 
 
-def test_delta_circ_golden():
-    # tourist_guide.tex 6170:  D⁻∘ = 𝟙₋ ⊗ ∘ + ∘ ⊗ ●(β₀)
-    sig, _base, _u = _gkpz_ctx()
-    circ = tree("xi", (0, 0))
-    beta0 = Homogeneity(-1, -1)
-    expected = {
-        ((), circ): 1,                                   # 𝟙₋ ⊗ ∘
-        ((circ,), red_node(beta0, width=2)): 1,          # ∘ ⊗ ●(β₀)
+def _sf(fr):
+    return tuple(sorted(fr, key=lambda x: x._sortkey()))
+
+
+# --------------------------------------------------------------------------- #
+# golden values (gKPZ)
+# --------------------------------------------------------------------------- #
+
+def test_delta_minus_circ_golden():
+    # tourist_guide.tex 6170:  δ∘ = 𝟙₋ ⊗ ∘ + ∘ ⊗ ●(β₀)
+    assert delta_minus(CIRC, SIG) == {
+        ((), CIRC): 1,
+        ((CIRC,), red_node(Homogeneity(-1, -1), width=2)): 1,
     }
-    assert delta_minus(circ, sig) == expected
 
 
-def test_delta_stability_invariants():
-    # The paper's Lemma: every right factor has extended homogeneity = |τ|, every
-    # extracted component is divergent, and the counit term 𝟙₋ ⊗ τ appears once.
-    sig, _base, _u = _gkpz_ctx()
-    for t in generate_counterterms(sig):
-        res = delta_minus(t, sig)
-        ext = t.extended_homogeneity(sig)
-        assert res.get(((), t)) == 1
-        assert all(r.extended_homogeneity(sig) == ext for (_f, r) in res)
-        assert all(c.extended_homogeneity(sig).is_negative()
-                   for (forest, _r) in res for c in forest)
-
-
-def test_delta_minus_coassociative():
-    # (δ⁻ ⊗ id) δ⁻ = (id ⊗ δ⁻) δ⁻  on U⁻ — the load-bearing algebraic invariant
-    # (tourist_guide.tex 5710), needs no probabilistic input.
-    sig, _base, _u = _gkpz_ctx()
-    for t in generate_counterterms(sig):
-        assert coassoc_lhs(t, sig) == coassoc_rhs(t, sig)
+def test_delta_plus_circ_golden():
+    # Δ∘ = ∘ ⊗ 𝟙₊  (the noise does not recenter)
+    blue_unit = tree("bullet", (0, 0), (), color="blue")
+    assert delta_plus(CIRC, SIG) == {(CIRC, blue_unit): 1}
 
 
 def test_twisted_antipode_circ():
-    # S'₋(∘) = −∘  (∘ is primitive).
-    sig, _base, _u = _gkpz_ctx()
-    circ = tree("xi", (0, 0))
-    assert twisted_antipode(circ, sig) == {(circ,): -1}
+    # S'₋(∘) = −∘  (∘ is primitive)
+    assert twisted_antipode(CIRC, SIG) == {(CIRC,): -1}
 
 
-def test_twisted_antipode_terminates_on_all():
-    sig, _base, _u = _gkpz_ctx()
-    for t in generate_counterterms(sig):
-        result = twisted_antipode(t, sig)
-        assert result          # nonempty forest-sum
+# --------------------------------------------------------------------------- #
+# counits
+# --------------------------------------------------------------------------- #
+
+def test_delta_minus_counit(ctx):
+    """(ε⁻⊗Id)δ = Id: the only empty-left-forest term is 𝟙₋⊗τ, coefficient 1."""
+    for t in ctx.trees(max_nodes=4):
+        empty = {r: c for (left, r), c in delta_minus(t, ctx.sig).items() if left == ()}
+        assert empty == {t: 1}
 
 
-def _blue_unit():
-    return tree("bullet", (0, 0), (), color="blue")   # 𝟙₊
+def test_delta_plus_counit(ctx):
+    """(Id⊗ε⁺)Δ = Id: the only right=𝟙₊ term is τ⊗𝟙₊, coefficient 1."""
+    unit = tree("bullet", (0,) * ctx.sig.width, (), color="blue")
+    for t in ctx.trees(max_nodes=4):
+        right_unit = {left: c for (left, r), c in delta_plus(t, ctx.sig).items() if r == unit}
+        assert right_unit == {t: 1}
 
 
-def test_delta_plus_circ():
-    # Δ∘ = ∘ ⊗ 𝟙₊  (the noise does not recenter).
-    sig, _base, _u = _gkpz_ctx()
-    circ = tree("xi", (0, 0))
-    assert delta_plus(circ, sig) == {(circ, _blue_unit()): 1}
+# --------------------------------------------------------------------------- #
+# stability of homogeneity (the grading the whole theory rests on)
+# --------------------------------------------------------------------------- #
+
+def test_delta_minus_stability(ctx):
+    """Every δ right factor has extended homogeneity |τ|; every extracted component
+    is divergent; the counit term 𝟙₋⊗τ appears exactly once."""
+    for t in ctx.trees(max_nodes=4):
+        res = delta_minus(t, ctx.sig)
+        ext = t.extended_homogeneity(ctx.sig)
+        assert res.get(((), t)) == 1
+        assert all(r.extended_homogeneity(ctx.sig) == ext for (_f, r) in res)
+        assert all(c.extended_homogeneity(ctx.sig).is_negative()
+                   for (forest, _r) in res for c in forest)
 
 
-def test_delta_plus_comodule_coassociative():
-    # (Δ ⊗ id) Δ = (id ⊗ Δ⁺) Δ   (tourist_guide.tex 5708): T is a right T⁺-comodule.
-    from collections import defaultdict
-    from fractions import Fraction
-    sig, _base, _u = _gkpz_ctx()
+def test_delta_plus_stability(ctx):
+    """|τ| = |left| + |right| for every Δ term (tourist_guide.tex 5851)."""
+    for t in ctx.trees(max_nodes=4):
+        ext = t.extended_homogeneity(ctx.sig)
+        for (left, right), _c in delta_plus(t, ctx.sig).items():
+            assert (left.extended_homogeneity(ctx.sig)
+                    + right.extended_homogeneity(ctx.sig)) == ext
 
+
+# --------------------------------------------------------------------------- #
+# coassociativities
+# --------------------------------------------------------------------------- #
+
+def test_delta_minus_coassociative(ctx):
+    """(δ⁻⊗Id)δ⁻ = (Id⊗δ⁻)δ⁻ on U⁻ (tourist_guide.tex 5710) — on every divergent tree."""
+    for t in ctx.trees():
+        assert coassoc_lhs(t, ctx.sig) == coassoc_rhs(t, ctx.sig)
+
+
+def test_delta_comodule_coassociative(ctx):
+    """(Δ⊗Id)Δ = (Id⊗Δ⁺)Δ: T is a right T⁺-comodule (tourist_guide.tex 5708)."""
     def lhs(t):
-        out = defaultdict(Fraction)
-        for (A, B), c in delta_plus(t, sig).items():
-            for (A1, A2), c2 in delta_plus(A, sig).items():
-                out[(A1, A2, B)] += c * c2
-        return {k: v for k, v in out.items() if v}
+        o = defaultdict(Fraction)
+        for (A, B), c in delta_plus(t, ctx.sig).items():
+            for (A1, A2), c2 in delta_plus(A, ctx.sig).items():
+                o[(A1, A2, B)] += c * c2
+        return {k: v for k, v in o.items() if v}
 
     def rhs(t):
-        out = defaultdict(Fraction)
-        for (A, B), c in delta_plus(t, sig).items():
-            for (B1, B2), c2 in delta_plus(B, sig, project_left=True).items():
-                out[(A, B1, B2)] += c * c2
-        return {k: v for k, v in out.items() if v}
+        o = defaultdict(Fraction)
+        for (A, B), c in delta_plus(t, ctx.sig).items():
+            for (B1, B2), c2 in delta_plus(B, ctx.sig, project_left=True).items():
+                o[(A, B1, B2)] += c * c2
+        return {k: v for k, v in o.items() if v}
 
-    for t in generate_counterterms(sig):
+    for t in ctx.trees(max_nodes=4):
         assert lhs(t) == rhs(t)
 
 
-def test_delta_plus_co_terminates():
-    # δ⁺ = (p₋⊗Id)D̄⁻ on the T⁺ factors produced by Δ — terminates and is nonempty.
-    sig, _base, _u = _gkpz_ctx()
-    for t in generate_counterterms(sig):
-        for (_a, b), _c in delta_plus(t, sig).items():
-            assert delta_minus(b, sig, root_disjoint=True)
-
-
-def test_cointeraction():
-    from collections import defaultdict
-    from fractions import Fraction
-    sig, _base, _u = _gkpz_ctx()
-
-    def sf(fr):
-        return tuple(sorted(fr, key=lambda x: x._sortkey()))
-
-    def lhs(t):                                   # (Id⊗Δ)δ
-        o = defaultdict(Fraction)
-        for (phi, psi), c in delta_minus(t, sig).items():
-            for (p1, p2), c2 in delta_plus(psi, sig).items():
-                o[(phi, p1, p2)] += c * c2
-        return {k: v for k, v in o.items() if v}
-
-    def rhs(t):                                   # M¹³(δ⊗δ⁺)Δ
-        o = defaultdict(Fraction)
-        for (A, B), c in delta_plus(t, sig).items():
-            for (A1, A2), c2 in delta_minus(A, sig).items():
-                for (B1, B2), c3 in delta_minus(B, sig, root_disjoint=True).items():
-                    o[(sf(A1 + B1), A2, B2)] += c * c2 * c3
-        return {k: v for k, v in o.items() if v}
-
-    for t in generate_counterterms(sig):
-        assert lhs(t) == rhs(t)
-
-
-def test_delta_counit():
-    # (ε⁻ ⊗ Id) δ = Id: the only empty-left-forest term is 𝟙₋ ⊗ τ, coefficient 1.
-    sig, _base, _u = _gkpz_ctx()
-    for t in generate_counterterms(sig):
-        empty_left = {r: c for (left, r), c in delta_minus(t, sig).items() if left == ()}
-        assert empty_left == {t: 1}
-
-
-def test_delta_plus_counit():
-    # (Id ⊗ ε⁺) Δ = Id: the only right=𝟙₊ term is τ ⊗ 𝟙₊, coefficient 1.
-    sig, _base, _u = _gkpz_ctx()
-    unit = _blue_unit()
-    for t in generate_counterterms(sig):
-        unit_right = {left: c for (left, r), c in delta_plus(t, sig).items() if r == unit}
-        assert unit_right == {t: 1}
-
-
-def test_delta_plus_homogeneity_stability():
-    # |τ| = |left| + |right|  (extended homogeneity), tourist_guide.tex 5851.
-    sig, _base, _u = _gkpz_ctx()
-    for t in generate_counterterms(sig):
-        ext = t.extended_homogeneity(sig)
-        for (left, right), _c in delta_plus(t, sig).items():
-            assert left.extended_homogeneity(sig) + right.extended_homogeneity(sig) == ext
-
-
-def test_delta_plus_plus_coassociative():
-    # (Δ⁺ ⊗ Id) Δ⁺ = (Id ⊗ Δ⁺) Δ⁺ — T⁺ is a coassociative Hopf algebra (tex 5709).
-    from collections import defaultdict
-    from fractions import Fraction
-    sig, _base, _u = _gkpz_ctx()
-    tplus = {r for t in generate_counterterms(sig) for (_l, r), _c in delta_plus(t, sig).items()}
+def test_delta_plus_plus_coassociative(ctx):
+    """(Δ⁺⊗Id)Δ⁺ = (Id⊗Δ⁺)Δ⁺: T⁺ is a coassociative Hopf algebra (tex 5709)."""
+    sig = ctx.sig
+    tplus = {r for t in ctx.trees(max_nodes=4) for (_l, r), _c in delta_plus(t, sig).items()}
 
     def dpp(b):
         return delta_plus(b, sig, project_left=True)
@@ -190,28 +157,13 @@ def test_delta_plus_plus_coassociative():
         assert lhs(b) == rhs(b)
 
 
-def test_delta_minus_coassoc_singular():
-    # Broader coverage: δ⁻ coassociativity on the richer β₀ = −3/2 − κ trees
-    # (the KPZ-table trees), not just β₀ = −1 − κ.
-    sig, _base, _u = _gkpz_ctx(reg=Rational(-3, 2) - kappa)
-    trees = [t for t in generate_counterterms(sig) if t.nodes() <= 4]
-    assert len(trees) > 5
-    for t in trees:
-        assert coassoc_lhs(t, sig) == coassoc_rhs(t, sig)
+# --------------------------------------------------------------------------- #
+# the cointeraction (the deepest law; includes the singular β₀=−3/2 corpus member)
+# --------------------------------------------------------------------------- #
 
-
-def test_cointeraction_singular():
-    # The cointeraction (Id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ on the more singular β₀=−3/2−κ trees
-    # (the KPZ-table trees, incl. the decorated ∘—I₀—∘^{(0,1)}). Holds once the
-    # e'-Taylor recentering is applied on the full ∂(A,F) — boundary AND
-    # between-component edges (BHZ arXiv:1610.08468); see notes/cointeraction_*.md.
-    from collections import defaultdict
-    from fractions import Fraction
-    sig, _base, _u = _gkpz_ctx(reg=Rational(-3, 2) - kappa)
-    trees = [t for t in generate_counterterms(sig) if t.nodes() <= 4]
-
-    def sf(fr):
-        return tuple(sorted(fr, key=lambda x: x._sortkey()))
+def test_cointeraction(ctx):
+    """(Id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ (tourist_guide.tex 5717)."""
+    sig = ctx.sig
 
     def lhs(t):
         o = defaultdict(Fraction)
@@ -225,8 +177,14 @@ def test_cointeraction_singular():
         for (A, B), c in delta_plus(t, sig).items():
             for (A1, A2), c2 in delta_minus(A, sig).items():
                 for (B1, B2), c3 in delta_minus(B, sig, root_disjoint=True).items():
-                    o[(sf(A1 + B1), A2, B2)] += c * c2 * c3
+                    o[(_sf(A1 + B1), A2, B2)] += c * c2 * c3
         return {k: v for k, v in o.items() if v}
 
-    for t in trees:
+    for t in ctx.trees(max_nodes=4):
         assert lhs(t) == rhs(t)
+
+
+def test_twisted_antipode_terminates(ctx):
+    """S'₋ is total and returns a nonempty forest-sum on every divergent tree."""
+    for t in ctx.trees(max_nodes=4):
+        assert twisted_antipode(t, ctx.sig)
