@@ -58,6 +58,11 @@ def _has_poly(t: object) -> bool:
     return any(t.node_dec) or any(_has_poly(s) for (_c, _p, s) in t.children)
 
 
+def _zero_tex(reason: str) -> str:
+    """LaTeX-safe rendering of a `scheme.zero_note` reason (only special token is ``X^n``)."""
+    return reason.replace("X^n", r"$X^n$")
+
+
 def _legend(eq: RenormalizedEquation) -> str:
     parts = []
     noises = eq.spde.noises
@@ -167,24 +172,36 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
             P.append(r"\end{align*}")
         if legend:
             from ..renorm.scheme import WHITE_NOISE, expectation, is_bare
-            from .report import integral_latex_block
+            from .report import integral_latex_block, legend_marks
             P.append(r"where, for the $\varepsilon$-regularized noise $\xi_\varepsilon$ "
                      r"(covariance $C_\varepsilon$) and the singular kernel $K$ of $L^{-1}$, the "
-                     r"elementary expectations are given below.  Those carrying a polynomial "
-                     r"factor $X^n$ are left symbolic.")
+                     r"elementary expectations are given below.  An entry marked $=0$ vanishes, and "
+                     r"$(=h_j)$ marks a duplicate (same value up to the $o$-decoration).")
+            marks = legend_marks(legend, sig)
             for sym, tr in legend:
+                z, dup = marks[sym]
                 note = (r"\quad{\footnotesize($o=" + hom_latex(tr.o) + "$)}"
                         if tr.color == "red" else "")
                 P.append(r"\begin{center}")
                 P.append(f"${sympy.latex(sym)} = h_\\varepsilon\\bigl({{}}$ {forest(tr, sig)} "
                          f"$\\bigr)$ {note}")
                 P.append(r"\end{center}")
-                if is_bare(tr):
-                    e = expectation(tr, sig, WHITE_NOISE)
-                    P.append(integral_latex_block(sympy.latex(sym), e, sig.width))
+                if z is not None and is_bare(tr):
+                    P.append(integral_latex_block(sympy.latex(sym), expectation(tr, sig, WHITE_NOISE),
+                                                  sig.width))
+                    P.append(r"\begin{center}{\footnotesize $= 0$ --- " + _zero_tex(z) + r"}\end{center}")
+                elif z is not None:
+                    P.append(r"\begin{center}{\footnotesize $" + sympy.latex(sym)
+                             + r" = 0$ --- " + _zero_tex(z) + r"}\end{center}")
+                elif is_bare(tr):
+                    P.append(integral_latex_block(sympy.latex(sym), expectation(tr, sig, WHITE_NOISE),
+                                                  sig.width))
+                    if dup is not None:
+                        P.append(r"\begin{center}{\footnotesize $= " + sympy.latex(dup)
+                                 + r"$ (same value)}\end{center}")
                 else:
-                    P.append(r"\begin{center}{\footnotesize (left symbolic --- "
-                             r"$\sigma$ carries a polynomial factor $X^n$)}\end{center}")
+                    P.append(r"\begin{center}{\footnotesize (left symbolic --- internal $X^n$: "
+                             r"integrand carries a $z^n$ factor not emitted here)}\end{center}")
     else:
         P.append(r"\bigskip")
         P.append(r"{\itshape Pass \texttt{canonical=True} for the canonical (BPHZ) "

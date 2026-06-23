@@ -20,6 +20,7 @@ from .tree import ascii_art, coord_names, edge_glyph_text, shorthand, _node_glyp
 
 if TYPE_CHECKING:
     from ..core.homogeneity import Homogeneity
+    from ..core.signature import Signature
     from ..renorm.equation import RenormalizedEquation
     from ..trees.tree import DecoratedTree
 
@@ -146,6 +147,27 @@ def canonical_data(eq: RenormalizedEquation) -> tuple[list, list]:
 
 def _h_annotation(tr: DecoratedTree) -> str:
     return f"  [o={tr.o}]" if tr.color == "red" else ""
+
+
+def legend_marks(legend: list, sig: Signature
+                 ) -> dict[sympy.Symbol, tuple[str | None, sympy.Symbol | None]]:
+    """Display-only annotations for the elementary-expectation legend:
+    ``{h_symbol: (zero_reason | None, duplicate_of | None)}``.  Flags which ``h(σ)`` are
+    *provably* 0 (`scheme.zero_note`) and which are duplicates — the same expectation up to the
+    o-decoration (`scheme.expectation_key`; ``Π^ζ`` is α-independent).  Purely cosmetic: the
+    symbolic canonical constants (`canonical_data`) are untouched, so the report only *labels*
+    redundant/vanishing entries, it does not reduce them."""
+    from ..renorm.scheme import expectation_key, zero_note
+    seen: dict[tuple, sympy.Symbol] = {}
+    marks: dict[sympy.Symbol, tuple[str | None, sympy.Symbol | None]] = {}
+    for sym, tr in legend:
+        z = zero_note(tr, sig)
+        key = expectation_key(tr)
+        first = seen.get(key)
+        if first is None:
+            seen[key] = sym
+        marks[sym] = (z, None if (z or first is None) else first)
+    return marks
 
 
 # --------------------------------------------------------------------------- #
@@ -329,15 +351,24 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
             out.append(f"    {operator_str(op)} {u.name} = "
                        f"{fstr(canonical_family_rhs(eq, a, rows))}")
         if legend:
-            out.append("  where, for the ε-regularized noise ξ_ε (covariance C_ε), each")
-            out.append("  elementary expectation, with K the singular kernel of L⁻¹.  Those")
-            out.append("  carrying a polynomial factor X^n are left symbolic:")
+            out.append("  where, for the ε-regularized noise ξ_ε (covariance C_ε) and the")
+            out.append("  singular kernel K of L⁻¹, each elementary expectation is given below;")
+            out.append("  '= 0' marks a vanishing value and '(= hⱼ)' a duplicate (same value):")
+            marks = legend_marks(legend, sig)
             for sym, tr in legend:
+                z, dup = marks[sym]
                 out.append(f"    {sym} = h_ε({shorthand(tr, sig, coords)}){_h_annotation(tr)}")
-                if is_bare(tr):
-                    out.append(f"       = {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}")
+                if z is not None and is_bare(tr):
+                    out.append(f"       = {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}"
+                               f"  = 0   ({z})")
+                elif z is not None:
+                    out.append(f"       = 0   ({z})")
+                elif is_bare(tr):
+                    tail = f"   (= {dup})" if dup is not None else ""
+                    out.append(f"       = {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}{tail}")
                 else:
-                    out.append("       = (left symbolic — σ carries a polynomial factor X^n)")
+                    out.append("       = (left symbolic — internal X^n: integrand carries a z^n "
+                               "factor not emitted here; a root X^n is shown as = 0)")
     else:
         out.append(_sec("CANONICAL (BPHZ) RENORMALIZATION"))
         out.append("  k_τ = h(S'₋τ) for centered Gaussian noise (parity-reduced; many vanish):")
@@ -423,14 +454,23 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
         L.append("```")
         if legend:
             L += ["", "where, for the ε-regularized noise `ξ_ε` (covariance `C_ε`) and the "
-                  "singular kernel `K` of `L⁻¹`, each elementary expectation is given below; those "
-                  "carrying a polynomial factor `X^n` are left symbolic:", ""]
+                  "singular kernel `K` of `L⁻¹`, each elementary expectation is given below; "
+                  "`= 0` marks a vanishing value and *(= hⱼ)* a duplicate (identical value):", ""]
+            marks = legend_marks(legend, sig)
             for sym, tr in legend:
+                z, dup = marks[sym]
                 head = f"- `{sym} = h_ε({shorthand(tr, sig, coords)})`{_h_annotation(tr)}"
-                if is_bare(tr):
-                    L.append(head + f"  `= {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}`")
+                if z is not None and is_bare(tr):
+                    L.append(head + f"  `= {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)} = 0`"
+                                    f"  *(vanishes — {z})*")
+                elif z is not None:
+                    L.append(head + f"  `= 0`  *(vanishes — {z})*")
+                elif is_bare(tr):
+                    tail = f"  *(= `{dup}`; same value)*" if dup is not None else ""
+                    L.append(head + f"  `= {expectation_str(expectation(tr, sig, WHITE_NOISE), sig.width)}`" + tail)
                 else:
-                    L.append(head + "  *(left symbolic — σ carries a polynomial factor `X^n`)*")
+                    L.append(head + "  *(left symbolic — internal `X^n`: integrand carries a "
+                             "`z^n` factor not emitted here; a root `X^n` shows as `= 0`)*")
     return "\n".join(L)
 
 

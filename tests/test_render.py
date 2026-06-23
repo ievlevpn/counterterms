@@ -124,3 +124,17 @@ def test_save_writes_exports(tmp_path):
 
 if __name__ == "__main__":
     print(_build().report())
+
+
+def test_canonical_legend_marks_zeros_and_duplicates_display_only():
+    """The KPZ canonical legend *marks* provably-zero and duplicate h(σ) — but the marking is
+    display-only: the symbolic constants are NOT reduced (a zero-valued symbol like `h7` still
+    appears in a constant), so no algebra changed."""
+    from tests.conftest import kpz
+    md = kpz().renormalize().render("markdown", canonical=True)
+    assert "pure-kernel total derivative" in md          # provable-zero mark on the legend
+    assert "same value" in md                            # duplicate mark on the legend
+    # display-only: a provably-zero symbol still appears in the (unreduced) constants
+    consts = [ln for ln in md.splitlines() if ln.startswith("- `k_")]
+    assert any("h7" in ln or "h2" in ln for ln in consts), \
+        "constants must stay unreduced (display-only) — a zero h-symbol should still appear"

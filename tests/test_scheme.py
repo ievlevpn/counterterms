@@ -11,7 +11,7 @@ from counterterms.renorm.scheme import expectation, has_odd_noise, wick_pairings
 from counterterms.structures import build_renormalization
 from counterterms.trees.tree import tree
 
-from tests.conftest import gkpz, multinoise
+from tests.conftest import gkpz, kpz, multinoise
 
 CIRC = tree("xi", (0, 0))
 SIG = build_context(gkpz())[0]
@@ -89,3 +89,46 @@ def test_canonical_character_parity_on_gkpz():
     assert len(zero) == 3 and len(nonzero) == 2
     assert all(not has_odd_noise(t, rs.sig) for t in nonzero)
     assert all(has_odd_noise(t, rs.sig) for t in zero)
+
+
+def test_zero_note_flags_provable_zeros_but_not_genuine_integrals():
+    """`zero_note` marks the provably-vanishing h(σ) (pure-kernel total derivatives, root X^n)
+    that the bare Wick integral alone does NOT detect — and leaves genuine noise integrals."""
+    from counterterms.renorm.scheme import expectation, is_bare, zero_note
+    rs = build_renormalization(kpz())
+    sig = rs.sig
+    for t in rs.divergent:
+        rs.canonical_character(t)                       # populate rs._h
+    trees = list(rs._h)
+    flagged = [t for t in trees if zero_note(t, sig)]
+    # the flag catches trees whose integral *formula* is non-empty (expectation() misses these)
+    nonzero_looking = [t for t in flagged if is_bare(t) and not expectation(t, sig).is_zero]
+    assert nonzero_looking, "zero_note should catch pure-kernel integrals that look non-zero"
+    assert any(zero_note(t, sig) == "pure-kernel total derivative" for t in trees)
+    # a genuine (even-noise) integral is NOT flagged
+    genuine = [t for t in trees
+               if not zero_note(t, sig) and is_bare(t) and not expectation(t, sig).is_zero]
+    assert genuine, "genuine noise integrals must remain unflagged"
+
+
+def test_expectation_key_collapses_o_duplicates():
+    """`expectation_key` ignores the o-decoration (Π is α-independent, tex 4003), so distinct
+    trees that differ only there share a key — the duplicate-flag basis for the report."""
+    from collections import Counter
+    from counterterms.renorm.scheme import expectation_key
+    rs = build_renormalization(kpz())
+    for t in rs.divergent:
+        rs.canonical_character(t)
+    by_key = Counter(expectation_key(t) for t in rs._h)
+    assert any(c > 1 for c in by_key.values()), "expected o-only duplicate h-trees in KPZ"
+
+
+def test_zero_note_root_xn_is_zero_not_symbolic():
+    """A ROOT X^n tree is h=0 — Π(X^nτ)(0)=0^n=0 (tex 1809, 5083) — so it is flagged zero,
+    not 'left symbolic'.  (Only an *internal* X^n is left symbolic: a writable integral with a
+    z^n factor the naive builder doesn't emit.)"""
+    from counterterms.renorm.scheme import zero_note
+    from counterterms.trees.tree import tree
+    xi = tree("xi", (0, 0))
+    root_xn = tree("bullet", (0, 1), ((0, (0, 1), xi),))     # X_x · ●·𝓘ₓ[Ξ]
+    assert zero_note(root_xn, SIG) == "root X^n vanishes at the base point"

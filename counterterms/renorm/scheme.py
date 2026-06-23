@@ -99,6 +99,39 @@ def is_bare(tree: DecoratedTree) -> bool:
         and all(is_bare(s) for (_c, _p, s) in tree.children)
 
 
+def expectation_key(tree: DecoratedTree) -> tuple:
+    """Identity of ``h(τ)=𝔼[Π^ζτ](0)`` **ignoring the o/colour decoration**.  ``Π^ζ(●^{n,α})``
+    is independent of the extended decoration ``α`` (tex 4003–4004), so trees that differ only
+    in their red nodes' o-decorations have the *same* elementary expectation.  Used only to
+    *flag* duplicate ``h``-symbols in the report (display-only); the symbolic character that
+    `structures.canonical_character` returns is unchanged."""
+    return (tree.node_type, tree.node_dec,
+            tuple(sorted((c, p, expectation_key(s)) for (c, p, s) in tree.children)))
+
+
+def zero_note(tree: DecoratedTree, sig: Signature) -> str | None:
+    """A short reason iff ``h(τ)=𝔼[Π^ζτ](0)`` is **provably 0** (for display-only marking),
+    else ``None``.  Three rigorous cases, needing no kernel evaluation:
+
+    * a non-zero **root** decoration ``X^n`` ⇒ ``Π(X^nτ)(0)=0^n=0`` (tex 1809, 5083);
+    * an **odd** count of some noise type ⇒ 𝔼 of an odd number of centered Gaussians is 0;
+    * a **no-noise** tree with a *derivative-edge leaf* (``p≠0``) ⇒ that leaf integrates a total
+      derivative ``∫∂^pK=0`` (``p≠0``, decaying/compactly-supported ``K``), so the whole
+      product vanishes.  (A no-noise tree with only ``p=0`` leaves needs the kernel's order-0
+      moment condition, so it is *not* flagged here — conservative.)"""
+    if any(tree.node_dec):
+        return "root X^n vanishes at the base point"
+    if has_odd_noise(tree, sig):
+        return "odd noise parity"
+    nodes, edges = _explode(tree)
+    if not any(n.node_type in sig.noise_homog for n in nodes):
+        parents = {a for (a, _b, _c, _p) in edges}
+        for (_a, b, _c, p) in edges:
+            if b not in parents and any(p):          # derivative edge into a leaf
+                return "pure-kernel total derivative"
+    return None
+
+
 def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE) -> Expectation:
     """The Wick expansion of ``h(τ)=𝔼[Π^ζτ](0)`` (symbolic; integrals unevaluated).
 

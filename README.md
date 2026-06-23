@@ -65,16 +65,14 @@ for t in rs.divergent:
 
 ## Example output
 
-`eq.save()` writes the report as text / Markdown / JSON and a typeset LaTeX → PDF. Here is the
-PDF for the gKPZ equation above — the parsed equation, every divergent tree $\tau$ (drawn in the
-paper's convention: $\circ$ noise, $\bullet$ integration node, dotted = derivative kernel) with its
-homogeneity $|\tau|$, symmetry factor $S(\tau)$, free constant $k_\tau$ and elementary differential
-$F(\tau^*)$, and the assembled renormalized family:
-
-![gKPZ renormalized equation — what the engine produces](docs/example_gkpz.png)
-
-*(rendered from [`docs/example_gkpz.pdf`](docs/example_gkpz.pdf); `canonical=True` adds the
-BPHZ section $k_\tau = h(S'_-\tau)$ with the parity-vanishing constants.)*
+`eq.save()` writes the report as text / Markdown / JSON and a typeset LaTeX → PDF. See the
+`canonical=True` report for the **KPZ** equation $(\partial_t - \Delta) u = (\partial_x u)^2 + \xi$
+at $\beta_0 = -3/2 - \kappa$ — **[`docs/kpz_canonical.pdf`](docs/kpz_canonical.pdf)** — which lays
+out the parsed equation, every divergent tree $\tau$ (drawn in the paper's convention: $\circ$
+noise, $\bullet$ integration node, dotted = derivative kernel) with its homogeneity $|\tau|$,
+symmetry factor $S(\tau)$, free constant $k_\tau$ and elementary differential $F(\tau^*)$, the
+assembled renormalized family, and the canonical (BPHZ) section $k_\tau = h(S'_-\tau)$ with the
+parity-vanishing constants.
 
 ## What you can do — and which module handles it
 
