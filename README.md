@@ -81,7 +81,7 @@ print(spde.renormalize().summary())     # the five gKPZ counterterms, each with 
 
 The renormalized equation it produces is
 
-$$(\partial_t - \Delta + 1)\,u = f(u)\zeta + g(u,\partial u) + \sum_{\tau \in \mathcal{B},\,|\tau|<0} \frac{k_\tau}{S(\tau)}\,F(\tau^*)(u,\partial u).$$
+$$(\partial_t - \Delta + 1) u = f(u)\zeta + g(u,\partial u) + \sum_{\tau \in \mathcal{B}, |\tau|<0} \frac{k_\tau}{S(\tau)} F(\tau^*)(u,\partial u).$$
 
 The same `spde` also yields the **canonical (BPHZ) character** — the symbolic constant
 $k_\tau = h(S'_-\tau)$ the twisted antipode prescribes (odd-noise trees vanish by parity; the
