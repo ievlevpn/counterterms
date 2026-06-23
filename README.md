@@ -65,14 +65,25 @@ for t in rs.divergent:
 
 ## Example output
 
-`eq.save()` writes the report as text / Markdown / JSON and a typeset LaTeX → PDF. See the
-`canonical=True` report for the **KPZ** equation $(\partial_t - \Delta) u = (\partial_x u)^2 + \xi$
-at $\beta_0 = -3/2 - \kappa$ — **[`docs/kpz_canonical.pdf`](docs/kpz_canonical.pdf)** — which lays
-out the parsed equation, every divergent tree $\tau$ (drawn in the paper's convention: $\circ$
-noise, $\bullet$ integration node, dotted = derivative kernel) with its homogeneity $|\tau|$,
-symmetry factor $S(\tau)$, free constant $k_\tau$ and elementary differential $F(\tau^*)$, the
-assembled renormalized family, and the canonical (BPHZ) section $k_\tau = h(S'_-\tau)$ with the
-parity-vanishing constants.
+`eq.save()` writes the report as text / Markdown / JSON and a typeset LaTeX → PDF. Both reports
+below are for the **KPZ** equation $(\partial_t - \Delta) u = (\partial_x u)^2 + \xi$ at
+$\beta_0 = -3/2 - \kappa$ — the parsed equation, every divergent tree $\tau$ (drawn in the paper's
+convention: $\circ$ noise, $\bullet$ integration node, dotted = derivative kernel) with its
+homogeneity $|\tau|$, symmetry factor $S(\tau)$, free constant $k_\tau$ and elementary differential
+$F(\tau^*)$, the assembled renormalized family, and the canonical (BPHZ) constants
+$k_\tau = h(S'_-\tau)$:
+
+- **[`docs/kpz_canonical.pdf`](docs/kpz_canonical.pdf)** — `canonical=True`: the BPHZ constants for a
+  general centered-Gaussian noise. Each $k_\tau$ is a polynomial in the elementary expectations
+  $h(\sigma)$; entries that provably vanish ($= 0$) or duplicate another ($= h_j$) are *marked* but
+  left in place. Correct for *any* noise (a non-symmetric mollifier genuinely keeps a $\partial_x u$
+  drift counterterm).
+- **[`docs/kpz_reduced.pdf`](docs/kpz_reduced.pdf)** — `reduced=True`: the same constants *fully
+  reduced* for a spatially-symmetric (e.g. white) noise. Exact identities are folded in — provable
+  zeros (root $X^n$, total derivatives) and o-duplicates, **plus** the spatial-reflection identity
+  $x\to-x$ — collapsing KPZ to a **single diverging constant**, $\partial_t u = \Delta u + (\partial_x u)^2 - C + \xi$,
+  matching Hairer. The reduction reports its symmetric-noise assumption and is never claimed for an
+  anisotropic noise.
 
 ## What you can do — and which module handles it
 
