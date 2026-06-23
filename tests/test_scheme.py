@@ -132,3 +132,17 @@ def test_zero_note_root_xn_is_zero_not_symbolic():
     xi = tree("xi", (0, 0))
     root_xn = tree("bullet", (0, 1), ((0, (0, 1), xi),))     # X_x · ●·𝓘ₓ[Ξ]
     assert zero_note(root_xn, SIG) == "root X^n vanishes at the base point"
+
+
+def test_spatial_reflection_zero():
+    """h(σ)=0 by x→−x for symmetric noise when the total spatial-derivative order over edges is odd
+    (each ∂ₓK is odd; K, C even). The KPZ drift trees (3 ∂ₓK edges) vanish; the 2-edge constant and
+    the no-derivative tree do not."""
+    from counterterms.renorm.scheme import spatial_reflection_zero
+    h0 = tree("bullet", (0, 0), [(0, (0, 1), CIRC), (0, (0, 1), CIRC)])   # ●·𝓘ₓ[Ξ]²  D=2 even
+    inner = tree("bullet", (0, 0), [(0, (0, 1), CIRC), (0, (0, 1), CIRC)])
+    h1 = tree("bullet", (0, 0), [(0, (0, 1), inner)])                     # ●·𝓘ₓ[●·𝓘ₓ[Ξ]²]  D=3 odd
+    p0 = tree("xi", (0, 0), [(0, (0, 0), CIRC)])                          # Ξ·𝓘[Ξ]  D=0
+    assert not spatial_reflection_zero(h0, SIG)
+    assert spatial_reflection_zero(h1, SIG)
+    assert not spatial_reflection_zero(p0, SIG)

@@ -108,23 +108,25 @@ class RenormalizedEquation:
 
     # --- rendering (notes/output.md) ------------------------------------------ #
 
-    def render(self, fmt: str = "text", canonical: bool = False) -> str:
+    def render(self, fmt: str = "text", canonical: bool = False, reduced: bool = False,
+               symmetric: bool = True) -> str:
         from ..render.report import render as _render
-        return _render(self, fmt, canonical)
+        return _render(self, fmt, canonical, reduced, symmetric)
 
-    def report(self, canonical: bool = False) -> str:
-        return self.render("text", canonical)
+    def report(self, canonical: bool = False, reduced: bool = False, symmetric: bool = True) -> str:
+        return self.render("text", canonical, reduced, symmetric)
 
-    def latex_document(self, canonical: bool = False) -> str:
+    def latex_document(self, canonical: bool = False, reduced: bool = False,
+                       symmetric: bool = True) -> str:
         from ..render.latex import latex_document
-        return latex_document(self, canonical)
+        return latex_document(self, canonical, reduced, symmetric)
 
-    def to_json(self, canonical: bool = False) -> str:
-        return self.render("json", canonical)
+    def to_json(self, canonical: bool = False, reduced: bool = False, symmetric: bool = True) -> str:
+        return self.render("json", canonical, reduced, symmetric)
 
     def save(self, stem: str = "equation", outdir: str = "output",
              formats: tuple[str, ...] = ("text", "markdown", "json", "latex"), pdf: bool = True,
-             canonical: bool = False) -> list[Path]:
+             canonical: bool = False, reduced: bool = False, symmetric: bool = True) -> list[Path]:
         """Write the exports to ``outdir/`` (default ``output/``); compile the PDF
         if ``pdflatex`` is on PATH.  Returns the paths written."""
         import shutil
@@ -137,7 +139,7 @@ class RenormalizedEquation:
         written = []
         for fmt in formats:
             p = d / f"{stem}.{ext[fmt]}"
-            p.write_text(self.render(fmt, canonical), encoding="utf-8")
+            p.write_text(self.render(fmt, canonical, reduced, symmetric), encoding="utf-8")
             written.append(p)
         if pdf and "latex" in formats and shutil.which("pdflatex"):
             # twice: longtable writes its column widths to .aux on the first pass and

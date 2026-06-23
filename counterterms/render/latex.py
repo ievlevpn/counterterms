@@ -79,7 +79,8 @@ def _legend(eq: RenormalizedEquation) -> str:
     return r"{\footnotesize Legend:\; " + r",\quad ".join(parts) + ".}"
 
 
-def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
+def latex_document(eq: RenormalizedEquation, canonical: bool = False,
+                   reduced: bool = False, symmetric: bool = True) -> str:
     sig = eq.sig
     cmap = const_map(eq)
     emap = elem_map(eq)
@@ -140,22 +141,42 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
         P.append(r"\end{align*}")
 
     # canonical (BPHZ) renormalization — parity-reduced, symbolic in the expectations h(σ)
-    if canonical:
-        rows, legend = canonical_data(eq)
+    if canonical or reduced:
+        rows, legend = canonical_data(eq, reduced, symmetric)
         nzero = sum(1 for _t, _k, v in rows if v == 0)
-        P.append(r"\section*{Canonical (BPHZ) renormalization}")
-        P.append(r"Each free constant at its canonical value $k_\tau = h(S'_-\tau)$ for a "
-                 r"centered Gaussian noise.  Mean-zero parity makes trees with an odd number of "
-                 f"noise vertices vanish ({nzero} of {len(rows)} below); the survivors are "
-                 r"polynomials in the elementary expectations "
-                 r"$h_i \equiv h_\varepsilon(\sigma)=\mathbb E[\Pi^\varepsilon\sigma](0)$ of the "
-                 r"$\varepsilon$-regularized noise $\xi_\varepsilon$.  These constants are "
-                 r"$\varepsilon$-dependent and diverge as $\varepsilon\to0$; the integrals below "
-                 r"are left unevaluated.")
+        if reduced and symmetric:
+            P.append(r"\section*{Canonical (BPHZ) renormalization --- reduced}")
+            P.append(r"Each free constant at its canonical value $k_\tau = h(S'_-\tau)$ for a "
+                     r"centered Gaussian noise, \textbf{reduced for a spatially-symmetric "
+                     r"(e.g.\ white) noise}: provably-zero $h(\sigma)$ set to $0$ --- root $X^n$, "
+                     r"pure-kernel total derivatives, and odd spatial-reflection parity "
+                     r"($x\to-x$) --- and $o$-duplicate $h(\sigma)$ merged "
+                     f"({nzero} of {len(rows)} vanish).  Each is an exact identity.")
+        elif reduced:
+            P.append(r"\section*{Canonical (BPHZ) renormalization --- reduced}")
+            P.append(r"Each free constant at its canonical value $k_\tau = h(S'_-\tau)$ for a "
+                     r"centered Gaussian noise, \textbf{reduced for a general (not assumed "
+                     r"symmetric) noise}: only the noise-independent identities are applied --- "
+                     r"provably-zero $h(\sigma)$ set to $0$ (root $X^n$, pure-kernel total "
+                     r"derivatives, parity) and $o$-duplicate $h(\sigma)$ merged "
+                     f"({nzero} of {len(rows)} vanish).  The \\textbf{{spatial-reflection "
+                     r"reduction is not applied}} (invalid for an anisotropic noise).")
+        else:
+            P.append(r"\section*{Canonical (BPHZ) renormalization}")
+            P.append(r"Each free constant at its canonical value $k_\tau = h(S'_-\tau)$ for a "
+                     r"centered Gaussian noise.  Mean-zero parity makes trees with an odd number of "
+                     f"noise vertices vanish ({nzero} of {len(rows)} below); the survivors are "
+                     r"polynomials in the elementary expectations "
+                     r"$h_i \equiv h_\varepsilon(\sigma)=\mathbb E[\Pi^\varepsilon\sigma](0)$ of the "
+                     r"$\varepsilon$-regularized noise $\xi_\varepsilon$.  These constants are "
+                     r"$\varepsilon$-dependent and diverge as $\varepsilon\to0$; the integrals below "
+                     r"are left unevaluated.")
         P.append(r"\begin{align*}")
         for t, k_free, v in rows:
-            rhs = (r"0 && \text{(vanishes: odd noise parity)}" if v == 0
-                   else flatex(v))
+            if v == 0:
+                rhs = "0" if reduced else r"0 && \text{(vanishes: odd noise parity)}"
+            else:
+                rhs = flatex(v)
             P.append(f"  {sympy.latex(k_free)} &= {rhs} \\\\")
         P.append(r"\end{align*}")
         P.append(r"giving the canonically renormalized equation(s)")
@@ -173,10 +194,13 @@ def latex_document(eq: RenormalizedEquation, canonical: bool = False) -> str:
         if legend:
             from ..renorm.scheme import WHITE_NOISE, expectation, is_bare
             from .report import integral_latex_block, legend_marks
-            P.append(r"where, for the $\varepsilon$-regularized noise $\xi_\varepsilon$ "
-                     r"(covariance $C_\varepsilon$) and the singular kernel $K$ of $L^{-1}$, the "
-                     r"elementary expectations are given below.  An entry marked $=0$ vanishes, and "
-                     r"$(=h_j)$ marks a duplicate (same value up to the $o$-decoration).")
+            cap = (r"where, for the $\varepsilon$-regularized noise $\xi_\varepsilon$ "
+                   r"(covariance $C_\varepsilon$) and the singular kernel $K$ of $L^{-1}$, the "
+                   r"elementary expectations are given below.")
+            if not reduced:
+                cap += (r"  An entry marked $=0$ vanishes, and $(=h_j)$ marks a duplicate "
+                        r"(same value up to the $o$-decoration).")
+            P.append(cap)
             marks = legend_marks(legend, sig)
             for sym, tr in legend:
                 z, dup = marks[sym]

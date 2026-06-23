@@ -66,18 +66,22 @@ def fstr(expr: sympy.Expr) -> str:
     return _PrimeStr().doprint(expr)
 
 
-def render(eq: RenormalizedEquation, fmt: str = "text", canonical: bool = False) -> str:
-    # `canonical` adds the Phase-3 BHZ section (k_τ = h(S'₋τ)); off by default
-    # because the twisted antipode blows up for deep trees (e.g. KPZ).
+def render(eq: RenormalizedEquation, fmt: str = "text", canonical: bool = False,
+           reduced: bool = False, symmetric: bool = True) -> str:
+    # `canonical` adds the Phase-3 BHZ section (k_τ = h(S'₋τ)); off by default because the
+    # twisted antipode blows up for deep trees (e.g. KPZ).  `reduced` (implies the section)
+    # folds in the exact identities (zeros + o-duplicates).  `symmetric` (default: white noise)
+    # additionally folds the spatial-reflection identity — set False for an anisotropic noise,
+    # where that reduction is invalid and must NOT be claimed.
     if fmt == "text":
-        return text_report(eq, canonical)
+        return text_report(eq, canonical, reduced, symmetric)
     if fmt == "markdown":
-        return markdown_report(eq, canonical)
+        return markdown_report(eq, canonical, reduced, symmetric)
     if fmt == "json":
-        return json_report(eq, canonical)
+        return json_report(eq, canonical, reduced, symmetric)
     if fmt == "latex":
         from .latex import latex_document
-        return latex_document(eq, canonical)
+        return latex_document(eq, canonical, reduced, symmetric)
     raise ValueError(f"unknown render format {fmt!r} (text/markdown/json/latex)")
 
 
@@ -119,7 +123,36 @@ def _sorted_trees(eq: RenormalizedEquation) -> list[DecoratedTree]:
 # Phase-3 bridge: the canonical (BHZ) renormalization, symbolic in h(σ).
 # --------------------------------------------------------------------------- #
 
-def canonical_data(eq: RenormalizedEquation) -> tuple[list, list]:
+def _reduction_subs(h_map: dict, sig: Signature, symmetric: bool = True
+                    ) -> dict[sympy.Symbol, sympy.Expr]:
+    """Provably-correct substitutions that *reduce* the canonical constants.  Each is an exact
+    identity, so the reduced constants equal the originals:
+
+    * vanishing ``h(σ) → 0`` — root ``Xⁿ`` / parity / pure-kernel total derivatives (`scheme.zero_note`,
+      valid for *any* centered noise) and — **only when ``symmetric``** — odd spatial-reflection
+      parity ``x→−x`` (`scheme.spatial_reflection_zero`, valid only for a spatially-symmetric noise);
+    * o-duplicate ``h(σ) → hⱼ`` — same expectation up to the o-decoration, which ``Π`` ignores
+      (`scheme.expectation_key`, tex 4003).
+
+    With ``symmetric=False`` the spatial-reflection identity is **not** applied (it is genuinely
+    invalid for an anisotropic noise — e.g. KPZ's drift counterterm need not vanish)."""
+    from ..renorm.scheme import expectation_key, spatial_reflection_zero, zero_note
+    subs: dict[sympy.Symbol, sympy.Expr] = {}
+    first_by_key: dict[tuple, sympy.Symbol] = {}
+    for tr, sym in h_map.items():
+        if zero_note(tr, sig) or spatial_reflection_zero(tr, sig, symmetric):
+            subs[sym] = sympy.Integer(0)
+            continue
+        key = expectation_key(tr)
+        if key in first_by_key:
+            subs[sym] = first_by_key[key]
+        else:
+            first_by_key[key] = sym
+    return subs
+
+
+def canonical_data(eq: RenormalizedEquation, reduced: bool = False,
+                   symmetric: bool = True) -> tuple[list, list]:
     """Build the renormalization structure and return ``(rows, legend)``:
 
     * ``rows = [(tree, free_const k_τ, value)]`` over the counterterm trees (homogeneity
@@ -129,12 +162,16 @@ def canonical_data(eq: RenormalizedEquation) -> tuple[list, list]:
       the even-noise ``h``-symbols;
     * ``legend = [(h_symbol, σ)]`` for each surviving elementary expectation ``h(σ)``.
 
-    The parity rule both sharpens the output (gKPZ: 3 of 5 vanish) and tames it
-    (KPZ: ~90-char expressions instead of 144 ``h``-symbols)."""
+    With ``reduced=True`` the provably-correct identities of `_reduction_subs` are applied
+    (vanishing and o-duplicate ``h(σ)``, for a spatially-symmetric noise), so the constants
+    appear fully reduced and the legend keeps only the genuine, distinct, non-zero ``h(σ)``."""
     from ..structures import build_renormalization
     rs = build_renormalization(eq.spde)
     cmap = const_map(eq)
     rows = [(t, cmap[t], rs.canonical_character(t)) for t in _sorted_trees(eq) if t in cmap]
+    if reduced:
+        subs = _reduction_subs(rs._h, eq.sig, symmetric)
+        rows = [(t, k, sympy.expand(v.xreplace(subs))) for t, k, v in rows]
     # keep only the h-symbols that survive, and renumber them h0, h1, … contiguously
     used = sorted(set().union(*(v.free_symbols for _t, _k, v in rows)) if rows else set(),
                   key=lambda s: int(str(s)[1:]))
@@ -280,7 +317,8 @@ def _sec(title: str) -> str:
     return f"\n── {title} " + "─" * max(2, 64 - len(title))
 
 
-def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
+def text_report(eq: RenormalizedEquation, canonical: bool = False, reduced: bool = False,
+                symmetric: bool = True) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
     cmap = const_map(eq)
@@ -332,18 +370,35 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
                        f"[τ={shorthand(ct.tree, sig, coords)}, |τ|={ct.homogeneity}]")
         out.append("")
 
-    if canonical:
-        rows, legend = canonical_data(eq)
+    if canonical or reduced:
+        rows, legend = canonical_data(eq, reduced, symmetric)
         nzero = sum(1 for _t, _k, v in rows if v == 0)
-        out.append(_sec("CANONICAL (BPHZ) RENORMALIZATION  k_τ = h(S'₋τ)"))
+        title = ("CANONICAL (BPHZ) RENORMALIZATION — reduced  k_τ = h(S'₋τ)" if reduced
+                 else "CANONICAL (BPHZ) RENORMALIZATION  k_τ = h(S'₋τ)")
+        out.append(_sec(title))
         out.append("  Each free constant at its canonical value for a centered Gaussian noise.")
-        out.append(f"  Mean-zero parity ⇒ trees with odd noise count vanish "
-                   f"({nzero}/{len(rows)} here); survivors are polynomials in the elementary")
-        out.append("  expectations hᵢ ≡ h_ε(σ) = 𝔼[Π^ε σ](0) of the ε-regularized noise ξ_ε.")
-        out.append("  These constants are ε-dependent and diverge as ε→0; the integrals below")
-        out.append("  are left unevaluated.")
+        if reduced and symmetric:
+            out.append("  Reduced for a spatially-symmetric (e.g. white) noise: provably-zero h(σ)")
+            out.append("  set to 0 — root X^n, pure-kernel total derivatives, and odd spatial-")
+            out.append(f"  reflection parity (x→−x) — and o-duplicate h(σ) merged ({nzero}/{len(rows)}")
+            out.append("  vanish). Each is an exact identity; survivors are polynomials in the hᵢ.")
+        elif reduced:
+            out.append("  Reduced for a general (not assumed symmetric) noise: only the noise-")
+            out.append("  independent identities are applied — provably-zero h(σ) set to 0 (root")
+            out.append("  X^n, pure-kernel total derivatives, parity) and o-duplicate h(σ) merged")
+            out.append(f"  ({nzero}/{len(rows)} vanish). The spatial-reflection reduction is NOT")
+            out.append("  applied (invalid for an anisotropic noise — drift terms may survive).")
+        else:
+            out.append(f"  Mean-zero parity ⇒ trees with odd noise count vanish "
+                       f"({nzero}/{len(rows)} here); survivors are polynomials in the elementary")
+            out.append("  expectations hᵢ ≡ h_ε(σ) = 𝔼[Π^ε σ](0) of the ε-regularized noise ξ_ε.")
+            out.append("  These constants are ε-dependent and diverge as ε→0; the integrals below")
+            out.append("  are left unevaluated.")
         for t, k_free, v in rows:
-            rhs = "0   (vanishes — odd noise parity)" if v == 0 else fstr(v)
+            if v == 0:
+                rhs = "0" if reduced else "0   (vanishes — odd noise parity)"
+            else:
+                rhs = fstr(v)
             out.append(f"  {k_free} = {rhs}      [τ={shorthand(t, sig, coords)}]")
         out.append("")
         out.append("  Canonically renormalized equation:")
@@ -352,8 +407,10 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
                        f"{fstr(canonical_family_rhs(eq, a, rows))}")
         if legend:
             out.append("  where, for the ε-regularized noise ξ_ε (covariance C_ε) and the")
-            out.append("  singular kernel K of L⁻¹, each elementary expectation is given below;")
-            out.append("  '= 0' marks a vanishing value and '(= hⱼ)' a duplicate (same value):")
+            out.append("  singular kernel K of L⁻¹, each elementary expectation is given below"
+                       + (":" if reduced else ";"))
+            if not reduced:
+                out.append("  '= 0' marks a vanishing value and '(= hⱼ)' a duplicate (same value):")
             marks = legend_marks(legend, sig)
             for sym, tr in legend:
                 z, dup = marks[sym]
@@ -386,7 +443,8 @@ def _md_cell(s: object) -> str:
     return str(s).replace("|", "\\|")
 
 
-def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
+def markdown_report(eq: RenormalizedEquation, canonical: bool = False,
+                    reduced: bool = False, symmetric: bool = True) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
     cmap = const_map(eq)
@@ -435,27 +493,48 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
         L.append(ascii_art(t, sig))
         L.append("```")
 
-    if canonical:
-        rows, legend = canonical_data(eq)
+    if canonical or reduced:
+        rows, legend = canonical_data(eq, reduced, symmetric)
         nzero = sum(1 for _t, _k, v in rows if v == 0)
-        L += ["", "## Canonical (BPHZ) renormalization", "",
-              "Each free constant at its canonical value for a centered Gaussian noise. "
-              f"Mean-zero parity ⇒ odd-noise trees vanish ({nzero}/{len(rows)} here); "
-              "survivors are polynomials in the elementary expectations "
-              "`hᵢ ≡ h_ε(σ) = 𝔼[Π^ε σ](0)` of the **ε-regularized noise ξ_ε**. These "
-              "constants are ε-dependent and **diverge as ε→0**; the integrals below are "
-              "left unevaluated.", ""]
+        heading = ("## Canonical (BPHZ) renormalization — reduced" if reduced
+                   else "## Canonical (BPHZ) renormalization")
+        if reduced and symmetric:
+            intro = ("Each free constant at its canonical value for a centered Gaussian noise, "
+                     "**reduced for a spatially-symmetric (e.g. white) noise**: provably-zero "
+                     "`h(σ)` set to 0 — root `Xⁿ`, pure-kernel total derivatives, and odd "
+                     "spatial-reflection parity (`x→−x`) — and o-duplicate `h(σ)` merged "
+                     f"({nzero}/{len(rows)} vanish). Each is an exact identity.")
+        elif reduced:
+            intro = ("Each free constant at its canonical value for a centered Gaussian noise, "
+                     "**reduced for a general (not assumed symmetric) noise**: only the "
+                     "noise-independent identities are applied — provably-zero `h(σ)` set to 0 "
+                     "(root `Xⁿ`, pure-kernel total derivatives, parity) and o-duplicate `h(σ)` "
+                     f"merged ({nzero}/{len(rows)} vanish). The **spatial-reflection reduction is "
+                     "not applied** (invalid for an anisotropic noise — drift terms may survive).")
+        else:
+            intro = ("Each free constant at its canonical value for a centered Gaussian noise. "
+                     f"Mean-zero parity ⇒ odd-noise trees vanish ({nzero}/{len(rows)} here); "
+                     "survivors are polynomials in the elementary expectations "
+                     "`hᵢ ≡ h_ε(σ) = 𝔼[Π^ε σ](0)` of the **ε-regularized noise ξ_ε**. These "
+                     "constants are ε-dependent and **diverge as ε→0**; the integrals below are "
+                     "left unevaluated.")
+        L += ["", heading, "", intro, ""]
         for t, k_free, v in rows:
-            rhs = "0  *(vanishes — odd noise parity)*" if v == 0 else f"`{fstr(v)}`"
+            if v == 0:
+                rhs = "0" if reduced else "0  *(vanishes — odd noise parity)*"
+            else:
+                rhs = f"`{fstr(v)}`"
             L.append(f"- `{k_free}` = {rhs}   (τ = `{shorthand(t, sig, coords)}`)")
         L += ["", "Canonically renormalized equation:", "", "```"]
         for a, (u, op, _r) in enumerate(eq.spde.equations):
             L.append(f"{operator_str(op)} {u.name} = {fstr(canonical_family_rhs(eq, a, rows))}")
         L.append("```")
         if legend:
-            L += ["", "where, for the ε-regularized noise `ξ_ε` (covariance `C_ε`) and the "
-                  "singular kernel `K` of `L⁻¹`, each elementary expectation is given below; "
-                  "`= 0` marks a vanishing value and *(= hⱼ)* a duplicate (identical value):", ""]
+            cap = ("where, for the ε-regularized noise `ξ_ε` (covariance `C_ε`) and the "
+                   "singular kernel `K` of `L⁻¹`, each elementary expectation is given below")
+            cap += (":" if reduced else "; `= 0` marks a vanishing value and *(= hⱼ)* a "
+                    "duplicate (identical value):")
+            L += ["", cap, ""]
             marks = legend_marks(legend, sig)
             for sym, tr in legend:
                 z, dup = marks[sym]
@@ -478,7 +557,8 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
 # json
 # --------------------------------------------------------------------------- #
 
-def json_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
+def json_report(eq: RenormalizedEquation, canonical: bool = False,
+                reduced: bool = False, symmetric: bool = True) -> str:
     sig = eq.sig
     coords = coord_names(sig.width)
     cmap = const_map(eq)
@@ -516,8 +596,10 @@ def json_report(eq: RenormalizedEquation, canonical: bool = False) -> str:
         "family_latex": {eq.unknowns[a].name: flatex(eq.counterterm_rhs(a))
                          for a in range(eq.n_components)},
     }
-    if canonical:
-        rows, legend = canonical_data(eq)
+    if canonical or reduced:
+        rows, legend = canonical_data(eq, reduced, symmetric)
+        data["canonical_reduced"] = reduced
+        data["reduction_assumes_symmetric_noise"] = bool(reduced and symmetric)
         data["canonical_bphz"] = [{"tree": shorthand(t, sig, coords), "constant": str(kf),
                                    "value": str(v), "value_latex": flatex(v),
                                    "vanishes": v == 0}

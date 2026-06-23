@@ -132,6 +132,26 @@ def zero_note(tree: DecoratedTree, sig: Signature) -> str | None:
     return None
 
 
+def spatial_reflection_zero(tree: DecoratedTree, sig: Signature, symmetric: bool = True) -> bool:
+    """``h(τ)=𝔼[Π^ζτ](0)=0`` by the spatial reflection ``x→−x`` — valid **only for a spatially-
+    symmetric (isotropic) noise**: white noise, or a symmetric mollifier (the canonical setting).
+
+    Each derivative edge ``∂^pK`` is odd under ``x→−x`` of order ``|p|_space``, while ``K`` and the
+    covariance ``C`` are even in ``x``; the integrand therefore picks up ``(−1)^D`` with
+    ``D = Σ_edges |p_e|_space`` the total spatial-derivative order over all edges (index 0 is time,
+    1.. are space; time derivatives don't count, ``C`` doesn't count).  ``h=(−1)^D h`` ⇒ ``D`` odd ⇒
+    ``h=0``.  Bare trees only — a non-bare ``X^n`` tree is handled by `zero_note` / left-symbolic.
+
+    ``symmetric`` records whether the noise law is spatially even; **if ``False`` this returns
+    ``False`` for every tree** — the reduction is genuinely invalid for an anisotropic noise (the
+    drift counterterm need not vanish), so we never claim it there."""
+    if not symmetric or not is_bare(tree):
+        return False
+    _nodes, edges = _explode(tree)
+    d_space = sum(sum(p[1:]) for (_a, _b, _c, p) in edges)
+    return d_space % 2 == 1
+
+
 def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE) -> Expectation:
     """The Wick expansion of ``h(τ)=𝔼[Π^ζτ](0)`` (symbolic; integrals unevaluated).
 

@@ -138,3 +138,49 @@ def test_canonical_legend_marks_zeros_and_duplicates_display_only():
     consts = [ln for ln in md.splitlines() if ln.startswith("- `k_")]
     assert any("h7" in ln or "h2" in ln for ln in consts), \
         "constants must stay unreduced (display-only) — a zero h-symbol should still appear"
+
+
+def test_reduced_drops_kpz_drift_terms():
+    """`reduced=True` applies the spatial-reflection reduction (symmetric noise): KPZ's two ∂h drift
+    counterterms — nonzero in the general (raw) canonical character — vanish, collapsing KPZ to a
+    single diverging constant (Hairer). Strictly more constants vanish than in the raw view."""
+    import json
+    from tests.conftest import kpz
+    eq = kpz().renormalize()
+    raw = {r["tree"]: r["vanishes"] for r in json.loads(eq.render("json", canonical=True))["canonical_bphz"]}
+    red = {r["tree"]: r["vanishes"] for r in json.loads(eq.render("json", reduced=True))["canonical_bphz"]}
+    for drift in ("●·𝓘ₓ[●·𝓘ₓ[Ξ]]·𝓘ₓ[Ξ]", "●·𝓘ₓ[●·𝓘ₓ[Ξ]²]"):
+        assert raw[drift] is False and red[drift] is True
+    assert sum(red.values()) > sum(raw.values())
+
+
+def test_reduced_pam_is_mass_only():
+    """Reduced 2D PAM matches the literature `u(ξ − C)`: the u-mass counterterm survives, the
+    gradient (drift) counterterms vanish (root Xⁿ)."""
+    import json
+    from sympy import Rational
+    from counterterms import Noise, Parabolic, SPDE, Unknown, kappa
+    u = Unknown("u", 2)
+    xi = Noise("xi", regularity=Rational(-1) - kappa)
+    eq = SPDE(noises=[xi], operator=Parabolic(dim=2), unknown=u, rhs=u.field * xi.symbol).renormalize()
+    red = {r["tree"]: r["vanishes"] for r in json.loads(eq.render("json", reduced=True))["canonical_bphz"]}
+    assert red["Ξ·𝓘[Ξ]"] is False                          # u·C mass survives
+    assert red["Xₓ·Ξ"] is True and red["X_y·Ξ"] is True     # gradient drift vanishes
+
+
+def test_reduced_does_not_claim_reflection_for_asymmetric_noise():
+    """The spatial-reflection reduction is gated on `symmetric`: with `symmetric=False` (anisotropic
+    noise) it is NOT applied — KPZ's drift counterterms stay non-zero — while the noise-independent
+    identities (zeros/duplicates) still fold. The JSON records the assumption honestly."""
+    import json
+    from tests.conftest import kpz
+    eq = kpz().renormalize()
+    sym = json.loads(eq.render("json", reduced=True, symmetric=True))
+    asy = json.loads(eq.render("json", reduced=True, symmetric=False))
+    vsym = {r["tree"]: r["vanishes"] for r in sym["canonical_bphz"]}
+    vasy = {r["tree"]: r["vanishes"] for r in asy["canonical_bphz"]}
+    drift = "●·𝓘ₓ[●·𝓘ₓ[Ξ]]·𝓘ₓ[Ξ]"
+    assert vsym[drift] is True and vasy[drift] is False   # claimed 0 only when symmetric
+    assert sum(vasy.values()) < sum(vsym.values())        # fewer vanish without reflection
+    assert sym["reduction_assumes_symmetric_noise"] is True
+    assert asy["reduction_assumes_symmetric_noise"] is False
