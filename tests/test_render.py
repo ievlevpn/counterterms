@@ -184,3 +184,28 @@ def test_reduced_does_not_claim_reflection_for_asymmetric_noise():
     assert sum(vasy.values()) < sum(vsym.values())        # fewer vanish without reflection
     assert sym["reduction_assumes_symmetric_noise"] is True
     assert asy["reduction_assumes_symmetric_noise"] is False
+
+
+def test_general_noise_reduction_is_noise_independent_only():
+    """Safety invariant: with `symmetric=False`, the `reduced` view must apply ONLY
+    noise-independent identities. It may zero h(σ) exactly when `zero_note` does (root Xⁿ /
+    parity / pure-kernel total derivative — valid for any centered Gaussian), and every merge
+    must be a genuine o-duplicate (`expectation_key`). The spatial-reflection identity must NOT
+    leak into the general-noise reduction (no accidental reduction for an anisotropic noise)."""
+    from counterterms.structures import build_renormalization
+    from counterterms.renorm.scheme import expectation_key, zero_note
+    from counterterms.render.report import _reduction_subs
+    from tests.conftest import CORPUS
+    for name, mk in CORPUS.items():
+        rs = build_renormalization(mk())
+        sig = rs.sig
+        for t in rs.divergent:
+            rs.canonical_character(t)
+        keyof = {sym: expectation_key(tr) for tr, sym in rs._h.items()}
+        zn = {sym for tr, sym in rs._h.items() if zero_note(tr, sig)}
+        asym = _reduction_subs(rs._h, sig, symmetric=False)
+        zeros = {s for s, v in asym.items() if v == 0}
+        merges = {s: v for s, v in asym.items() if v != 0}
+        assert zeros == zn, f"{name}: general-noise reduction zeroed a symmetry-dependent h"
+        assert all(keyof[s] == keyof[d] for s, d in merges.items()), \
+            f"{name}: general-noise merge is not a genuine o-duplicate"
