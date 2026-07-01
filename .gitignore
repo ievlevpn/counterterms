@@ -17,3 +17,4 @@ output/*
 !output/.gitkeep
 references/tourist_guide.pdf
 references/tourist_guide.tex
+site/

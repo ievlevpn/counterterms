@@ -16,6 +16,9 @@ packages = ["counterterms"]
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.6"]
+docs = [
+    "mkdocs-material>=9.7.6",
+]
 
 [tool.ruff]
 # E741 (ambiguous name l/r) is intentional: l/r = left/right tensor legs in the coproducts.
