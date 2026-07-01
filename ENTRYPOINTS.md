@@ -28,7 +28,7 @@ Everything below fills in one arrow.
 
 ## Read in this order
 
-### 1. `tests/test_golden_gkpz.py` — what the library promises
+### 1. `tests/test_goldens.py` — what the library promises
 The gKPZ example (tex 5996–6012): an SPDE in, five specific counterterms out. Read this first to
 see the **input format** and the **exact expected output**. The assertions encode the three
 things every counterterm carries: homogeneity `|τ|`, symmetry factor `S(τ)`, and the elementary
@@ -45,7 +45,8 @@ turns the SymPy right-hand side into (a) the **base nonlinearities** `F(∘_j*) 
 `F(●*) = g` in jet variables, and (b) the structural **rule** (which child edges each node type
 admits, with caps). This is also where **scope is enforced** — read the `raise ValueError(...)`
 lines to see exactly what is in and out of scope (affine-in-noise, `g` ≤ quadratic in `∂u`,
-`β₀ ∈ (−2,0)`, `|p|_𝔰 ≤ 1`).
+`|p|_𝔰 ≤ 1`; subcriticality `β₀ > −order` is the rule-based check in `equation/rule.py`,
+called from `build_context`).
 
 ### 4. `counterterms/core/signature.py` — the vocabulary
 The `Signature` is the single object every algorithm is parametric over: dimension, scaling,
@@ -68,8 +69,8 @@ multiset of child edges. The three methods to study:
 - `symmetry_factor()` — `S(τ) = n!·Πⱼ S(σⱼ)^{mⱼ}·mⱼ!` (tex 3982).
 
 ### 7. `counterterms/core/jets.py` — jet variables (tiny)
-`jet(k)` maps a spacetime multi-index to a SymPy symbol `u_k`; `u_(0,…,0)` is the unknown,
-`u_{e_i}` its `∂_{x_i}` derivative. These are the variables the nonlinearities and `F(τ*)` are
+`jet(comp, k)` maps a component index and spacetime multi-index to a SymPy symbol `u^c_k`;
+`u_(0,…,0)` is the unknown, `u_{e_i}` its `∂_{x_i}` derivative. These are the variables the nonlinearities and `F(τ*)` are
 written in. Read it right before §8–9.
 
 ### 8. `counterterms/equation/generate.py` — which trees exist
@@ -77,10 +78,12 @@ written in. Read it right before §8–9.
 **budget-pruned fixpoint DFS**. The comments explain termination: every uncapped edge (`I_0`)
 adds positive homogeneity when `β₀ > −2`, so it is bounded by the budget; every edge that can
 add `≤ 0` is a derivative edge with a finite cap (this is the "`g` quadratic in `∂u`" cutoff).
-The `break` in `_emit` relies on the child atoms being sorted by homogeneity contribution.
+The `break` in `_emit` relies on the child atoms being sorted by homogeneity contribution
+(and fires only for positive-contribution atoms — capped negative contributions may pull an
+overshooting partial sum back under the bound).
 
 ### 9. `counterterms/renorm/nonlinearity.py` — the counterterm engine (Υ map)
-`elem_diff(τ, base_F, width)` computes `F(τ*) = (Πᵢ F(τ_i*))·(D^n Πᵢ ∂_{p_i}) F(b*)`
+`elem_diff(t, comp, base, sig)` computes `F(τ*) = (Πᵢ F(τ_i*))·(D^n Πᵢ ∂_{p_i}) F(b*)`
 (tex 4524 / 4915). The two operators to understand: `∂_p` (a plain slot derivative) and the
 total derivative `D_i = Σ_k u_{k+e_i} ∂_k` (`_D`). Order matters: the `∂_{p_i}` are applied
 *before* `D^n`, and they hit **all** slots of `g`. This is the only place SymPy does real work.

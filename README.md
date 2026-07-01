@@ -59,7 +59,7 @@ satisfy $|p|_\mathfrak{s} \le 1$.
 
 ```sh
 uv sync
-uv run pytest          # 185 tests, ~8s
+uv run pytest          # 187 tests, ~10s
 ```
 
 ## Quickstart

@@ -46,7 +46,10 @@ def test_gkpz_five_counterterms():
 
 
 def test_kpz_negative_rows():
-    # KPZ: (∂_t−Δ)u = (∂ₓu)² + ξ, space-time WN, β₀=−3/2−κ (tourist_guide.tex 6028–6063).
+    # Classical KPZ: (∂_t−Δ)u = (∂ₓu)² + ξ, space-time WN, β₀=−3/2−κ. The homogeneity ROWS
+    # coincide with the paper's *generalized*-KPZ table (tex 6017, rows at 6028–6163); only the
+    # row values are asserted here — the exact 43-tree gKPZ table match is
+    # tests/test_validation.py::test_gkpz_sc_tree_table_matches_paper_at_beta0_minus_3_2.
     u = Unknown("u", 1)
     xi = Noise("xi", regularity=Rational(-3, 2) - kappa)
     res = SPDE(operator=Parabolic(dim=1), unknown=u, noises=[xi],

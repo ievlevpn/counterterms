@@ -66,13 +66,14 @@ constants from your own discrete computation; the library does the symbolic book
 half. *Boundary:* it does not compute those constants.
 
 ### 5. Complexity / scaling studies
-Quantify how the renormalization grows with roughness — gPAM `f(u)ξ`:
+Quantify how the renormalization grows with roughness — gPAM `f(u)ξ`, d = 1:
 
     β₀ = −1     3 counterterms   homogeneities {−1−κ, −κ, −2κ}
     β₀ = −3/2   11 counterterms  homogeneities {−3/2−κ, −1−2κ, −1/2−κ, −1/2−3κ, −2κ, −4κ}
 
-and near criticality (β₀→−2) the tree set explodes (generation genuinely hangs at
-β₀=−1.9 — a faithful reflection of the math, not a bug).
+and near criticality (β₀→−2) the tree set explodes (generation fails fast with a
+`RuntimeError` past the 5000-tree backstop at β₀=−1.9 — a faithful reflection of
+the math, not a bug).
 *Who:* anyone gauging "how hard is this equation."
 
 ### 6. Combinatorial skeleton for an analytic proof / reproducing the literature
@@ -91,9 +92,10 @@ The companion object `build_regularity_structure(spde)` exposes the graded model
   covariance integrals. The `hᵢ` / `k(τ)` *numbers* are not computed.
 - **No analysis** — no model construction, no estimates, no convergence/well-posedness.
 - **No solving or simulation.**
-- **Out of scope:** β₀ ≤ −order (Φ⁴₃ at −5/2, sine-Gordon) — needs the da Prato–Debussche
-  pre-pass (not built); `g` beyond quadratic in `∂u` or `|p|_𝔰>1`; quasilinear /
-  non-parabolic operators.
+- **Out of scope:** β₀ ≤ −order for *non-polynomial* noise couplings (sine-Gordon — needs
+  Wick exponentials); `g` beyond quadratic in `∂u` or `|p|_𝔰>1`; quasilinear /
+  non-parabolic operators. *(Polynomial additive-noise supercritical equations — Φ⁴₂, Φ⁴₃ —
+  **are** handled, via the built `daprato_lift` pre-pass; see `equation/daprato.py`.)*
 - `G⁻_ad` reduction and formal rule completion are deferred (model-dependent / niche).
 
 ---

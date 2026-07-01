@@ -6,7 +6,48 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Phase 3 — the algebraic-renormalization core** (`trees/coproducts.py`, `core/hopf.py`,
+  `structures.py`): extraction–contraction `δ`/`δ⁻`, recentering `Δ`/`Δ⁺`, the negative twisted
+  antipode `S'₋`, the symbolic BHZ character `k = h∘S'₋`, `RegularityStructure (T, T⁺)`, the
+  rule-based subcriticality check (`β₀ > −order`), and the renormalization group `G⁻`. The
+  cointeraction holds over the corpus **including β₀ = −3/2**.
+- **da Prato–Debussche lift** (`equation/daprato.py`, `daprato_lift`) — supercritical polynomial
+  additive-noise equations (Φ⁴₂: 3 counterterms, Φ⁴₃: 9) via the subcritical remainder equation.
+- **Canonical BPHZ scheme, symbolic half** (`renorm/scheme.py`): Wick-pairing combinatorics with
+  within-noise-type Isserlis matching, the centered-Gaussian parity rule, and each surviving
+  `h(σ)` spelled out as its explicit ε-regularized divergent integral in the report legend.
+- **`reduced=True` report view**: the exact identities (parity, root `Xⁿ ⇒ 0`, pure-kernel total
+  derivative, o-duplicate merging) substituted into the canonical constants, plus the
+  **spatial-reflection identity** gated on a `symmetric` flag (default white noise) — collapses
+  canonical KPZ to Hairer's single constant; never claimed for an anisotropic noise.
+- **Full-structure JSON export** (`render/export.py`, `structure_json`) — round-trippable trees,
+  graded basis, coproducts, antipode, characters.
+- `FractionalHeat(dim, sigma)` operator; generator fail-fast backstop (`RuntimeError` past 5000
+  pool trees instead of hanging).
+- MIT license; CI (ruff + pytest); MkDocs documentation site (`mkdocs.yml`, `docs/`).
+- Package renamed `regstruct` → `counterterms`; the paper untracked (copyright) with an arXiv
+  pointer in `references/`.
+
 ### Fixed
+- **Tree generation: node-decoration cap now scales with `−β₀`** instead of the fixed
+  order-2-only `|n|_𝔰 ≤ 2` — at operator order > 2 with `β₀ ≤ −2` genuine counterterms (e.g.
+  `Ξ^{(0,3)}` at order 4, β₀ = −3−κ) were silently missing from the family. Pools at order 2 are
+  provably unchanged.
+- **Tree generation: the DFS no longer prunes on intermediate partial sums** — a decorated node
+  above the homogeneity bound can be pulled back under by several capped negative-contribution
+  children (KPZ at β₀ = −7/4 was missing `●^{(0,2)}I'(Ξ)²` from the positive sector). Counterterm
+  sets at order 2 unaffected.
+- **Assumption-D2 total gradient bound** (`grad_budget`): in `d ≥ 2` a direction-mixing gradient
+  nonlinearity could exceed total degree 2 in `∂u` per node in the *raw* tree basis (the
+  renormalized equation was unaffected — spurious trees were Υ-zero).
+- **δ⁺ comodule law**: removed the redundant force-internal-under-red rule that broke
+  compatibility condition (b); the cointeraction is carried by the between-edge `e'` recentering
+  alone. BHZ character byte-identical. Regression: `test_delta_plus_comodule`.
+- **`p₋` projection**: only the *red* `●^{0,α}` maps to `𝟙₋` (a bare black `●` has homogeneity 0
+  and maps to 0), per tex 5760.
+- **`expectation` validity domain**: independent noises factorize (no cross-type Wick pairing);
+  red contraction nodes are fine, only `Xⁿ` node decorations are refused.
 - **LaTeX divergent-trees table overflow.** Two causes: (1) the `forest` trees carried a
   coordinate `baseline`, making TikZ report a wrong hbox width — now each tree is wrapped in
   `$\vcenter{\hbox{…}}$` (correct width, vertically centered on the math axis); (2) `longtable`
@@ -47,11 +88,10 @@ All notable changes to this project are documented here. The format follows
 - `RenormalizedEquation.all_trees` (the full `𝓑_<0`) and `.original_rhs(comp)`.
 
 ### Planned
-- **Phase 3** — the coproducts `Δ, Δ⁺, Δ⁻`, the regularity/renormalization structures
-  (`T, T⁺, U, U⁻`), the twisted antipode `S'₋`, the symbolic BHZ character, rule completion,
-  and the `G⁻`/`G⁻_ad` toggle.
-- **Phase 4 (deferred seams)** — `NoiseLaw` + canonical BPHZ constant values; a multi-index
-  symbol basis; da Prato–Debussche pre-pass for `β₀ ≤ −2`.
+- Numeric BPHZ constant values (Track B2 — evaluating the ε-regularized integrals).
+- The `G⁻_ad` admissible-subgroup reduction (needs the analytic model layer).
+- A multi-index symbol basis (Linares–Otto–Tempelmayr) on the generic-algebra seam.
+- Formal rule completion (BHZ Prop 5.21) for hand-supplied rules.
 
 ## [0.2.0] — 2026-06-22
 
@@ -78,8 +118,6 @@ All notable changes to this project are documented here. The format follows
 ### Note
 - The `G⁻`/`G⁻_ad` toggle was deferred to Phase 3 (admissibility is a model notion; the full
   free family is emitted as the safe superset).
-
-## [0.1.0] — 2026-06-21
 
 ## [0.1.0] — 2026-06-21
 

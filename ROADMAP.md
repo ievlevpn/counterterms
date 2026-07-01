@@ -50,7 +50,7 @@ single-noise results are unchanged (regression green).
 
 ---
 
-## Phase 3 — the algebraic-renormalization core 🔨
+## Phase 3 — the algebraic-renormalization core ✅ *(two deferred boxes → Phase 4)*
 
 **Goal:** build the genuine regularity-structures machinery. This is the famous-hard part.
 Modules: `trees/coproducts.py`, `structures.py`, `core/hopf.py` (the basis-agnostic layer).
@@ -64,8 +64,10 @@ Modules: `trees/coproducts.py`, `structures.py`, `core/hopf.py` (the basis-agnos
 - [x] **Negative twisted antipode `S'₋`** (tex 5034); `S'₋(∘) = −∘`.
 - [x] **`δ⁺` (`D̄⁻`)** + the **cointeraction** `(id⊗Δ)δ = M¹³(δ⊗δ⁺)Δ` — **holds for the gKPZ
       class (β₀=−1) AND the singular β₀=−3/2 trees**. Fix: the e'-Taylor recentering runs over
-      the full extraction boundary `∂(A,F)` (between-component edges too, not only φ→outside),
-      and edges below a pre-existing red node stay internal. See
+      the full extraction boundary `∂(A,F)` (between-component edges too, not only φ→outside).
+      *(An earlier second rule — "edges below a pre-existing red node stay internal" — proved
+      redundant for the cointeraction and to **break** the δ⁺ comodule law (b); removed, with a
+      permanent condition-(b) regression test `test_delta_plus_comodule`.)* See
       [`notes/cointeraction_singular_noise.md`](notes/cointeraction_singular_noise.md) §8.
 - [x] **Structures** — `RenormalizationStructure` (`δ`, `δ⁻`, `S'₋`) + the **symbolic BHZ
       character** `k = h∘S'₋` (`h` left symbolic). (`structures.py`)
@@ -93,11 +95,11 @@ Modules: `trees/coproducts.py`, `structures.py`, `core/hopf.py` (the basis-agnos
       would be unsound (CLAUDE.md warning), so it is deferred to the model layer.
 
 **Acceptance:** coassociativities + cointeraction (incl. singular β₀=−3/2) green as property
-tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **169 tests pass (~5s).**
+tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **187 tests pass (~10s).**
 
 ---
 
-## Phase 4 — deferred seams (optional) ⬜
+## Phase 4 — deferred seams (optional) 🔨
 
 **Goal:** the boundaries we intentionally left without implementations.
 

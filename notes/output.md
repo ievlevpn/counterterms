@@ -4,8 +4,8 @@ A plan for **what we can emit and how to make it pretty**. Companion to
 `architecture.md` §3.11/§5 (which already reserves a `render/` package and a
 `Renderer` seam). This document is the spec for that package: the *information
 inventory*, the *tree notation*, the *output channels*, and the *full-report
-layout*. Nothing here is implemented yet — Phase-3/4 items are explicit
-placeholders so the report degrades gracefully to "not yet computed".
+layout*. **Status: the `render/` package implementing this spec is built and
+green** (O1–O3.5 in `ROADMAP.md`); this note remains the design reference.
 
 Guiding principle (ponytail): **reuse the printers we already have.** SymPy
 ships a 2D-unicode pretty-printer (`sympy.pretty`) and a LaTeX printer

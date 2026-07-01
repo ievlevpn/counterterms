@@ -13,6 +13,7 @@ uv run python -u examples/01_renormalized_equation.py
 | 03 | `03_systems_and_noises.py` | Coupled **systems** (shared constants) and **multiple noises**. | `SPDE(equations=[...])` |
 | 04 | `04_daprato_phi4.py` | The **da Prato–Debussche lift** — renormalize a supercritical Φ⁴₃ (β₀≤−order). | `daprato_lift` |
 | 05 | `05_bhz_and_export.py` | The **BHZ character** (twisted antipode), the canonical-parity rule, and the JSON **export**. | `build_renormalization`, `render.structure_json` |
+| 06 | `06_fractional_heat.py` | **Swapping the linear operator** — the same equation under the heat vs a fractional operator. | `FractionalHeat`, `Operator` |
 
 ## The 60-second version
 
@@ -43,6 +44,6 @@ for ct in eq.counterterms:   # each: tree, |τ|, S(τ), F(τ*), free constant k_
 ```
 
 The free constants `k_τ` parametrise the renormalization group; their canonical (numeric)
-values need probabilistic input (out of scope — see the README "What it does *not* do").
+values need probabilistic input (out of scope — see the README section "It is symbolic").
 
 See the top-level [`README.md`](../README.md) for the full capability → module map.

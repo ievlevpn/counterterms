@@ -8,7 +8,10 @@ there, kept for the record.
 **The fix, in one sentence:** the `e'` Taylor recentering must be applied on the
 *full* extraction boundary `∂(A,F)` = {edges with parent in the extracted forest,
 not internal to a component} — i.e. **between-component edges too**, not only
-`φ→outside` edges. (Plus: edges below a pre-existing red node stay internal.)
+`φ→outside` edges. *(A second rule shipped with this fix — "edges below a
+pre-existing red node stay internal" — was later shown redundant for the
+cointeraction and to break the δ⁺ comodule law; it was **removed** on 2026-06-22,
+see §8(b).)*
 
 Test: `tests/test_coproducts.py::test_cointeraction_singular` (now a real, passing
 test). All algebraic invariants green.
@@ -208,6 +211,11 @@ terms (the δ⁺-comodule-coassociativity failure on nested-red trees) and cut t
 β₀=−3/2 cointeraction failures to **2 trees**, both the original
 `∘—I₀—∘^{(0,1)}` recentering case.
 
+> **Superseded (2026-06-22):** this diagnosis was wrong — the improvement observed
+> here came from masking, not correctness. Once §8(a) (between-edge recentering)
+> landed, this rule was shown to *cause* the δ⁺ comodule failures it was meant to
+> fix, and it was removed (commit `d3adcaf`). See §8(b). Kept for the record.
+
 **The irreducible crux (still open).** For `∘—I₀—∘^{(0,1)}` the `e'=(0,1)`
 recentering produces, in the middle (T) leg:
 
@@ -248,16 +256,18 @@ edges also recentered, `δ` can recenter a node *whose child is also extracted*,
 which is exactly the term the recenter-then-extract order (`M¹³(δ⊗δ⁺)Δ`) produces
 via `Δ` and the extract-then-recenter order (`(Id⊗Δ)δ`) was missing.
 
-**(b) Edges below a pre-existing red node stay internal.** A red node is a
-contracted placeholder; on *re-extraction* (the second coproduct in the
-cointeraction / the δ⁺ comodule) its extracted children must merge into it, never
-split off as a sibling red node via a between-edge. Without this, `δ⁺` over-
-produced nested-red terms and failed its own comodule coassociativity.
+**(b) ~~Edges below a pre-existing red node stay internal.~~ REMOVED (2026-06-22,
+commit `d3adcaf`) — this rule was wrong.** It was added believing δ⁺ over-produced
+nested-red terms without it, but the 2026-06-22 math audit established the opposite:
+once (a) carries the cointeraction, the forced-internal-under-red rule is *redundant*
+for the cointeraction **and breaks the δ⁺ comodule law** (compatibility condition (b),
+tex 3451–3454): 66/195 mismatches at β₀=−3/2 with the rule, 0 without it, all other
+tests unchanged. The rule is gone from `delta_minus`; the comodule law is pinned by
+`tests/test_coproducts.py::test_delta_plus_comodule`. Only (a) below survives.
 
-Both live in `delta_minus`'s subforest enumeration; `_assemble` already applied
-`πe'`/`e+e'` to *any* cross-component edge, so (a) needed only to add the between-
-edges to the recentering list. Net diff: a few lines. Commits on this branch:
-`697612f` (b), and the between-edge recentering (a).
+(a) lives in `delta_minus`'s subforest enumeration; `_assemble` already applied
+`πe'`/`e+e'` to *any* cross-component edge, so it needed only to add the between-
+edges to the recentering list. Net diff: a few lines.
 
 **Why the earlier "absorb into o" attempts were wrong** (§3, §4b): they tried to
 *reconcile* the two genuinely-distinct basis elements `●^{(0,1)}(o=−3/2−κ)` and
