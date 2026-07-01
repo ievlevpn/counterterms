@@ -10,7 +10,7 @@ from sympy import Derivative, Function, Rational
 
 from counterterms import Noise, Parabolic, SPDE, Unknown, kappa
 from counterterms.equation.dsl import build_context
-from counterterms.equation.generate import generate_counterterms
+from counterterms.equation.generate import generate_counterterms, generate_trees
 
 f, g = Function("f"), Function("g")
 
@@ -66,6 +66,36 @@ def test_d2_total_gradient_bound_in_dim2():
     trees = generate_counterterms(sig)
     assert all(max_grad_edges(t) <= 2 for t in trees)   # no node exceeds 2 gradient edges
     assert len(trees) == 8                              # was 11 (3 spurious) before the fix
+
+
+def test_order4_node_decoration_counterterm_not_dropped():
+    """The node-decoration cap must scale with −β₀, not sit at the order-2 value 2.
+    At order 4, β₀=−3−κ, the bare-noise counterterm Ξ^{(0,3)} has homogeneity −κ < 0
+    and belongs to 𝓑_{<0}; the old fixed cap |n|_𝔰 ≤ 2 silently dropped it."""
+    sig, _b, _u = _build(4, -3)
+    trees = generate_counterterms(sig)
+    decs = {t.node_dec for t in trees if t.node_type == "xi" and not t.children}
+    assert (0, 3) in decs                               # was missing before the fix
+    assert all(t.homogeneity(sig).is_negative() for t in trees)
+
+
+def test_pool_keeps_trees_reached_through_overshooting_partial_sums():
+    """The DFS must not prune on intermediate homogeneity sums: a decorated node above
+    the bound can be pulled back under by several capped negative-contribution children.
+    KPZ at β₀=−7/4−κ: ●^{(0,2)}I'(Ξ)² has std 2 + 2(1+β₀) = 1/2 < 1 and is
+    rule-conforming, but the old `break` pruned it after the first child (2 − 3/4 ≥ 1)."""
+    u = Unknown("u", 1)
+    xi = Noise("xi", regularity=Rational(-7, 4) - kappa)
+    rhs = xi.symbol + Derivative(u.field, u.x[0]) ** 2
+    sig, _b, _u = build_context(
+        SPDE(noises=[xi], operator=Parabolic(dim=1), unknown=u, rhs=rhs))
+    pool = generate_trees(sig)
+    hits = [t for t in pool
+            if t.node_type == "bullet" and t.node_dec == (0, 2) and len(t.children) == 2
+            and all(p == (0, 1) and s.node_type == "xi" and not s.children
+                    for (_c, p, s) in t.children)]
+    assert len(hits) == 1                               # was 0 before the fix
+    assert hits[0].homogeneity(sig).std == Rational(1, 2)
 
 
 def test_nonsingular_noise_rejected():

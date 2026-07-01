@@ -7,13 +7,17 @@ node admits — `(component, p)` with a cap on derivative-edge multiplicity = th
 nonlinearity's degree in that slot — what makes "g quadratic in ∂u" terminate).
 
 Children are selected by a **budget-pruned DFS**: edge atoms are sorted by their
-homogeneity contribution, so once one overshoots the budget all later ones do too
-(``break``).  Termination: an uncapped edge (a field slot, ``p = 0``) contributes
-``> 0`` to the standard part when ``β₀ > −2``, so it is bounded by the budget;
-every edge that can contribute ``≤ 0`` is a derivative slot with a finite cap.
+homogeneity contribution, so once a *positive-contribution* atom overshoots the
+budget all later ones do too (``break``).  Non-positive contributions are never
+pruned on intermediate sums — a partial sum above the bound can still be pulled
+back under by further capped negative children.  Termination: an uncapped edge
+(a field slot, ``p = 0``) contributes ``> 0`` to the standard part by
+subcriticality (``order + β₀ > 0``), so it is bounded by the budget; every edge
+that can contribute ``≤ 0`` is a derivative slot with a finite cap.
 """
 from __future__ import annotations
 
+import math
 from collections import Counter
 from fractions import Fraction
 from typing import TYPE_CHECKING
@@ -29,8 +33,20 @@ if TYPE_CHECKING:
     from ..trees.tree import DecoratedTree
 
 _BOUND = Fraction(1)          # keep trees with homogeneity.std < 1
-_MAX_NODE_SCALED = 2          # safety cap on |n|_𝔰 of a node decoration
 _MAX_POOL = 5000              # runaway-growth backstop (largest legitimate case ≈ 191 trees)
+
+
+def _max_node_scaled(sig: Signature, bound: Fraction) -> int:
+    """Largest node-decoration weight ``|n|_𝔰`` that can appear in the pool.
+
+    Every rule-conforming tree has ``std ≥ β₀_min``: by subcriticality each edge
+    contributes ``edge_gain + child_std ≥ edge_gain + β₀_min > 0`` (induction), so a
+    root decoration ``n`` can only enter the pool when ``|n|_𝔰 + β₀_min < bound``.
+    At order 2 (``β₀ > −2``, ``bound = 1``) this reproduces the old fixed cap of 2;
+    for higher operator order it grows with ``−β₀`` (e.g. cap 3 at order 4, β₀ = −3,
+    admitting the counterterm ``Ξ^{(0,3)}`` the fixed cap silently dropped)."""
+    beta_min = min(sig.node_homogeneity(b).std for b in sig.node_types)
+    return max(0, math.ceil(bound - beta_min) - 1)
 
 
 def _multiindices(length: int, scaling: Scaling, max_scaled: int) -> Iterator[MultiIndex]:
@@ -50,7 +66,7 @@ def generate_trees(sig: Signature, bound: Fraction = _BOUND) -> list[DecoratedTr
     """All rule-conforming decorated trees ``τ`` with ``homogeneity.std < bound`` — the
     γ-truncated basis of the model space ``T``.  ``generate_counterterms`` is the
     ``|τ|<0`` subset (the counterterm carriers); the rest are the positive sector."""
-    decs = list(_multiindices(sig.width, sig.scaling, _MAX_NODE_SCALED))
+    decs = list(_multiindices(sig.width, sig.scaling, _max_node_scaled(sig, bound)))
     pool: dict[DecoratedTree, DecoratedTree] = {}
 
     def add(t: DecoratedTree) -> bool:
@@ -135,8 +151,12 @@ def _emit(
             if is_grad and grad_budget is not None and grad_used >= grad_budget:
                 continue                  # D2: ≤ grad_budget gradient edges per node
             nh = h + contrib
-            if nh.std >= bound:           # atoms sorted ascending ⇒ rest overshoot too
-                break
+            if nh.std >= bound and contrib.std > 0:
+                break                     # sorted ascending ⇒ the rest overshoot too
+            # contrib.std ≤ 0: recurse even above the bound — further copies of a capped
+            # negative slot can pull the sum back under (e.g. ●^{(0,2)}I'(Ξ)² at β₀=−7/4);
+            # `add` re-checks the bound, and negative slots are finite-capped, so this
+            # terminates.
             counts[(comp, p)] += 1
             dfs(idx, chosen + [(comp, p, sub)], nh, grad_used + int(is_grad))
             counts[(comp, p)] -= 1

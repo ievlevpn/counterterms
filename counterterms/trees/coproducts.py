@@ -361,7 +361,8 @@ def _component_naive_homog(members: list[int], nodes: list[_Node], nphi_map: dic
 # --------------------------------------------------------------------------- #
 
 def _p_minus(t: DecoratedTree, sig: Signature) -> tuple[str, DecoratedTree] | tuple[str]:
-    """p₋ on a single tree: keep if divergent; ● and red ●^{0,α} → 𝟙₋; else 0."""
+    """p₋ on a single tree: keep if divergent; the red ●^{0,α} → 𝟙₋ (tex 5760 — red
+    only; a bare *black* ● has homogeneity 0 and maps to 0); else 0."""
     if t.homogeneity(sig).is_negative():
         return ("keep", t)
     if t.nodes() == 1 and t.color == "red" and not any(t.node_dec):
