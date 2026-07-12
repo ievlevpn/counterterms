@@ -209,3 +209,27 @@ def test_general_noise_reduction_is_noise_independent_only():
         assert zeros == zn, f"{name}: general-noise reduction zeroed a symmetry-dependent h"
         assert all(keyof[s] == keyof[d] for s, d in merges.items()), \
             f"{name}: general-noise merge is not a genuine o-duplicate"
+
+
+def test_objects_display_themselves():
+    """UX invariant: trees, counterterms, and equations are self-displaying — shorthand
+    str/repr with NO Signature needed, MathJax-safe `_repr_latex_` (no forest/TikZ), and a
+    markdown `_repr_markdown_` on the equation for Jupyter."""
+    from tests.conftest import kpz
+    from counterterms.render.tree import shorthand
+
+    eq = kpz().renormalize()
+    t = max(eq.all_trees, key=lambda t: t.nodes())
+    assert str(t) == shorthand(t, eq.sig)             # context-free == sig-full display
+    assert repr(t) == str(t) and "DecoratedTree(" not in repr(t)
+    lat = t._repr_latex_()
+    assert lat.startswith("$") and r"\mathcal{I}" in lat and "forest" not in lat
+    assert "▸" in t.draw()                            # ascii_art, sig-free
+
+    ct = eq.counterterms[0]
+    assert "τ =" in str(ct) and "S =" in str(ct)
+    assert ct._repr_latex_().startswith("$")
+
+    assert "counterterm(s)" in repr(eq) and len(repr(eq)) < 120
+    assert str(eq) == eq.summary() and "[τ = " in str(eq)
+    assert eq._repr_markdown_().startswith("# Renormalized equation")

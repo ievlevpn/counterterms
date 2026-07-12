@@ -11,6 +11,7 @@ width, so ``p=(0,1)`` prints as an *x*-derivative, not index soup.
 from __future__ import annotations
 
 from collections import Counter
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -44,6 +45,26 @@ def _node_glyph(node_type: str, sig: Signature) -> str:
     return "Ξ" if len(_noises(sig)) == 1 else "Ξ_" + node_type
 
 
+def _display_sig(t: DecoratedTree) -> Signature:
+    """A display-only stand-in `Signature` derived from the tree itself, so a tree can
+    render with no context (``str(t)``).  Reads the width off the root's node decoration,
+    the noise types and component count off the tree's nodes/edges."""
+    names: set[str] = set()
+    comps: list[int] = [0]
+
+    def walk(s: DecoratedTree) -> None:
+        if s.node_type != "bullet":
+            names.add(s.node_type)
+        for (c, _p, sub) in s.children:
+            comps.append(c)
+            walk(sub)
+
+    walk(t)
+    width = len(t.node_dec)
+    return SimpleNamespace(width=width, dim=width - 1, n_components=max(comps) + 1,
+                           node_types=("bullet", *sorted(names)))  # type: ignore[return-value]
+
+
 def _poly_text(n: MultiIndex, coords: tuple[str, ...]) -> str:
     parts = []
     for i, e in enumerate(n):
@@ -56,7 +77,12 @@ def _poly_text(n: MultiIndex, coords: tuple[str, ...]) -> str:
 
 
 def _node_token(t: DecoratedTree, sig: Signature, coords: tuple[str, ...]) -> str:
-    glyph = _node_glyph(t.node_type, sig)
+    if t.color == "red":                              # contraction node (the forest's square)
+        glyph = "▪" if not (t.o.std or t.o.kap) else f"▪(o={t.o})"
+    else:
+        glyph = _node_glyph(t.node_type, sig)
+        if t.color == "blue":                         # T⁺ root
+            glyph += "⁺"
     poly = _poly_text(t.node_dec, coords)
     return f"{poly}·{glyph}" if poly else glyph
 
@@ -80,7 +106,10 @@ def _grouped(
 # shorthand
 # --------------------------------------------------------------------------- #
 
-def shorthand(t: DecoratedTree, sig: Signature, coords: tuple[str, ...] | None = None) -> str:
+def shorthand(t: DecoratedTree, sig: Signature | None = None,
+              coords: tuple[str, ...] | None = None) -> str:
+    if sig is None:
+        sig = _display_sig(t)
     if coords is None:
         coords = coord_names(sig.width)
     factors = [_node_token(t, sig, coords)]
@@ -93,10 +122,56 @@ def shorthand(t: DecoratedTree, sig: Signature, coords: tuple[str, ...] | None =
 
 
 # --------------------------------------------------------------------------- #
+# shorthand, math-mode LaTeX (MathJax-safe — no forest/TikZ; for Jupyter reprs)
+# --------------------------------------------------------------------------- #
+
+def _node_token_latex(t: DecoratedTree, sig: Signature, coords: tuple[str, ...]) -> str:
+    if t.color == "red":
+        glyph = r"\blacksquare" if not (t.o.std or t.o.kap) \
+            else r"\blacksquare^{(o=" + str(t.o).replace("κ", r"\kappa") + ")}"
+    elif t.node_type == "bullet":
+        glyph = r"\bullet"
+    else:
+        glyph = r"\Xi" if len(_noises(sig)) == 1 else r"\Xi_{\mathrm{" + t.node_type + "}}"
+    if t.color == "blue":
+        glyph += "^{+}"
+    poly = _poly_latex(t.node_dec, coords)
+    return poly + r"\cdot " + glyph if poly else glyph
+
+
+def _edge_glyph_latex(c: int, p: MultiIndex, sig: Signature, coords: tuple[str, ...]) -> str:
+    s = r"\mathcal{I}"
+    if sig.n_components > 1:
+        s += "^{(" + str(c) + ")}"
+    sub = "".join(coords[i] for i, e in enumerate(p) for _ in range(e))
+    if sub:
+        s += "_{" + sub + "}"
+    return s
+
+
+def shorthand_latex(t: DecoratedTree, sig: Signature | None = None,
+                    coords: tuple[str, ...] | None = None) -> str:
+    """Math-mode LaTeX shorthand, e.g. ``\\bullet\\cdot\\mathcal{I}_{x}[\\Xi]^{2}``."""
+    if sig is None:
+        sig = _display_sig(t)
+    if coords is None:
+        coords = coord_names(sig.width)
+    factors = [_node_token_latex(t, sig, coords)]
+    for (c, p, sub), m in _grouped(t.children):
+        e = _edge_glyph_latex(c, p, sig, coords) + "[" + shorthand_latex(sub, sig, coords) + "]"
+        if m > 1:
+            e += "^{" + str(m) + "}"
+        factors.append(e)
+    return r"\cdot ".join(factors)
+
+
+# --------------------------------------------------------------------------- #
 # 2D terminal drawing  (fixed 4-char indent; edge embedded in the child token)
 # --------------------------------------------------------------------------- #
 
-def ascii_art(t: DecoratedTree, sig: Signature) -> str:
+def ascii_art(t: DecoratedTree, sig: Signature | None = None) -> str:
+    if sig is None:
+        sig = _display_sig(t)
     coords = coord_names(sig.width)
     lines = [_node_token(t, sig, coords)]
     _walk(t, sig, coords, "", lines)

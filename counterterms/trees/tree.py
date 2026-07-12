@@ -79,6 +79,24 @@ class DecoratedTree:
         """The canonical isomorphism key (satisfies the `core.symbol.Symbol` protocol)."""
         return self._sortkey()
 
+    # --- self-display: shorthand everywhere, MathJax LaTeX in Jupyter --------- #
+
+    def __str__(self) -> str:
+        from ..render.tree import shorthand
+        return shorthand(self)
+
+    def __repr__(self) -> str:            # dataclass skips its generated __repr__
+        return self.__str__()
+
+    def _repr_latex_(self) -> str:
+        from ..render.tree import shorthand_latex
+        return f"${shorthand_latex(self)}$"
+
+    def draw(self, sig: Signature | None = None) -> str:
+        """2D terminal drawing (`render.tree.ascii_art`)."""
+        from ..render.tree import ascii_art
+        return ascii_art(self, sig)
+
 
 def tree(node_type: str, node_dec: MultiIndex, children: tuple[Edge, ...] = (),
          color: str = "black", o: Homogeneity = _ZERO) -> DecoratedTree:

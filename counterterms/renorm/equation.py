@@ -39,6 +39,20 @@ class Counterterm:
     def term(self) -> sympy.Expr:
         return self.coefficient * self.elem_diff
 
+    def __str__(self) -> str:
+        return (f"{sympy.sstr(sympy.expand(self.term))}   "
+                f"[τ = {self.tree}, |τ| = {self.homogeneity}, S = {self.symmetry_factor}]")
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def _repr_latex_(self) -> str:
+        from ..render.tree import shorthand_latex
+        hom = str(self.homogeneity).replace("κ", r"\kappa")
+        return (f"${sympy.latex(sympy.expand(self.term))} \\qquad "
+                f"\\tau = {shorthand_latex(self.tree)},\\ |\\tau| = {hom},"
+                f"\\ S = {self.symmetry_factor}$")
+
 
 @dataclass
 class RenormalizedEquation:
@@ -158,6 +172,7 @@ class RenormalizedEquation:
 
     def summary(self) -> str:
         """Compact per-component listing (kept for error messages / quick demos)."""
+        from ..render.tree import shorthand
         lines = []
         for comp in range(self.n_components):
             cts = self.per_component[comp]
@@ -165,5 +180,18 @@ class RenormalizedEquation:
             for ct in sorted(cts, key=lambda c: c.homogeneity._key()):
                 term = sympy.expand(ct.coefficient * self._pretty(ct.elem_diff))
                 lines.append(f"   |τ|={str(ct.homogeneity):>8}  S={ct.symmetry_factor}  "
-                             f"+ {sympy.sstr(term)}")
+                             f"+ {sympy.sstr(term):<12}  [τ = {shorthand(ct.tree, self.sig)}]")
         return "\n".join(lines)
+
+    # --- self-display: summary at the prompt, markdown report in Jupyter ------ #
+
+    def __str__(self) -> str:
+        return self.summary()
+
+    def __repr__(self) -> str:
+        total = sum(len(v) for v in self.per_component.values())
+        return (f"<RenormalizedEquation: {self.n_components} component(s), "
+                f"{total} counterterm(s), {len(self.all_trees)} trees in 𝓑_<0>")
+
+    def _repr_markdown_(self) -> str:
+        return self.render("markdown")
