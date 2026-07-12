@@ -183,3 +183,22 @@ def test_canonical_family_object():
     rows, legend = canonical_data(eq, reduced=True, symmetric=True)
     assert [(t, v) for t, _k, v in rows] == list(fam.constants.items())
     assert dict(legend) == fam.legend
+
+
+def test_divergence_rates_match_literature():
+    """KPZ (Hairer): C_ε ≍ ε⁻¹ at |τ| = −1−2κ; the two −4κ constants are log-divergent;
+    the bare noise sits at ε^(−3/2). Rates are read off the κ→0 homogeneity."""
+    import sympy
+    from tests.conftest import kpz
+    from counterterms.renorm.scheme import divergence_str
+
+    eq = kpz().renormalize()
+    eps = sympy.Symbol("epsilon", positive=True)
+    by_rate = {}
+    for ct in eq.counterterms:
+        by_rate.setdefault(ct.divergence, []).append(ct)
+    assert len(by_rate[sympy.log(1 / eps)]) == 4          # the four −4κ / −2κ … wait: −2κ too
+    assert eps ** sympy.Rational(-1) in by_rate           # C_ε ~ ε⁻¹
+    assert eps ** sympy.Rational(-3, 2) in by_rate        # bare Ξ
+    assert "log(1/ε)" in eq.summary()                     # summary shows rates
+    assert divergence_str(eq.counterterms[0].homogeneity) in str(eq.counterterms[0])

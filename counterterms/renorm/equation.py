@@ -41,9 +41,18 @@ class Counterterm:
     def term(self) -> sympy.Expr:
         return self.coefficient * self.elem_diff
 
+    @property
+    def divergence(self) -> sympy.Expr:
+        """Leading ε→0 rate of the canonical value of ``k_τ`` (`scheme.divergence_rate`):
+        ``ε^{|τ|₀}``, or ``log(1/ε)`` for a κ-critical tree.  Up to log corrections."""
+        from .scheme import divergence_rate
+        return divergence_rate(self.homogeneity)
+
     def __str__(self) -> str:
+        from .scheme import divergence_str
         return (f"{sympy.sstr(sympy.expand(self.term))}   "
-                f"[τ = {self.tree}, |τ| = {self.homogeneity}, S = {self.symmetry_factor}]")
+                f"[τ = {self.tree}, |τ| = {self.homogeneity}, S = {self.symmetry_factor}, "
+                f"~ {divergence_str(self.homogeneity)}]")
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -106,13 +115,15 @@ class CanonicalFamily:
                 for sym, tr in self.legend.items() if is_bare(tr)}
 
     def __str__(self) -> str:
+        from .scheme import divergence_str
         tag = ("canonical (BPHZ) constants"
                + (", reduced" if self.reduced else "")
                + (" [symmetric noise]" if self.reduced and self.symmetric else ""))
         lines = [tag + ":"]
         for t, v in self.constants.items():
             k = self.free_constants[t]
-            lines.append(f"  {k} = {sympy.sstr(v)}   [τ = {t}]")
+            rate = f", ~ {divergence_str(t.homogeneity(self.eq.sig))}" if v != 0 else ""
+            lines.append(f"  {k} = {sympy.sstr(v)}   [τ = {t}{rate}]")
         for sym, tr in self.legend.items():
             lines.append(f"  {sym} = h_ε({tr})")
         return "\n".join(lines)
@@ -278,6 +289,7 @@ class RenormalizedEquation:
     def summary(self) -> str:
         """Compact per-component listing (kept for error messages / quick demos)."""
         from ..render.tree import shorthand
+        from .scheme import divergence_str
         lines = []
         for comp in range(self.n_components):
             cts = self.per_component[comp]
@@ -285,6 +297,7 @@ class RenormalizedEquation:
             for ct in sorted(cts, key=lambda c: c.homogeneity._key()):
                 term = sympy.expand(ct.coefficient * self._pretty(ct.elem_diff))
                 lines.append(f"   |τ|={str(ct.homogeneity):>8}  S={ct.symmetry_factor}  "
+                             f"~{divergence_str(ct.homogeneity):<9}  "
                              f"+ {sympy.sstr(term):<12}  [τ = {shorthand(ct.tree, self.sig)}]")
         return "\n".join(lines)
 

@@ -15,8 +15,8 @@ from sympy.core.function import AppliedUndef
 from sympy.printing.latex import LatexPrinter
 from sympy.printing.str import StrPrinter
 
-from ..renorm.scheme import (WHITE_NOISE, Expectation, expectation, is_bare,
-                             reduction_subs as _reduction_subs)
+from ..renorm.scheme import (WHITE_NOISE, Expectation, divergence_str, expectation,
+                             is_bare, reduction_subs as _reduction_subs)
 from .tree import ascii_art, coord_names, edge_glyph_text, shorthand, _node_glyph
 
 if TYPE_CHECKING:
@@ -298,7 +298,8 @@ def text_report(eq: RenormalizedEquation, canonical: bool = False, reduced: bool
                     f"{len(cmap)} counterterms, {ndrop} dropped)"))
     for t in trees:
         k = cmap.get(t)
-        tag = str(k) if k is not None else "F(τ*)=0 — no counterterm"
+        tag = f"{k} ~ {divergence_str(t.homogeneity(sig))}" if k is not None \
+            else "F(τ*)=0 — no counterterm"
         out.append(f"  τ = {shorthand(t, sig, coords)}      "
                    f"|τ| = {t.homogeneity(sig)}   S = {t.symmetry_factor()}   [{tag}]")
         out += ["      " + ln for ln in ascii_art(t, sig).splitlines()]
@@ -410,14 +411,15 @@ def markdown_report(eq: RenormalizedEquation, canonical: bool = False,
 
     L += ["## Divergent trees", ""]
     if scalar:
-        L += ["| τ | \\|τ\\| | S(τ) | constant | F(τ*) |", "|---|---|---|---|---|"]
+        L += ["| τ | \\|τ\\| | S(τ) | constant | ~ε→0 | F(τ*) |", "|---|---|---|---|---|---|"]
     else:
-        L += ["| τ | \\|τ\\| | S(τ) | constant |", "|---|---|---|---|"]
+        L += ["| τ | \\|τ\\| | S(τ) | constant | ~ε→0 |", "|---|---|---|---|---|"]
     for t in trees:
         k = cmap.get(t)
         kc = str(k) if k is not None else "— (F=0)"
+        div = divergence_str(t.homogeneity(sig)) if k is not None else "—"
         row = f"| `{_md_cell(shorthand(t, sig, coords))}` | `{_md_cell(t.homogeneity(sig))}` | " \
-              f"{t.symmetry_factor()} | `{_md_cell(kc)}` |"
+              f"{t.symmetry_factor()} | `{_md_cell(kc)}` | `{_md_cell(div)}` |"
         if scalar:
             f = fstr(eq._pretty(emap[t])) if k is not None else "0"
             row += f" `{_md_cell(f)}` |"
@@ -524,6 +526,7 @@ def json_report(eq: RenormalizedEquation, canonical: bool = False,
             "nodes": t.nodes(),
             "contributes": k is not None,
             "constant": str(k) if k is not None else None,
+            "divergence": (divergence_str(t.homogeneity(sig)) if k is not None else None),
             "F_latex": (flatex(eq._pretty(emap[t]))
                         if (k is not None and scalar) else None),
         })

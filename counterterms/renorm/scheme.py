@@ -23,6 +23,7 @@ import sympy
 from ..trees.coproducts import _explode
 
 if TYPE_CHECKING:
+    from ..core.homogeneity import Homogeneity
     from ..core.signature import Signature
     from ..structures import RenormalizationStructure
     from ..trees.tree import DecoratedTree
@@ -150,6 +151,28 @@ def spatial_reflection_zero(tree: DecoratedTree, sig: Signature, symmetric: bool
     _nodes, edges = _explode(tree)
     d_space = sum(sum(p[1:]) for (_a, _b, _c, p) in edges)
     return d_space % 2 == 1
+
+
+_EPS = sympy.Symbol("epsilon", positive=True)
+
+
+def divergence_rate(h: Homogeneity) -> sympy.Expr:
+    """The leading ε→0 divergence rate of a renormalization constant indexed by a tree of
+    homogeneity ``h``, by scaling degree: ``ε^{|τ|₀}`` with ``|τ|₀`` the κ→0 homogeneity,
+    and ``log(1/ε)`` at the κ-critical trees (``|τ|₀ = 0``).  Up to log *corrections* from
+    subdivergences — every twisted-antipode term scales with the same total ε-degree (the
+    o-decoration preserves extended homogeneity), so the power is exact but the log
+    exponent is not computed.  Anchor: KPZ's ``C_ε ≍ ε⁻¹`` at ``|τ| = −1−2κ`` and its two
+    log-divergent ``−4κ`` constants (Hairer, *Solving the KPZ equation*)."""
+    std = sympy.Rational(h.std.numerator, h.std.denominator)
+    if std == 0:
+        return sympy.log(1 / _EPS)
+    return _EPS ** std
+
+
+def divergence_str(h: Homogeneity) -> str:
+    """Plain-text display of `divergence_rate`: ``ε^(-1)`` / ``log(1/ε)``."""
+    return "log(1/ε)" if h.std == 0 else f"ε^({h.std})"
 
 
 def reduction_subs(h_map: dict[DecoratedTree, sympy.Symbol], sig: Signature,
