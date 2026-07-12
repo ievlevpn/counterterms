@@ -21,9 +21,12 @@ if TYPE_CHECKING:
         RenormalizationStructure,
     )
 
+from .playground import Playground, playground  # noqa: E402  (function shadows its module)
+
 __all__ = ["SPDE", "Noise", "Operator", "Parabolic", "FractionalHeat", "Unknown",
            "kappa", "jet", "renormalize", "build_renormalization",
-           "build_regularity_structure", "build_renormalization_group", "daprato_lift"]
+           "build_regularity_structure", "build_renormalization_group", "daprato_lift",
+           "playground", "Playground"]
 
 
 def renormalize(spde: SPDE) -> RenormalizedEquation:
