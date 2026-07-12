@@ -38,8 +38,12 @@ trees (`renorm/scheme.py`, see `notes/elementary_expectations.md`). Still deferr
   `Signature`-parametric design, interfaces, extension cookbook, phasing).
 - `counterterms/` — package: `core/{homogeneity,jets,signature,hopf,symbol}`, `trees/{tree,
   coproducts}`, `equation/{dsl,rule,generate,daprato}`, `renorm/{nonlinearity,equation,scheme}`,
-  `structures.py`, `render/{tree,report,latex,export}`, `api`. (Phase-3 algebra — `core/hopf`,
-  `trees/coproducts`, `structures` — is built and green.)
+  `structures.py`, `render/{tree,report,latex,export}`, `api`, `playground` (standalone
+  tree/algebra sandbox, no SPDE needed). (Phase-3 algebra — `core/hopf`, `trees/coproducts`,
+  `structures` — is built and green.) UX layer: objects self-display (shorthand str/repr,
+  Jupyter `_repr_latex_`/`_repr_markdown_`); `eq.canonical()/.bphz()` → `CanonicalFamily`
+  (BPHZ constants/expectations/rhs as sympy objects); `Counterterm.divergence` (ε-rate);
+  `Noise.white/spatial_white`.
   `tests/` — layered by concern: `conftest.py` (the SPDE corpus + `ctx` fixture), `test_{homogeneity,
   core,trees}` (the non-negotiable conventions as unit tests), `test_pipeline` (generate + Υ-map),
   `test_coproducts` (the algebraic laws, parametrized over the corpus), `test_{structures,goldens,
