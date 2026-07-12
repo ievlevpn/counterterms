@@ -146,3 +146,40 @@ def test_spatial_reflection_zero():
     assert not spatial_reflection_zero(h0, SIG)
     assert spatial_reflection_zero(h1, SIG)
     assert not spatial_reflection_zero(p0, SIG)
+
+
+def test_canonical_family_object():
+    """`eq.canonical()/.bphz()` expose the report's canonical data as computable sympy
+    objects: constants (poly in h_i), legend, Wick expectations, substitution, collected rhs.
+    KPZ, symmetric noise: parity kills k0,k1,k3; reflection kills the two drift constants;
+    exactly 3 survive (literature: Hairer's single −Cε after collecting)."""
+    import sympy
+    from tests.conftest import kpz
+    from counterterms.renorm.scheme import Expectation
+
+    eq = kpz().renormalize()
+    fam = eq.bphz()                                  # = canonical(reduced=True, symmetric=True)
+    assert fam.reduced and fam.symmetric
+    assert set(fam.constants) == set(fam.free_constants) and len(fam.constants) == 8
+    survivors = {t: v for t, v in fam.constants.items() if v != 0}
+    assert len(survivors) == 3                       # k2, k6, k7 — the ε⁻¹ and the two logs
+    assert all(str(s).startswith("h") for v in survivors.values() for s in v.free_symbols)
+
+    # legend covers exactly the h-symbols used; expectations are Wick integrals for bare σ
+    used = set().union(*(v.free_symbols for v in fam.constants.values()))
+    assert set(fam.legend) == used
+    exps = fam.expectations()
+    assert exps and all(isinstance(e, Expectation) for e in exps.values())
+
+    # substitution replays the reduction on the free family; rhs collects it
+    pretty_family = sympy.expand(sum(
+        sympy.Rational(1, ct.symmetry_factor) * ct.constant * eq._pretty(ct.elem_diff)
+        for ct in eq.per_component[0]))
+    assert sympy.expand(fam.rhs(0) - eq.original_rhs(0)
+                        - pretty_family.xreplace(fam.substitution)) == 0
+
+    # the renderers' adapter agrees with the object
+    from counterterms.render.report import canonical_data
+    rows, legend = canonical_data(eq, reduced=True, symmetric=True)
+    assert [(t, v) for t, _k, v in rows] == list(fam.constants.items())
+    assert dict(legend) == fam.legend

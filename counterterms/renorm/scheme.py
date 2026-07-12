@@ -152,6 +152,33 @@ def spatial_reflection_zero(tree: DecoratedTree, sig: Signature, symmetric: bool
     return d_space % 2 == 1
 
 
+def reduction_subs(h_map: dict[DecoratedTree, sympy.Symbol], sig: Signature,
+                   symmetric: bool = True) -> dict[sympy.Symbol, sympy.Expr]:
+    """Provably-correct substitutions that *reduce* the canonical constants.  Each is an exact
+    identity, so the reduced constants equal the originals:
+
+    * vanishing ``h(σ) → 0`` — root ``Xⁿ`` / parity / pure-kernel total derivatives (`zero_note`,
+      valid for *any* centered noise) and — **only when ``symmetric``** — odd spatial-reflection
+      parity ``x→−x`` (`spatial_reflection_zero`, valid only for a spatially-symmetric noise);
+    * o-duplicate ``h(σ) → hⱼ`` — same expectation up to the o-decoration, which ``Π`` ignores
+      (`expectation_key`, tex 4003).
+
+    With ``symmetric=False`` the spatial-reflection identity is **not** applied (it is genuinely
+    invalid for an anisotropic noise — e.g. KPZ's drift counterterm need not vanish)."""
+    subs: dict[sympy.Symbol, sympy.Expr] = {}
+    first_by_key: dict[tuple, sympy.Symbol] = {}
+    for tr, sym in h_map.items():
+        if zero_note(tr, sig) or spatial_reflection_zero(tr, sig, symmetric):
+            subs[sym] = sympy.Integer(0)
+            continue
+        key = expectation_key(tr)
+        if key in first_by_key:
+            subs[sym] = first_by_key[key]
+        else:
+            first_by_key[key] = sym
+    return subs
+
+
 def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE) -> Expectation:
     """The Wick expansion of ``h(τ)=𝔼[Π^ζτ](0)`` (symbolic; integrals unevaluated).
 

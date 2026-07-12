@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from ..core.homogeneity import Homogeneity
     from ..core.signature import Signature
     from ..equation.dsl import SPDE, Unknown
+    from ..renorm.scheme import Expectation, NoiseLaw
+    from ..structures import RenormalizationStructure
     from ..trees.tree import DecoratedTree
 
 
@@ -52,6 +54,74 @@ class Counterterm:
         return (f"${sympy.latex(sympy.expand(self.term))} \\qquad "
                 f"\\tau = {shorthand_latex(self.tree)},\\ |\\tau| = {hom},"
                 f"\\ S = {self.symmetry_factor}$")
+
+
+def _collected_rhs(eq: RenormalizedEquation, comp: int,
+                   canon: dict[DecoratedTree, sympy.Expr]) -> sympy.Expr:
+    """The renormalized RHS of component ``comp`` with each free constant replaced by its
+    value from ``canon``: original equation + Σ (value/S(τ))·F(τ*); zero values drop out."""
+    expr = eq.original_rhs(comp)
+    for ct in eq.per_component[comp]:
+        v = canon.get(ct.tree, sympy.Integer(0))
+        if v != 0:
+            expr += sympy.Rational(1, ct.symmetry_factor) * v * eq._pretty(ct.elem_diff)
+    return sympy.expand(expr)
+
+
+@dataclass
+class CanonicalFamily:
+    """The canonical (BPHZ) specialization ``k_τ = h(S'₋τ)`` of the free-constant family,
+    as **computable sympy objects** (the report renders *from* this).
+
+    ``constants[τ]`` is the canonical value of the free constant ``k_τ`` — a polynomial in
+    the elementary expectations ``hᵢ = h_ε(σᵢ) = 𝔼[Π^ε σᵢ](0)`` (``0`` when it provably
+    vanishes); ``legend[hᵢ]`` is the tree ``σᵢ``.  With ``reduced`` the exact identities of
+    `renorm.scheme.reduction_subs` are folded in (`symmetric` additionally applies the
+    spatial-reflection identity — valid only for a spatially-symmetric noise)."""
+
+    eq: RenormalizedEquation
+    structure: RenormalizationStructure               # the underlying Phase-3 algebra
+    reduced: bool
+    symmetric: bool
+    constants: dict[DecoratedTree, sympy.Expr]        # τ → value of k_τ (homogeneity order)
+    free_constants: dict[DecoratedTree, sympy.Symbol]  # τ → the free symbol k_τ it replaces
+    legend: dict[sympy.Symbol, DecoratedTree]         # hᵢ → σᵢ
+
+    @property
+    def substitution(self) -> dict[sympy.Symbol, sympy.Expr]:
+        """``{k_τ: canonical value}`` — apply with ``.xreplace`` to any expression built
+        from the free family (e.g. ``eq.counterterm_rhs(0)``)."""
+        return {self.free_constants[t]: v for t, v in self.constants.items()}
+
+    def rhs(self, comp: int = 0) -> sympy.Expr:
+        """The canonically renormalized RHS of component ``comp`` (collected; vanishing
+        counterterms dropped)."""
+        return _collected_rhs(self.eq, comp, self.constants)
+
+    def expectations(self, law: NoiseLaw | None = None) -> dict[sympy.Symbol, Expectation]:
+        """``hᵢ → `` its Wick-pairing integral (`renorm.scheme.expectation`), for the bare
+        σᵢ (the non-bare ones need the full canonical model — Track B — and are skipped)."""
+        from .scheme import WHITE_NOISE, expectation, is_bare
+        return {sym: expectation(tr, self.eq.sig, law or WHITE_NOISE)
+                for sym, tr in self.legend.items() if is_bare(tr)}
+
+    def __str__(self) -> str:
+        tag = ("canonical (BPHZ) constants"
+               + (", reduced" if self.reduced else "")
+               + (" [symmetric noise]" if self.reduced and self.symmetric else ""))
+        lines = [tag + ":"]
+        for t, v in self.constants.items():
+            k = self.free_constants[t]
+            lines.append(f"  {k} = {sympy.sstr(v)}   [τ = {t}]")
+        for sym, tr in self.legend.items():
+            lines.append(f"  {sym} = h_ε({tr})")
+        return "\n".join(lines)
+
+    def __repr__(self) -> str:
+        nz = sum(1 for v in self.constants.values() if v == 0)
+        return (f"<CanonicalFamily: {len(self.constants)} constants "
+                f"({nz} vanish), {len(self.legend)} elementary expectations, "
+                f"reduced={self.reduced}, symmetric={self.symmetric}>")
 
 
 @dataclass
@@ -119,6 +189,41 @@ class RenormalizedEquation:
         for nz in self.spde.noises:
             expr = expr + self.base[comp][nz.name] * nz.symbol
         return self._pretty(expr)
+
+    # --- the canonical (BPHZ) specialization, as computable objects ------------ #
+
+    def canonical(self, reduced: bool = False, symmetric: bool = True) -> CanonicalFamily:
+        """The canonical (BPHZ) values ``k_τ = h(S'₋τ)`` of the free constants, for a
+        centered Gaussian noise (parity-reduced: odd-noise trees vanish).  ``reduced``
+        folds in the exact identities of `renorm.scheme.reduction_subs`; ``symmetric``
+        (default) additionally applies spatial reflection — set ``False`` for an
+        anisotropic noise, where that identity is invalid."""
+        from ..structures import build_renormalization
+        rs = build_renormalization(self.spde)
+        cmap = {ct.tree: ct.constant
+                for cts in self.per_component.values() for ct in cts}
+        trees = [t for t in sorted(self.all_trees, key=lambda t: t.homogeneity(self.sig)._key())
+                 if t in cmap]
+        values = [rs.canonical_character(t) for t in trees]
+        if reduced:
+            from .scheme import reduction_subs
+            subs = reduction_subs(rs._h, self.sig, symmetric)
+            values = [sympy.expand(v.xreplace(subs)) for v in values]
+        # keep only the h-symbols that survive, renumbered h0, h1, … contiguously
+        used = sorted(set().union(*(v.free_symbols for v in values)) if values else set(),
+                      key=lambda s: int(str(s)[1:]))
+        relabel = {s: sympy.Symbol(f"h{i}") for i, s in enumerate(used)}
+        values = [v.xreplace(relabel) for v in values]
+        legend = dict(sorted(((relabel[sym], tr) for tr, sym in rs._h.items() if sym in relabel),
+                             key=lambda x: int(str(x[0])[1:])))
+        return CanonicalFamily(
+            eq=self, structure=rs, reduced=reduced, symmetric=symmetric,
+            constants=dict(zip(trees, values)),
+            free_constants={t: cmap[t] for t in trees}, legend=legend)
+
+    def bphz(self, symmetric: bool = True) -> CanonicalFamily:
+        """Sugar: the fully reduced canonical family, ``canonical(reduced=True, …)``."""
+        return self.canonical(reduced=True, symmetric=symmetric)
 
     # --- rendering (notes/output.md) ------------------------------------------ #
 

@@ -15,7 +15,8 @@ from sympy.core.function import AppliedUndef
 from sympy.printing.latex import LatexPrinter
 from sympy.printing.str import StrPrinter
 
-from ..renorm.scheme import WHITE_NOISE, Expectation, expectation, is_bare
+from ..renorm.scheme import (WHITE_NOISE, Expectation, expectation, is_bare,
+                             reduction_subs as _reduction_subs)
 from .tree import ascii_art, coord_names, edge_glyph_text, shorthand, _node_glyph
 
 if TYPE_CHECKING:
@@ -123,63 +124,14 @@ def _sorted_trees(eq: RenormalizedEquation) -> list[DecoratedTree]:
 # Phase-3 bridge: the canonical (BHZ) renormalization, symbolic in h(σ).
 # --------------------------------------------------------------------------- #
 
-def _reduction_subs(h_map: dict, sig: Signature, symmetric: bool = True
-                    ) -> dict[sympy.Symbol, sympy.Expr]:
-    """Provably-correct substitutions that *reduce* the canonical constants.  Each is an exact
-    identity, so the reduced constants equal the originals:
-
-    * vanishing ``h(σ) → 0`` — root ``Xⁿ`` / parity / pure-kernel total derivatives (`scheme.zero_note`,
-      valid for *any* centered noise) and — **only when ``symmetric``** — odd spatial-reflection
-      parity ``x→−x`` (`scheme.spatial_reflection_zero`, valid only for a spatially-symmetric noise);
-    * o-duplicate ``h(σ) → hⱼ`` — same expectation up to the o-decoration, which ``Π`` ignores
-      (`scheme.expectation_key`, tex 4003).
-
-    With ``symmetric=False`` the spatial-reflection identity is **not** applied (it is genuinely
-    invalid for an anisotropic noise — e.g. KPZ's drift counterterm need not vanish)."""
-    from ..renorm.scheme import expectation_key, spatial_reflection_zero, zero_note
-    subs: dict[sympy.Symbol, sympy.Expr] = {}
-    first_by_key: dict[tuple, sympy.Symbol] = {}
-    for tr, sym in h_map.items():
-        if zero_note(tr, sig) or spatial_reflection_zero(tr, sig, symmetric):
-            subs[sym] = sympy.Integer(0)
-            continue
-        key = expectation_key(tr)
-        if key in first_by_key:
-            subs[sym] = first_by_key[key]
-        else:
-            first_by_key[key] = sym
-    return subs
-
-
 def canonical_data(eq: RenormalizedEquation, reduced: bool = False,
                    symmetric: bool = True) -> tuple[list, list]:
-    """Build the renormalization structure and return ``(rows, legend)``:
-
-    * ``rows = [(tree, free_const k_τ, value)]`` over the counterterm trees (homogeneity
-      order), where ``value`` is the **canonical (BPHZ) constant** ``k_τ = h(S'₋τ)`` for a
-      centered-Gaussian noise — *parity-reduced*, so trees with an odd number of noise
-      vertices vanish (``value == 0``) and the survivors collapse to short polynomials in
-      the even-noise ``h``-symbols;
-    * ``legend = [(h_symbol, σ)]`` for each surviving elementary expectation ``h(σ)``.
-
-    With ``reduced=True`` the provably-correct identities of `_reduction_subs` are applied
-    (vanishing and o-duplicate ``h(σ)``, for a spatially-symmetric noise), so the constants
-    appear fully reduced and the legend keeps only the genuine, distinct, non-zero ``h(σ)``."""
-    from ..structures import build_renormalization
-    rs = build_renormalization(eq.spde)
-    cmap = const_map(eq)
-    rows = [(t, cmap[t], rs.canonical_character(t)) for t in _sorted_trees(eq) if t in cmap]
-    if reduced:
-        subs = _reduction_subs(rs._h, eq.sig, symmetric)
-        rows = [(t, k, sympy.expand(v.xreplace(subs))) for t, k, v in rows]
-    # keep only the h-symbols that survive, and renumber them h0, h1, … contiguously
-    used = sorted(set().union(*(v.free_symbols for _t, _k, v in rows)) if rows else set(),
-                  key=lambda s: int(str(s)[1:]))
-    relabel = {s: sympy.Symbol(f"h{i}") for i, s in enumerate(used)}
-    rows = [(t, k, v.xreplace(relabel)) for t, k, v in rows]
-    legend = sorted(((relabel[sym], tr) for tr, sym in rs._h.items() if sym in relabel),
-                    key=lambda x: int(str(x[0])[1:]))
-    return rows, legend
+    """Adapter over `renorm.equation.CanonicalFamily` (``eq.canonical(...)``) keeping the
+    renderers' shapes: ``rows = [(tree, free_const k_τ, value)]`` in homogeneity order and
+    ``legend = [(h_symbol, σ)]``.  See `CanonicalFamily` for the semantics."""
+    fam = eq.canonical(reduced=reduced, symmetric=symmetric)
+    rows = [(t, fam.free_constants[t], v) for t, v in fam.constants.items()]
+    return rows, list(fam.legend.items())
 
 
 def _h_annotation(tr: DecoratedTree) -> str:
@@ -297,16 +249,10 @@ def expectation_str(e: Expectation, width: int) -> str:
 
 
 def canonical_family_rhs(eq: RenormalizedEquation, comp: int, rows: list):
-    """The canonically renormalized RHS of component ``comp``: the original equation plus
-    each surviving counterterm with its free constant replaced by the canonical (BPHZ)
-    value ``(k_τ/S(τ))·F(τ*)``; vanishing (odd-parity) trees drop out."""
-    canon = {t: v for t, _k, v in rows}
-    expr = eq.original_rhs(comp)
-    for ct in eq.per_component[comp]:
-        v = canon.get(ct.tree, sympy.Integer(0))
-        if v != 0:
-            expr += sympy.Rational(1, ct.symmetry_factor) * v * eq._pretty(ct.elem_diff)
-    return sympy.expand(expr)
+    """The canonically renormalized RHS of component ``comp`` (delegates to the owner,
+    `renorm.equation._collected_rhs`); vanishing (odd-parity) trees drop out."""
+    from ..renorm.equation import _collected_rhs
+    return _collected_rhs(eq, comp, {t: v for t, _k, v in rows})
 
 
 # --------------------------------------------------------------------------- #
