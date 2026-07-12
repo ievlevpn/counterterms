@@ -65,7 +65,7 @@ class Playground:
         """Sugar for the single-noise leaf, ``pg.noise()``."""
         return self.noise()
 
-    def I(self, sub: DecoratedTree, p: object = "", comp: int = 0) -> Edge:
+    def I(self, sub: DecoratedTree, p: object = "", comp: int = 0) -> Edge:  # noqa: E743 — the paper's 𝓘
         """An integration edge ``𝓘^{(comp)}_p[sub]`` — feed to `tree`."""
         return (comp, self._mi(p), sub)
 

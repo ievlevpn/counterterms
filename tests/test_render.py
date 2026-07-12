@@ -194,7 +194,7 @@ def test_general_noise_reduction_is_noise_independent_only():
     leak into the general-noise reduction (no accidental reduction for an anisotropic noise)."""
     from counterterms.structures import build_renormalization
     from counterterms.renorm.scheme import expectation_key, zero_note
-    from counterterms.render.report import _reduction_subs
+    from counterterms.renorm.scheme import reduction_subs as _reduction_subs
     from tests.conftest import CORPUS
     for name, mk in CORPUS.items():
         rs = build_renormalization(mk())

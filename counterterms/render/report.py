@@ -16,7 +16,7 @@ from sympy.printing.latex import LatexPrinter
 from sympy.printing.str import StrPrinter
 
 from ..renorm.scheme import (WHITE_NOISE, Expectation, divergence_str, expectation,
-                             is_bare, reduction_subs as _reduction_subs)
+                             is_bare)
 from .tree import ascii_art, coord_names, edge_glyph_text, shorthand, _node_glyph
 
 if TYPE_CHECKING:
