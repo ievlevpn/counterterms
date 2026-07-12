@@ -34,7 +34,8 @@ def _frac(x: object) -> Fraction:
 
 
 def _split_kappa(expr: object) -> tuple[Fraction, Fraction]:
-    expr = sympy.expand(sympy.sympify(expr))
+    # locals: a string "-3/2 - kappa" must hit OUR kappa (positive=True), not a fresh symbol
+    expr = sympy.expand(sympy.sympify(expr, locals={"kappa": kappa, "κ": kappa}))
     if expr.has(kappa) and sympy.Poly(expr, kappa).degree() > 1:
         raise ValueError("regularity must be affine in κ")
     return _frac(expr.coeff(kappa, 0)), _frac(expr.coeff(kappa, 1))
@@ -71,6 +72,22 @@ class Noise:
         self.symbol = sympy.Symbol(name)
         self.std, self.kap = _split_kappa(regularity)
         self.homogeneity = Homogeneity(self.std, self.kap)
+
+    # Named noises — the regularities users otherwise hand-compute (and get wrong:
+    # the |Ξ|=β₀ convention makes an off-by-2 silent and fatal).  tex 694: a
+    # d-dimensional space white noise is C^{−d/2−κ}; a spacetime white noise is
+    # C^{−d/2−1−κ} under the parabolic scaling — i.e. −|𝔰|/2−κ with |𝔰|=order+d.
+
+    @classmethod
+    def white(cls, name: str, dim: int, order: int = 2) -> Noise:
+        """Spacetime white noise in ``dim`` space dimensions: β₀ = −(order+dim)/2 − κ
+        (= −|𝔰|/2 − κ under the (order,1,…,1) scaling; tex 694)."""
+        return cls(name, sympy.Rational(-(order + dim), 2) - kappa)
+
+    @classmethod
+    def spatial_white(cls, name: str, dim: int) -> Noise:
+        """Purely spatial white noise (time-independent): β₀ = −dim/2 − κ (tex 694)."""
+        return cls(name, sympy.Rational(-dim, 2) - kappa)
 
 
 class Operator:

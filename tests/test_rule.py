@@ -104,3 +104,19 @@ def test_nonsingular_noise_rejected():
     with pytest.raises(ValueError, match="not singular"):
         build_context(SPDE(noises=[xi], operator=Parabolic(dim=1), unknown=u,
                            rhs=f(u.field) * xi.symbol))
+
+
+def test_named_noises_match_paper_regularities():
+    """tex 694: space white noise C^{−d/2−κ}; spacetime white noise C^{−d/2−1−κ}
+    (parabolic). KPZ's ξ = Noise.white('xi', 1) must equal the hand-written −3/2−κ."""
+    from fractions import Fraction
+    from counterterms.equation.dsl import Noise
+
+    assert Noise.white("xi", 1).homogeneity == Noise("xi", "-3/2 - kappa").homogeneity
+    for d in (1, 2, 3):
+        st = Noise.white("xi", d).homogeneity
+        sp = Noise.spatial_white("xi", d).homogeneity
+        assert (st.std, st.kap) == (Fraction(-(2 + d), 2), Fraction(-1))
+        assert (sp.std, sp.kap) == (Fraction(-d, 2), Fraction(-1))
+    # general operator order: −|𝔰|/2 with |𝔰| = order + d
+    assert Noise.white("xi", 1, order=4).homogeneity.std == Fraction(-5, 2)
