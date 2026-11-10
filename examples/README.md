@@ -14,6 +14,7 @@ uv run python -u examples/01_renormalized_equation.py
 | 04 | `04_daprato_phi4.py` | The **da Prato–Debussche lift** — renormalize a supercritical Φ⁴₃ (β₀≤−order). | `daprato_lift` |
 | 05 | `05_bhz_and_export.py` | The **BHZ character** (twisted antipode), the canonical-parity rule, and the JSON **export**. | `build_renormalization`, `render.structure_json` |
 | 06 | `06_fractional_heat.py` | **Swapping the linear operator** — the same equation under the heat vs a fractional operator. | `FractionalHeat`, `Operator` |
+| 07 | `07_visual_tour.ipynb` | A **notebook tour** — the equation, trees, coproducts and BPHZ constants drawing themselves, and the embedded explorer. Open with `uv run --with jupyterlab jupyter lab examples/07_visual_tour.ipynb`. | `eq.show`, `eq.explore`, `cuts`, `render.svg` |
 
 ## The 60-second version
 
