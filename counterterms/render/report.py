@@ -83,7 +83,10 @@ def render(eq: RenormalizedEquation, fmt: str = "text", canonical: bool = False,
     if fmt == "latex":
         from .latex import latex_document
         return latex_document(eq, canonical, reduced, symmetric)
-    raise ValueError(f"unknown render format {fmt!r} (text/markdown/json/latex)")
+    if fmt == "html":
+        from .html import html_document
+        return html_document(eq, canonical, reduced, symmetric)
+    raise ValueError(f"unknown render format {fmt!r} (text/markdown/json/latex/html)")
 
 
 # --------------------------------------------------------------------------- #

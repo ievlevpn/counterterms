@@ -268,7 +268,7 @@ class RenormalizedEquation:
         import subprocess
         from pathlib import Path
 
-        ext = {"text": "txt", "markdown": "md", "json": "json", "latex": "tex"}
+        ext = {"text": "txt", "markdown": "md", "json": "json", "latex": "tex", "html": "html"}
         d = Path(outdir)
         d.mkdir(parents=True, exist_ok=True)
         written = []
