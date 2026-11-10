@@ -13,6 +13,7 @@ inline.  This module only *reads* the engine's objects.  See notes/visual_layer_
 from __future__ import annotations
 
 import re
+from fractions import Fraction
 from html import escape
 from typing import TYPE_CHECKING
 from xml.dom.minidom import Element
@@ -27,6 +28,7 @@ from .tree import shorthand
 
 if TYPE_CHECKING:
     from ..core.homogeneity import Homogeneity
+    from ..core.signature import Signature
     from ..renorm.equation import CanonicalFamily, Counterterm, RenormalizedEquation
     from ..trees.tree import DecoratedTree
 
@@ -137,6 +139,7 @@ display:flex;flex-direction:column;justify-content:flex-end;align-items:center;g
 border-radius:6px}
 .op{color:var(--mut);padding:0 2px}
 .pairs{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:flex-end;margin:4px 0 10px}
+h3{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--mut)}
 details{margin-top:8px}summary{cursor:pointer;color:var(--mut);font-size:13px}
 .note{color:var(--mut);font-size:13px}
 """
@@ -175,7 +178,35 @@ _JS = """
 def _detail_extras(eq: RenormalizedEquation, t: DecoratedTree,
                    fam: CanonicalFamily | None) -> str:
     """Further sections of a tree's detail panel (the coproduct, the canonical value)."""
-    return ""
+    return _coproduct_html(t, eq.sig)
+
+
+_SHOWN_TERMS = 12
+
+
+def _coproduct_html(t: DecoratedTree, sig: Signature) -> str:
+    """The extraction–contraction coaction ``δτ = Σ c · (extracted forest) ⊗ (contracted tree)``
+    (`trees.coproducts.delta_minus`, tex 5636), every term drawn.  A term carries no unique
+    provenance on τ — different cuts giving the same pair are summed — so the pair itself is
+    what is shown.  Terms beyond the first `_SHOWN_TERMS` fold into a ``<details>``."""
+    from ..trees.coproducts import delta_minus
+
+    def term(forest: tuple[DecoratedTree, ...], right: DecoratedTree, c: Fraction) -> str:
+        coeff = "" if c == 1 else ("−" if c == -1 else escape(str(c)).replace("-", "−") + " ·")
+        left = "".join(svg(f, sig) for f in forest) or "𝟙"
+        return (f'<span class="term">{coeff}<span>{left}</span><span class="op">⊗</span>'
+                f"{svg(right, sig)}</span>")
+
+    items = sorted(delta_minus(t, sig).items(),
+                   key=lambda kv: (len(kv[0][0]), sum(f.nodes() for f in kv[0][0]),
+                                   kv[0][1].nodes()))
+    terms = [term(forest, right, c) for (forest, right), c in items]
+    shown, rest = terms[:_SHOWN_TERMS], terms[_SHOWN_TERMS:]
+    more = (f'<details><summary>{len(rest)} more terms</summary><div class="terms">'
+            + "".join(rest) + "</div></details>") if rest else ""
+    return ('<div class="coproduct"><h3>Extraction coproduct  δτ = Σ (extracted forest) ⊗ '
+            f'(contracted tree) — {len(terms)} terms</h3><div class="terms">'
+            + "".join(shown) + "</div>" + more + "</div>")
 
 
 def html_document(eq: RenormalizedEquation, canonical: bool = False,

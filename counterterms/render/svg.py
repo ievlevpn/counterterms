@@ -130,6 +130,7 @@ def svg(t: DecoratedTree, sig: Signature | None = None, *,
                 cv.text(mx + 4, my, lab)
 
     # ---- nodes
+    red_leaves = 0
     for i, n in enumerate(nodes):
         x, y = xs[i], ys[i]
         if n.color == "red":
@@ -138,7 +139,14 @@ def svg(t: DecoratedTree, sig: Signature | None = None, *,
                              f'width="{2 * h:g}" height="{2 * h:g}" fill="{_RED}"/>')
             cv.grow(x - h, y - h, x + h, y + h)
             if n.o.std != 0 or n.o.kap != 0:
-                cv.text(x, y - h - 3, f"o={n.o}", "middle")
+                if n.children:                    # edges leave upward: label beside the node,
+                    if i in parent and x <= xs[parent[i][0]]:    # on the side away from siblings
+                        cv.text(x - h - 3, y + 3, f"o={n.o}", "end")
+                    else:
+                        cv.text(x + h + 3, y + 3, f"o={n.o}")
+                else:                             # leaf: above; stagger so neighbours don't collide
+                    cv.text(x, y - h - 3 - 9 * (red_leaves % 2), f"o={n.o}", "middle")
+                    red_leaves += 1
         elif n.color == "blue":
             cv.shapes.append(f'<circle class="n n-blue" data-id="{i}" cx="{x:.1f}" cy="{y:.1f}" '
                              f'r="{_R_DOT:g}" fill="{_BLUE}"/>')

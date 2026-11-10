@@ -93,3 +93,22 @@ def test_save_writes_html_only_when_asked(tmp_path):
     assert not any(p.suffix == ".html" for p in default)
     (p,) = eq.save(stem="g", outdir=str(tmp_path / "b"), formats=("html",), pdf=False)
     assert p.name == "g.html" and p.read_text(encoding="utf-8").startswith("<!doctype html>")
+
+
+def test_coproduct_terms_match_delta_minus():
+    from counterterms.trees.coproducts import delta_minus
+    eq = gkpz().renormalize()
+    doc = eq.render("html")
+    want = sum(len(delta_minus(t, eq.sig)) for t in eq.all_trees)
+    assert len(_tags(doc, "span", "term")) == want
+    assert len(_tags(doc, "div", "coproduct")) == len(eq.all_trees)
+
+
+def test_coproduct_overflow_is_kept():
+    from counterterms.trees.coproducts import delta_minus
+    eq = kpz().renormalize()
+    sizes = [len(delta_minus(t, eq.sig)) for t in eq.all_trees]
+    assert max(sizes) > 12                               # the fixture really exercises overflow
+    doc = eq.render("html")
+    assert len(_tags(doc, "span", "term")) == sum(sizes)
+    assert doc.count("<details") == sum(1 for n in sizes if n > 12)
