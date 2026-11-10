@@ -31,7 +31,8 @@ Two deliverables, in order:
 
 - A `β₀` slider / homogeneity ladder that regenerates trees (needs Python behind the page).
 - A Pyodide playground on the docs site; a click-to-build tree editor.
-- Highlighting the extracted subforest *on the original tree*. `delta_minus` returns
+- *(Built later, 2026-11-10, via an opt-in trace — `coproducts.cuts`; a term now shows all its cuts.)*
+  Highlighting the extracted subforest *on the original tree*. `delta_minus` returns
   `{(forest, contracted tree): coeff}` and sums coefficients over different node subsets that
   give the same pair, so a term has no unique provenance. Each term is drawn as
   `forest ⊗ contracted tree` instead.

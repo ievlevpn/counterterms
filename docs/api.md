@@ -82,7 +82,9 @@ each *bare* \(\sigma_i\)).
 
 | Callable | Returns | Purpose |
 |---|---|---|
-| `svg(t, sig=None, *, pairing=(), scale=1.0)` | `str` | one tree as a standalone inline `<svg>`; `pairing=((i, j), …)` adds Wick arcs between noise nodes (pre-order ids) |
+| `svg(t, sig=None, *, pairing=(), scale=1.0, mark=None, number=False)` | `str` | one tree as a standalone inline `<svg>`; `pairing=((i, j), …)` adds Wick arcs between noise nodes (pre-order ids); `mark={node: block}` shades a cut; `number` writes the node ids |
+| `renorm.nonlinearity.node_factors(t, comp, base, sig)` | `list[sympy.Expr]` | the Υ-map one node at a time — the factors whose product is `elem_diff` |
+| `trees.coproducts.cuts(t, sig)` | `dict[(forest, tree), list[(Fraction, blocks)]]` | the cuts of `t` behind each term of `delta_minus` |
 | `html_document(eq, canonical=False, reduced=False, symmetric=True)` | `str` | the single-file explorer (= `eq.render("html", …)`) |
 | `renorm.scheme.pairings(tree, sig)` | `list[tuple[tuple[int, int], ...]]` | every global Wick pairing of a bare tree — the terms of `expectation` |
 

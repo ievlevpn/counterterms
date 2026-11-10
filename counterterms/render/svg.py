@@ -15,7 +15,7 @@ Black elements use ``currentColor`` so the picture follows the surrounding text 
 from __future__ import annotations
 
 from html import escape
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Mapping
 
 from .tree import _display_sig, _noises, _poly_text, coord_names
 
@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 _SLOT, _STEP, _MARGIN, _FONT = 30.0, 34.0, 8.0, 8.0
 _R_DOT, _R_NOISE, _HALF_SQ = 3.2, 4.2, 3.5
 _RED, _BLUE, _GREY = "#c0392b", "#2c6fbb", "#9aa0a6"
+_R_HALO = 7.5
+_CUT = ("#e69f00", "#56b4e9", "#009e73", "#cc79a7")       # one colour per extracted block
 _NOISE_FILL = ("none", _GREY, "#4a7bd0")        # matches forest's noise / noisegray / noiseblue
 
 
@@ -34,6 +36,7 @@ class _Canvas:
     """Collects SVG elements and the bounding box of everything drawn."""
 
     def __init__(self) -> None:
+        self.under: list[str] = []          # cut shading, drawn beneath everything
         self.edges: list[str] = []
         self.shapes: list[str] = []
         self.x0 = self.y0 = float("inf")
@@ -43,12 +46,12 @@ class _Canvas:
         self.x0, self.y0 = min(self.x0, xa, xb), min(self.y0, ya, yb)
         self.x1, self.y1 = max(self.x1, xa, xb), max(self.y1, ya, yb)
 
-    def text(self, x: float, y: float, s: str, anchor: str = "start") -> None:
+    def text(self, x: float, y: float, s: str, anchor: str = "start", cls: str = "lbl") -> None:
         w = 0.6 * _FONT * len(s)
         left = {"start": x, "middle": x - w / 2, "end": x - w}[anchor]
         self.grow(left, y - _FONT, left + w, y + 2)
         self.shapes.append(
-            f'<text class="lbl" x="{x:.1f}" y="{y:.1f}" font-size="{_FONT:g}" '
+            f'<text class="{cls}" x="{x:.1f}" y="{y:.1f}" font-size="{_FONT:g}" '
             f'text-anchor="{anchor}" fill="currentColor">{escape(s)}</text>')
 
 
@@ -70,8 +73,13 @@ def _edge_label(c: int, p: MultiIndex, sig: Signature, coords: tuple[str, ...]) 
 
 
 def svg(t: DecoratedTree, sig: Signature | None = None, *,
-        pairing: tuple[tuple[int, int], ...] = (), scale: float = 1.0) -> str:
-    """Draw ``t`` as a standalone ``<svg>`` string (see the module docstring)."""
+        pairing: tuple[tuple[int, int], ...] = (), scale: float = 1.0,
+        mark: Mapping[int, int] | None = None, number: bool = False) -> str:
+    """Draw ``t`` as a standalone ``<svg>`` string (see the module docstring).
+
+    ``mark`` shades a cut: ``{node id: block index}`` puts a coloured halo behind each listed
+    node and a coloured band along every edge joining two nodes of the same block (an
+    extracted subtree of `trees.coproducts.cuts`).  ``number`` writes each node's id beside it."""
     if sig is None:
         sig = _display_sig(t)
     coords = coord_names(sig.width)
@@ -106,6 +114,20 @@ def svg(t: DecoratedTree, sig: Signature | None = None, *,
     ys = {i: (top - depth[i]) * _STEP for i in depth}         # root lowest (SVG y grows down)
 
     cv = _Canvas()
+    mark = mark or {}
+
+    # ---- cut shading: a halo per marked node, a band per edge internal to one block
+    for i, g in mark.items():
+        colour = _CUT[g % len(_CUT)]
+        cv.under.append(f'<circle class="cut-node cut-{g}" cx="{xs[i]:.1f}" cy="{ys[i]:.1f}" '
+                        f'r="{_R_HALO:g}" fill="{colour}" fill-opacity="0.45"/>')
+        cv.grow(xs[i] - _R_HALO, ys[i] - _R_HALO, xs[i] + _R_HALO, ys[i] + _R_HALO)
+    for k, (i, _c, _p) in parent.items():
+        if i in mark and mark.get(k) == mark[i]:
+            cv.under.append(
+                f'<line class="cut-edge cut-{mark[i]}" x1="{xs[i]:.1f}" y1="{ys[i]:.1f}" '
+                f'x2="{xs[k]:.1f}" y2="{ys[k]:.1f}" stroke="{_CUT[mark[i] % len(_CUT)]}" '
+                f'stroke-opacity="0.45" stroke-width="{_R_HALO:g}" stroke-linecap="round"/>')
 
     # ---- edges (trimmed to the node outlines, so an open noise circle stays empty)
     for k, (i, c, p) in parent.items():
@@ -164,6 +186,8 @@ def svg(t: DecoratedTree, sig: Signature | None = None, *,
             cv.grow(x - _R_NOISE - 1, y - _R_NOISE - 1, x + _R_NOISE + 1, y + _R_NOISE + 1)
             if j >= len(_NOISE_FILL):                        # too many noises to colour: name it
                 cv.text(x, y - _R_NOISE - 4, "Ξ_" + n.node_type, "middle")   # above: clear of edges
+        if number:
+            cv.text(x - _radius(n) - 3, y + 3, str(i), "end", "num")
         poly = _poly_text(n.node_dec, coords)
         if poly:
             # a leaf has free space above; an inner node's edges leave upward, so go below
@@ -192,4 +216,4 @@ def svg(t: DecoratedTree, sig: Signature | None = None, *,
             f'viewBox="{vx:.1f} {vy:.1f} {vw:.1f} {vh:.1f}" '
             f'width="{vw * scale:.1f}" height="{vh * scale:.1f}" '
             f'style="vertical-align:middle">'
-            + "".join(cv.edges) + "".join(cv.shapes) + "</svg>")
+            + "".join(cv.under) + "".join(cv.edges) + "".join(cv.shapes) + "</svg>")

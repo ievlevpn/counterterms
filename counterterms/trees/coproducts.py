@@ -41,6 +41,7 @@ Forest = tuple[DecoratedTree, ...]                             # a product in U�
 TensorSum = dict[tuple[Forest, DecoratedTree], Fraction]       # δ : (extracted forest) ⊗ (contracted tree)
 PlusSum = dict[tuple[DecoratedTree, DecoratedTree], Fraction]  # Δ : (left tree) ⊗ (right tree)
 GroupSum = dict[tuple[Forest, Forest], Fraction]               # δ⁻ : (left forest) ⊗ (right forest)
+Cut = tuple[Fraction, tuple[tuple[int, ...], ...]]              # (coefficient, extracted blocks of node ids)
 ForestSum = dict[Forest, Fraction]                             # S'₋ : forest-sum in ℝ[U]
 
 _E_CAP = 4   # ponytail: safety cap on |e'|_𝔰 per boundary edge; the |φ|<0 filter is the real bound
@@ -160,9 +161,13 @@ def _block_tops(phi: set[int], eint: list[tuple[int, int]], nodes: list[_Node]) 
 # the coproduct
 # --------------------------------------------------------------------------- #
 
-def delta_minus(t: DecoratedTree, sig: Signature, root_disjoint: bool = False) -> TensorSum:
+def delta_minus(t: DecoratedTree, sig: Signature, root_disjoint: bool = False,
+                trace: dict[tuple[Forest, DecoratedTree], list[Cut]] | None = None) -> TensorSum:
     """δ = (p₋⊗Id)D⁻ : U → U⁻⊗U.  ``root_disjoint=True`` gives δ⁺ = (p₋⊗Id)D̄⁻ :
-    T⁺ → U⁻⊗T⁺ (subforests φ disjoint from the root; the blue root is preserved)."""
+    T⁺ → U⁻⊗T⁺ (subforests φ disjoint from the root; the blue root is preserved).
+
+    ``trace``, if given, is filled with the provenance of every contribution (see `cuts`);
+    it is write-only here and never changes the result."""
     nodes, edges = _explode(t)
     width = sig.width
     n = len(nodes)
@@ -183,6 +188,8 @@ def delta_minus(t: DecoratedTree, sig: Signature, root_disjoint: bool = False) -
             continue
         if not phi:                   # unit term 𝟙₋ ⊗ τ
             out[((), t)] += Fraction(1)
+            if trace is not None:
+                trace.setdefault(((), t), []).append((Fraction(1), ()))
             continue
 
         # ∂φ (boundary) and the within-φ edges. A subforest also chooses, for each
@@ -266,8 +273,25 @@ def delta_minus(t: DecoratedTree, sig: Signature, root_disjoint: bool = False) -
                     if killed:
                         continue
                     out[(tuple(kept), right)] += coeff
+                    if trace is not None:
+                        blocks = tuple(sorted(tuple(sorted(m)) for m in comps.values()))
+                        trace.setdefault((tuple(kept), right), []).append((coeff, blocks))
 
     return {k: v for k, v in out.items() if v != 0}
+
+
+def cuts(t: DecoratedTree, sig: Signature) -> dict[tuple[Forest, DecoratedTree], list[Cut]]:
+    """Where each term of ``δτ`` comes from: ``{(forest, contracted tree): [(coeff, blocks), …]}``.
+
+    A *cut* is one contribution to a term: ``blocks`` are the extracted subtrees as tuples of
+    node ids (pre-order, as in `_explode` and `render.svg`), ``coeff`` its coefficient
+    (binomials of the decoration split over ``e'!``).  One term generally sums several cuts —
+    symmetric choices of the same shape (a coefficient 2 is two mirror cuts) and different
+    decoration splits ``n_φ``/``e'`` of the same blocks — so its coefficient in `delta_minus`
+    is the sum of its cuts' coefficients.  The unit term has the single empty cut."""
+    trace: dict[tuple[Forest, DecoratedTree], list[Cut]] = {}
+    delta_minus(t, sig, trace=trace)
+    return trace
 
 
 def _assemble(t: DecoratedTree, nodes: list[_Node], children_of: dict[int, list[ChildEntry]],

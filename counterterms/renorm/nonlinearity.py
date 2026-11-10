@@ -53,3 +53,23 @@ def elem_diff(t: DecoratedTree, comp: int, base: dict[int, dict[str, sympy.Expr]
     for (c, _p, sub) in t.children:                  # × Πᵢ F_{cᵢ}(τ_i*)
         expr = expr * elem_diff(sub, c, base, sig)
     return sympy.expand(expr)
+
+
+def node_factors(t: DecoratedTree, comp: int, base: dict[int, dict[str, sympy.Expr]],
+                 sig: Signature) -> list[sympy.Expr]:
+    """The Υ-map one node at a time: the factor each node of ``t`` contributes to
+    ``F_comp(t*)``, in pre-order (the node numbering of `render.svg` / `coproducts._explode`).
+
+    Unrolling the recursion above, ``F_a(τ*) = Π_v (D^{n_v} Π_i ∂_{(c_i,p_i)}) F_{a_v}(b_v*)``:
+    node ``v`` of type ``b_v`` with decoration ``n_v`` contributes its base nonlinearity,
+    differentiated once per child edge and then ``D^{n_v}`` times, where ``a_v`` is the
+    component of the edge planting ``v`` (``comp`` for the root).  The product of the list,
+    expanded, is `elem_diff` (tested over the corpus); a zero entry is the node that kills the
+    counterterm."""
+    expr = base[comp][t.node_type]
+    for (c, p, _sub) in t.children:
+        expr = sympy.diff(expr, jet(c, p))
+    out = [_Dn(expr, t.node_dec, sig.width)]
+    for (c, _p, sub) in t.children:
+        out += node_factors(sub, c, base, sig)
+    return out

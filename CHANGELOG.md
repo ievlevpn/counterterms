@@ -17,6 +17,11 @@ All notable changes to this project are documented here. The format follows
 - **Notebook display** (`render.display`): coproduct and antipode results (`TreeSum`, still a
   plain `dict`), `RenormalizedEquation` and `CanonicalFamily` draw themselves; `eq.show(t)` /
   `pg.show(t)` draw a tree with its equation's signature; `eq.explore()` embeds the explorer.
+- **The Υ-map node by node** (`renorm.nonlinearity.node_factors`) and **the cuts behind each
+  coproduct term** (`trees.coproducts.cuts`, an opt-in `trace=` on `delta_minus` that never
+  changes its result). The explorer shows both: a numbered tree with one factor per node
+  (the vanishing node marked when `F(τ*) = 0`), and before each term of `δτ` the tree with the
+  extracted subtrees shaded.
 - **`renorm.scheme.pairings(tree, sig)`**: the global Wick pairings as node-id pairs;
   `expectation` builds its terms from it.
 

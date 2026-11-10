@@ -20,7 +20,7 @@ equations` with free constants (rule → trees → S(τ) → Υ-map → assembly
 decoupled/coupled systems, multi-noise, operator order, scope rejections. A `render/` package
 emits the full report (trees drawn as shorthand / ascii / LaTeX-`forest` / SVG) in
 text/markdown/json/latex, plus a single-file HTML explorer (`eq.render("html")`) — see
-`notes/output.md`, `notes/visual_layer_design.md`. `uv run pytest` (230 tests, ~10s). Phase 3
+`notes/output.md`, `notes/visual_layer_design.md`. `uv run pytest` (238 tests, ~15s). Phase 3
 complete & green: coproducts (cointeraction holds **including β₀=−3/2**), `RegularityStructure
 (T,T⁺)`, the generic `core/hopf` layer, subcriticality check, twisted antipode + BHZ character,
 renormalization group `G⁻`. Phase 4 in progress: `daprato_lift` (da Prato–Debussche) unlocks

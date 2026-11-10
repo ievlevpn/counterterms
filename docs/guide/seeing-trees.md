@@ -75,6 +75,22 @@ svg(t, pg.sig, pairing=((1, 2),))
 
 <p><svg xmlns="http://www.w3.org/2000/svg" class="rs-tree" viewBox="-13.2 -28.5 56.4 73.7" width="79.0" height="103.2" style="vertical-align:middle"><line class="e e-d" x1="13.7" y1="31.1" x2="1.7" y2="3.8" stroke="currentColor" stroke-width="1.1" stroke-dasharray="1.5 2.5" stroke-linecap="round"/><line class="e e-d" x1="16.3" y1="31.1" x2="28.3" y2="3.8" stroke="currentColor" stroke-width="1.1" stroke-dasharray="1.5 2.5" stroke-linecap="round"/><circle class="n n-bullet" data-id="0" cx="15.0" cy="34.0" r="3.2" fill="currentColor"/><circle class="n n-noise n-noise-0" data-id="1" cx="0.0" cy="0.0" r="4.2" fill="none" stroke="currentColor" stroke-width="1.1"/><circle class="n n-noise n-noise-0" data-id="2" cx="30.0" cy="0.0" r="4.2" fill="none" stroke="currentColor" stroke-width="1.1"/><path class="pair" d="M 0.0 -5.2 Q 15.0 -20.5 30.0 -5.2" fill="none" stroke="#c0392b" stroke-width="1" stroke-dasharray="3 2"/></svg></p>
 
+## The data behind the two explanatory views
+
+```python
+from counterterms.equation.dsl import build_context
+from counterterms.renorm.nonlinearity import node_factors
+from counterterms.trees.coproducts import cuts
+
+sig, base, _ = build_context(spde)
+node_factors(t, 0, base, sig)     # one factor per node, in drawing order; their product is F(τ*)
+cuts(t, sig)                      # {(forest, contracted tree): [(coefficient, blocks), …]}
+svg(t, sig, mark={1: 0}, number=True)   # shade node 1 as block 0, and number the nodes
+```
+
+`blocks` are the extracted subtrees as tuples of node numbers. For the cherry `●·𝓘ₓ[Ξ]²` the term
+that extracts one noise has coefficient 2 and two cuts, `((1,),)` and `((2,),)`.
+
 ## The explorer
 
 ```python
@@ -91,8 +107,16 @@ It is one file that opens offline in a browser. [Open the KPZ example](../kpz_ex
 - **The gallery** shows *every* divergent tree, grouped by homogeneity with the most singular
   first. A tree whose \(F(\tau^*)\) vanishes is dimmed and marked "no counterterm".
 - **The detail panel** of the selected tree gives \(|\tau|\), \(S(\tau)\), its constant,
-  the divergence rate and \(F(\tau^*)\), then the extraction coproduct \(\delta\tau\)
-  drawn term by term as *(extracted forest) ⊗ (contracted tree)*.
+  the divergence rate and \(F(\tau^*)\).
+- **The Υ-map, node by node.** The tree is drawn with numbered nodes beside a table with one
+  row per node: its nonlinearity, what differentiates it (one \(\partial\) per child edge,
+  one \(D\) per polynomial decoration) and the resulting factor. The product of the factors
+  is \(F(\tau^*)\). Hover a row or a node to see which is which. When \(F(\tau^*) = 0\),
+  the row whose factor vanishes is marked — that node is why the tree has no counterterm.
+- **The extraction coproduct** \(\delta\tau\), term by term as *(extracted forest) ⊗
+  (contracted tree)*. Before each pair, \(\tau\) is drawn with the extracted subtrees shaded,
+  one colour per subtree. Several shaded copies are several cuts that give the same pair: a
+  coefficient 2 is typically two mirror-image cuts.
 - **With `canonical=True` or `reduced=True`** the panel also shows the canonical value of
   \(k_\tau\) and, for each elementary expectation \(h_\varepsilon(\sigma)\) in it, one
   diagram per Wick pairing — the terms of its integral.
@@ -102,8 +126,8 @@ It is one file that opens offline in a browser. [Open the KPZ example](../kpz_ex
 ## Limits
 
 - `"html"` is not among `save`'s default formats; ask for it explicitly.
-- A coproduct term is shown as the pair it is. The extracted part is not highlighted on the
-  original tree, because different cuts that give the same pair are summed into one term.
+- At most four cuts are drawn per coproduct term; a `+n` says how many more there are. Cuts
+  that differ only in how the polynomial decorations are split are drawn once.
 - Only the first 12 coproduct terms are shown inline; the rest unfold on click.
 - Non-bare \(\sigma\) (with a polynomial decoration) have no pairing diagrams — their
   expectation needs the full canonical model.

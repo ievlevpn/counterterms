@@ -133,13 +133,21 @@ display:flex;flex-direction:column;justify-content:flex-end;align-items:center;g
 .facts{display:grid;grid-template-columns:max-content 1fr;gap:3px 14px;font-size:14px;margin:0}
 .facts dt{color:var(--mut)}.facts dd{margin:0}
 .sh{font-size:12px;color:var(--mut);margin-top:4px;text-align:center}
-.coproduct,.canonical{margin-top:16px;border-top:1px solid var(--line);padding-top:10px}
+.coproduct,.canonical,.upsilon{margin-top:16px;border-top:1px solid var(--line);padding-top:10px}
 .terms{display:flex;flex-wrap:wrap;gap:10px 6px;align-items:center}
 .term{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border:1px solid var(--line);
 border-radius:6px}
 .op{color:var(--mut);padding:0 2px}
 .pairs{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin:4px 0 10px}
 h3{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--mut)}
+.upsilon table{border-collapse:collapse;font-size:14px;margin-bottom:8px}
+.upsilon th,.upsilon td{padding:3px 12px 3px 0;text-align:left;vertical-align:middle}
+.upsilon th,.upsilon caption{color:var(--mut);font-weight:500;font-size:12px;text-align:left}
+.upsilon tfoot td{border-top:1px solid var(--line);padding-top:6px}
+.upsilon tr.nhl{background:var(--hl)}
+.upsilon svg .n{cursor:pointer}.upsilon svg .n.nhl{stroke:var(--sel);stroke-width:3.5px}
+.num{opacity:.7}
+.cutview{opacity:.95}
 details{margin-top:8px}summary{cursor:pointer;color:var(--mut);font-size:13px}
 .note{color:var(--mut);font-size:13px}
 """
@@ -159,6 +167,16 @@ _JS = """
     el.addEventListener('mouseenter',function(){[].forEach.call(all(i),function(x){x.classList.add('hl');});});
     el.addEventListener('mouseleave',function(){[].forEach.call(all(i),function(x){x.classList.remove('hl');});});
     el.addEventListener('click',function(){select(i);});
+  });
+  [].forEach.call(document.querySelectorAll('.upsilon'),function(box){
+    function mark(k,on){[].forEach.call(
+      box.querySelectorAll('tr[data-node="'+k+'"],svg .n[data-id="'+k+'"]'),
+      function(x){x.classList.toggle('nhl',on);});}
+    [].forEach.call(box.querySelectorAll('tr[data-node],svg .n[data-id]'),function(el){
+      var k=el.dataset.node||el.dataset.id;
+      el.addEventListener('mouseenter',function(){mark(k,true);});
+      el.addEventListener('mouseleave',function(){mark(k,false);});
+    });
   });
   document.addEventListener('keydown',function(e){
     if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
@@ -180,7 +198,56 @@ def _detail_extras(eq: RenormalizedEquation, t: DecoratedTree,
                    fam: CanonicalFamily | None) -> str:
     """Further sections of a tree's detail panel (the coproduct, the canonical value)."""
     canon = _canonical_html(eq, t, fam) if fam is not None and t in fam.constants else ""
-    return canon + _coproduct_html(t, eq.sig)
+    return canon + _upsilon_html(eq, t) + _coproduct_html(t, eq.sig)
+
+
+def _upsilon_html(eq: RenormalizedEquation, t: DecoratedTree) -> str:
+    """The Υ-map one node at a time (`renorm.nonlinearity.node_factors`): the tree with its
+    nodes numbered, and per node the base nonlinearity, what differentiates it (one ∂ per child
+    edge, one D per polynomial decoration) and the resulting factor; their product is F(τ*)."""
+    from ..core.jets import jet
+    from ..renorm.nonlinearity import elem_diff, node_factors
+    from .tree import _node_token, coord_names
+
+    sig = eq.sig
+    coords = coord_names(sig.width)
+    order: list[DecoratedTree] = []                           # pre-order, as the drawing numbers
+
+    def walk(sub: DecoratedTree, a: int, comps: list[int]) -> None:
+        order.append(sub)
+        comps.append(a)
+        for (c, _p, child) in sub.children:
+            walk(child, c, comps)
+
+    out = ['<div class="upsilon"><h3>Υ-map — one factor per node</h3>'
+           '<p class="note">Each node contributes its own nonlinearity, differentiated once per '
+           "child edge (in the jet variable that edge carries) and then by the total derivative "
+           "D once per polynomial decoration. F(τ*) is the product.</p>"
+           f'<div class="top"><div>{svg(t, sig, scale=1.7, number=True)}</div><div>']
+    for a in range(sig.n_components):
+        order.clear()
+        comps: list[int] = []
+        walk(t, a, comps)
+        factors = node_factors(t, a, eq.base, sig)
+        rows = []
+        for k, (node, av, fac) in enumerate(zip(order, comps, factors)):
+            ops = [f"∂/∂{mathml(eq._pretty(jet(c, p)))}" for (c, p, _s) in node.children]
+            ops += [f"D<sub>{coords[i]}</sub>" for i, e in enumerate(node.node_dec) for _ in range(e)]
+            zero = ' <span class="note">— this factor vanishes</span>' if fac == 0 else ""
+            rows.append(
+                f'<tr class="factor" data-node="{k}"><td>{k}</td>'
+                f"<td>{escape(_node_token(node, sig, coords))}</td>"
+                f"<td>{mathml(eq._pretty(eq.base[av][node.node_type]))}</td>"
+                f'<td>{" ".join(ops) or "—"}</td><td>{mathml(eq._pretty(fac))}{zero}</td></tr>')
+        cap = (f"<caption>in the {escape(eq.unknowns[a].name)}-equation</caption>"
+               if sig.n_components > 1 else "")
+        total = mathml(eq._pretty(elem_diff(t, a, eq.base, sig)))
+        out.append(f"<table>{cap}<thead><tr><th>#</th><th>node</th><th>nonlinearity</th>"
+                   "<th>differentiated by</th><th>factor</th></tr></thead><tbody>"
+                   + "".join(rows) + f'</tbody><tfoot><tr><td colspan="4">F(τ*) = product</td>'
+                   f"<td>{total}</td></tr></tfoot></table>")
+    out.append("</div></div></div>")
+    return "".join(out)
 
 
 def _canonical_html(eq: RenormalizedEquation, t: DecoratedTree, fam: CanonicalFamily) -> str:
@@ -216,20 +283,36 @@ def _canonical_html(eq: RenormalizedEquation, t: DecoratedTree, fam: CanonicalFa
 _SHOWN_TERMS = 12
 
 
+_SHOWN_CUTS = 4
+
+
 def _coproduct_html(t: DecoratedTree, sig: Signature) -> str:
     """The extraction–contraction coaction ``δτ = Σ c · (extracted forest) ⊗ (contracted tree)``
-    (`trees.coproducts.delta_minus`, tex 5636), every term drawn.  A term carries no unique
-    provenance on τ — different cuts giving the same pair are summed — so the pair itself is
-    what is shown.  Terms beyond the first `_SHOWN_TERMS` fold into a ``<details>``."""
+    (`trees.coproducts.delta_minus`, tex 5636), every term drawn — and, before each pair, the
+    cuts of τ that produce it (`trees.coproducts.cuts`): τ with the extracted subtrees shaded,
+    one colour per subtree.  Several shaded copies mean several cuts sum into that term (two
+    mirror cuts are where a coefficient 2 comes from); at most `_SHOWN_CUTS` are drawn.  Terms
+    beyond the first `_SHOWN_TERMS` fold into a ``<details>``."""
     from ..trees.coproducts import delta_minus
+
+    trace: dict = {}
+    delta = delta_minus(t, sig, trace=trace)
 
     def term(forest: tuple[DecoratedTree, ...], right: DecoratedTree, c: Fraction) -> str:
         coeff = "" if c == 1 else ("−" if c == -1 else escape(str(c)).replace("-", "−") + " ·")
         left = "".join(svg(f, sig) for f in forest) or "𝟙"
-        return (f'<span class="term">{coeff}<span>{left}</span><span class="op">⊗</span>'
-                f"{svg(right, sig)}</span>")
+        configs = list(dict.fromkeys(blocks for _c, blocks in trace[(forest, right)] if blocks))
+        views = "".join(
+            '<span class="cutview">'
+            + svg(t, sig, scale=0.8, mark={i: g for g, blk in enumerate(blocks) for i in blk})
+            + "</span>" for blocks in configs[:_SHOWN_CUTS])
+        if len(configs) > _SHOWN_CUTS:
+            views += f'<span class="note">+{len(configs) - _SHOWN_CUTS}</span>'
+        arrow = '<span class="op">↦</span>' if views else ""
+        return (f'<span class="term">{views}{arrow}{coeff}<span>{left}</span>'
+                f'<span class="op">⊗</span>{svg(right, sig)}</span>')
 
-    items = sorted(delta_minus(t, sig).items(),
+    items = sorted(delta.items(),
                    key=lambda kv: (len(kv[0][0]), sum(f.nodes() for f in kv[0][0]),
                                    kv[0][1].nodes()))
     terms = [term(forest, right, c) for (forest, right), c in items]
@@ -237,8 +320,11 @@ def _coproduct_html(t: DecoratedTree, sig: Signature) -> str:
     more = (f'<details><summary>{len(rest)} more terms</summary><div class="terms">'
             + "".join(rest) + "</div></details>") if rest else ""
     return ('<div class="coproduct"><h3>Extraction coproduct  δτ = Σ (extracted forest) ⊗ '
-            f'(contracted tree) — {len(terms)} terms</h3><div class="terms">'
-            + "".join(shown) + "</div>" + more + "</div>")
+            f'(contracted tree) — {len(terms)} terms</h3>'
+            '<p class="note">Before each pair: τ with the extracted subtrees shaded. Several '
+            "shaded copies are several cuts that give the same pair.</p>"
+            '<div class="terms">' + "".join(shown) + "</div>" + more + "</div>")
+
 
 
 def html_document(eq: RenormalizedEquation, canonical: bool = False,
