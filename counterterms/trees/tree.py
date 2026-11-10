@@ -92,6 +92,11 @@ class DecoratedTree:
         from ..render.tree import shorthand_latex
         return f"${shorthand_latex(self)}$"
 
+    def _repr_html_(self) -> str:
+        # the drawn tree; JupyterLab ranks text/html above text/latex, so this wins there
+        from ..render.svg import svg
+        return svg(self)
+
     def draw(self, sig: Signature | None = None) -> str:
         """2D terminal drawing (`render.tree.ascii_art`)."""
         from ..render.tree import ascii_art
