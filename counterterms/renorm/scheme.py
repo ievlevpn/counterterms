@@ -225,6 +225,7 @@ def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE
     from collections import defaultdict
     from itertools import product
 
+    sig.require_gaussian("expectation()")
     nodes, edges = _explode(tree)
     by_type: dict[str, list[int]] = defaultdict(list)
     for n in nodes:

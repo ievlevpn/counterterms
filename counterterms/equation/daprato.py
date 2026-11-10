@@ -19,7 +19,9 @@ nonlinearity in ``u`` with no derivatives.  Multiplicative-noise and non-polynom
 nonlinearities (e.g. sine-Gordon, which needs Wick *exponentials*) are out of scope here.
 The lifted Wick noises are correlated (all built from one ``ξ``); that is irrelevant to
 the counterterm *structure* this produces, and matters only for the *canonical values*
-(Phase 4 Track B).
+(Phase 4 Track B).  Each ``:X^k:`` is tagged ``Noise.chaos = k``; the Gaussian-only paths
+(``canonical()``/``bphz()``, ``canonical_character``, ``expectation``) refuse a lifted
+equation rather than apply the independent-Gaussian parity rule to it.
 """
 from __future__ import annotations
 
@@ -63,7 +65,7 @@ def daprato_lift(spde: SPDE) -> SPDE:
             continue
         reg = k * (sympy.Rational(a_std.numerator, a_std.denominator)
                    + sympy.Rational(a_kap.numerator, a_kap.denominator) * kappa)
-        nk = Noise(f"X{k}", regularity=reg)             # :X^k:, regularity k·α_X
+        nk = Noise(f"X{k}", regularity=reg, chaos=k)    # :X^k:, regularity k·α_X
         noises.append(nk)
         rhs_v += ck * nk.symbol
 

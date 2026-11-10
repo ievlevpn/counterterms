@@ -115,7 +115,9 @@ class CanonicalFamily:
                 for sym, tr in self.legend.items() if is_bare(tr)}
 
     def __str__(self) -> str:
+        from ..render.tree import shorthand
         from .scheme import divergence_str
+        sig = self.eq.sig                             # name the noises as the family does
         tag = ("canonical (BPHZ) constants"
                + (", reduced" if self.reduced else "")
                + (" [symmetric noise]" if self.reduced and self.symmetric else ""))
@@ -123,9 +125,9 @@ class CanonicalFamily:
         for t, v in self.constants.items():
             k = self.free_constants[t]
             rate = f", ~ {divergence_str(t.homogeneity(self.eq.sig))}" if v != 0 else ""
-            lines.append(f"  {k} = {sympy.sstr(v)}   [τ = {t}{rate}]")
+            lines.append(f"  {k} = {sympy.sstr(v)}   [τ = {shorthand(t, sig)}{rate}]")
         for sym, tr in self.legend.items():
-            lines.append(f"  {sym} = h_ε({tr})")
+            lines.append(f"  {sym} = h_ε({shorthand(tr, sig)})")
         return "\n".join(lines)
 
     def __repr__(self) -> str:
@@ -208,7 +210,10 @@ class RenormalizedEquation:
         centered Gaussian noise (parity-reduced: odd-noise trees vanish).  ``reduced``
         folds in the exact identities of `renorm.scheme.reduction_subs`; ``symmetric``
         (default) additionally applies spatial reflection — set ``False`` for an
-        anisotropic noise, where that identity is invalid."""
+        anisotropic noise, where that identity is invalid.
+
+        Raises ``NotImplementedError`` for a da Prato–Debussche-lifted equation: its Wick-power
+        noises are correlated and non-Gaussian (`Signature.require_gaussian`)."""
         from ..structures import build_renormalization
         rs = build_renormalization(self.spde)
         cmap = {ct.tree: ct.constant

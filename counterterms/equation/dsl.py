@@ -66,9 +66,11 @@ class Noise:
     std: Fraction
     kap: Fraction
     homogeneity: Homogeneity
+    chaos: int           # Wiener-chaos order: 1 = Gaussian; k>1 = a Wick power :X^k: (daprato_lift)
 
-    def __init__(self, name: str, regularity: object) -> None:
+    def __init__(self, name: str, regularity: object, chaos: int = 1) -> None:
         self.name = name
+        self.chaos = chaos
         self.symbol = sympy.Symbol(name)
         self.std, self.kap = _split_kappa(regularity)
         self.homogeneity = Homogeneity(self.std, self.kap)
@@ -279,6 +281,7 @@ def build_context(spde: SPDE) -> tuple[Signature, dict[int, dict[str, sympy.Expr
         node_types=node_types,
         allowed=allowed,
         grad_budget=grad_budget,
+        non_gaussian=frozenset(nz.name for nz in noises if nz.chaos != 1),
     )
     check_subcritical(sig)        # rule must be subcritical, else 𝓑_{<0} is infinite
     unknowns = [eqn[0] for eqn in equations]

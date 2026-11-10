@@ -52,7 +52,11 @@ structure: the divergences are **mass terms** (\(\propto v\), two independent co
 - **Wick powers as independent symbols.** The lifted noises \(X_1, X_2, X_3\) are treated as
   independent noises with the right regularities. The **free-constant family is exactly right**;
   but the *canonical* constants for \(\Phi^4\) would need the true joint law of the
-  \(:\!X^k\!:\) (one underlying Gaussian), which the symbolic scheme does not model. Compare
-  canonical \(\Phi^4\) output by structure, not by value.
+  \(:\!X^k\!:\) (one underlying Gaussian), which the symbolic scheme does not model. Each
+  lifted noise is tagged `Noise.chaos = k`, and the Gaussian-only paths (`canonical()`,
+  `bphz()`, `report(canonical=True)`, `canonical_character`, `expectation`) **raise
+  `NotImplementedError`** on a lifted equation instead of applying the independent-Gaussian
+  parity rule. The raw `bhz_character` (every \(h(\sigma)\) left symbolic) is law-agnostic and
+  still available.
 - If the lift is insufficient (the remainder still supercritical), the downstream subcriticality
   check rejects it — you never get silent wrong output.

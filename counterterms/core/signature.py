@@ -36,6 +36,21 @@ class Signature:
     # total degree in ∂u (Assumption D2 ⇒ ≤2).  Per-edge caps alone don't bound this across
     # mixed directions (g(u)(∂₁u+∂₂u)² in d≥2).  Missing key ⇒ unbounded.  (tex 5337-5340)
     grad_budget: dict[str, int] = field(default_factory=dict)
+    # noise types that are NOT independent centered Gaussians — the Wick powers :X^k: (k≥2) of a
+    # da Prato–Debussche lift, all built from one ξ.  Irrelevant to the tree/counterterm
+    # structure; the Gaussian parity rule and the per-type Isserlis pairing are invalid for them.
+    non_gaussian: frozenset[str] = frozenset()
+
+    def require_gaussian(self, what: str) -> None:
+        """Refuse a Gaussian-only computation when the noises include Wick powers."""
+        if self.non_gaussian:
+            raise NotImplementedError(
+                f"{what} assumes independent centered Gaussian noises, but "
+                f"{', '.join(sorted(self.non_gaussian))} are Wick powers :X^k: of one underlying "
+                "noise (da Prato–Debussche lift): they are correlated across types and not "
+                "Gaussian, so the parity rule and per-type Wick pairing do not apply. The "
+                "free-constant family and the raw bhz_character (h symbolic) remain valid; the "
+                "canonical values need a correlated NoiseLaw (Phase 4 / Track B).")
 
     @property
     def width(self) -> int:

@@ -62,6 +62,8 @@ class RenormalizationStructure:
         whenever σ has an odd number of noise vertices, so odd-parity forests drop — see
         `canonical_character`."""
         from .renorm.scheme import has_odd_noise
+        if parity:
+            self.sig.require_gaussian("the parity-reduced canonical character")
         expr = sympy.Integer(0)
         for forest, coeff in self.twisted_antipode(t).items():
             term = sympy.Rational(coeff.numerator, coeff.denominator)
