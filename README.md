@@ -49,7 +49,8 @@ satisfy $|p|_\mathfrak{s} \le 1$.
 - a **reduced** view that folds in the exact identities (vanishing & duplicate constants, and — for a
   spatially-symmetric noise — the reflection identity);
 - typeset **reports** in text / Markdown / JSON / LaTeX→PDF, with the trees drawn;
-- a single-file **HTML explorer** and **SVG tree drawings** (also the notebook display of a tree);
+- a single-file **HTML explorer** and **SVG tree drawings** — see [the pictures below](#seeing-it);
+- objects that **draw themselves in a notebook**: trees, the equation, coproducts, the canonical constants;
 - the underlying **algebra**: the regularity structure $(T, T^+)$, the extraction/recentering
   coproducts, the twisted antipode, the BHZ character, the renormalization group $G^-$, and a JSON
   export of the whole structure.
@@ -97,7 +98,7 @@ for t in rs.divergent:
 ```
 
 `eq.canonical()` / `eq.bphz()` return the same constants as a `CanonicalFamily` of SymPy objects,
-and every object prints itself (shorthand in a terminal, LaTeX/Markdown in Jupyter). The canonical
+and every object displays itself (shorthand in a terminal, drawn trees in Jupyter). The canonical
 paths assume independent centered Gaussian noises, so they **refuse a da Prato–Debussche-lifted
 equation** (its Wick-power noises are correlated); the free-constant family is unaffected.
 
@@ -123,10 +124,26 @@ renormalized family, and the canonical (BPHZ) constants $k_\tau = h(S'_-\tau)$.
   **plus** the spatial-reflection identity $x\to-x$, collapsing KPZ to a **single diverging
   constant**, $\partial_t u = \Delta u + (\partial_x u)^2 - C + \xi$ (Hairer's result). The reduction
   states its symmetric-noise assumption and is never claimed for an anisotropic noise.
-- **[`docs/kpz_explorer.html`](docs/kpz_explorer.html)** (`eq.render("html", reduced=True)`) — the
-  same reduced view as one interactive page: every tree drawn, each counterterm linked to its tree,
-  the extraction coproduct and the Wick pairings as pictures. Download it and open it in a browser
-  (GitHub shows HTML files as source).
+
+### Seeing it
+
+`eq.render("html")` (or `eq.save("gkpz", formats=("html",))`) writes one self-contained page that
+opens offline. Here is generalized KPZ with `canonical=True`: each counterterm in the equation is
+linked to its tree, and the selected tree shows its canonical value with the Wick pairing drawn,
+then the $\Upsilon$-map one node at a time — the factor each node contributes to $F(\tau^*)$.
+
+![The explorer for generalized KPZ: the equation, the five divergent trees, and the selected tree's canonical value and node-by-node Υ-map](docs/explorer_gkpz.png)
+
+Below that, the extraction coproduct $\delta\tau$ is drawn term by term. Before each pair
+*(extracted forest) ⊗ (contracted tree)*, the tree is shown with the extracted subtrees shaded, so
+a coefficient 2 is visibly two mirror-image cuts (KPZ, the five-node tree):
+
+![The extraction coproduct of a KPZ tree, each term preceded by the tree with its cut shaded](docs/explorer_cuts.png)
+
+The full interactive example is [`docs/kpz_explorer.html`](docs/kpz_explorer.html) (KPZ, reduced
+view) — download it and open it in a browser, since GitHub shows HTML files as source. In a
+notebook the same objects draw themselves, and `eq.explore()` embeds this page in a cell; see
+[Seeing the trees](docs/guide/seeing-trees.md).
 
 ---
 
@@ -147,6 +164,7 @@ optionally composed with the renormalization coproducts and characters.
 | The canonical (BPHZ) constants as SymPy objects | `eq.canonical()`, `eq.bphz()` → `CanonicalFamily` (`.constants`, `.legend`, `.rhs()`, `.substitution`, `.expectations()`) | `renorm/equation.py` |
 | Render a report (text / markdown / json / latex; `canonical`, `reduced`) | `eq.summary()`, `eq.render(fmt, …)`, `eq.save(…)` | `render/report.py`, `render/latex.py` |
 | Explore an equation in the browser (one offline HTML file) | `eq.render("html", …)`, `eq.save(stem, formats=("html",))` | `render/html.py` |
+| Work in a notebook (everything draws itself) | `eq`, `eq.bphz()`, `eq.show(t)`, `eq.explore()`, `rn.coaction(t)`, … | `render/display.py` |
 | $\Phi^4_2 / \Phi^4_3$ (supercritical, $\beta_0 \le -\text{order}$) | `daprato_lift(spde).renormalize()` | `equation/daprato.py` |
 
 ### The trees and the rule
@@ -156,7 +174,7 @@ optionally composed with the renormalization coproducts and characters.
 | The structural rule from the nonlinearity | `build_context(spde)` → `(sig, base, unknowns)` | `equation/dsl.py` |
 | Subcriticality check ($\beta_0 > -\text{order}$) | `check_subcritical(sig)` (auto in `build_context`) | `equation/rule.py` |
 | Decorated trees: canonical form, $S(\tau)$, homogeneity | `DecoratedTree`, `tree`, `red_node` | `trees/tree.py` |
-| The elementary differential $F(\tau^*)$ ($\Upsilon$-map) | `elem_diff(t, comp, base, sig)` | `renorm/nonlinearity.py` |
+| The elementary differential $F(\tau^*)$ ($\Upsilon$-map) | `elem_diff(t, comp, base, sig)`; one factor per node: `node_factors(t, comp, base, sig)` | `renorm/nonlinearity.py` |
 | Draw a single tree (shorthand / ascii / `forest` / SVG) | `shorthand`, `ascii_art`, `forest`, `svg` | `render/tree.py`, `render/svg.py` |
 
 ### The algebraic structure (regularity & renormalization)
@@ -165,6 +183,7 @@ optionally composed with the renormalization coproducts and characters.
 | The regularity structure $(T, T^+)$, graded basis | `build_regularity_structure(spde)` | `structures.py` |
 | Recentering $\Delta : T \to T \otimes T^+$, structure coproduct $\Delta^+$ | `delta_plus(t, sig[, project_left])` | `trees/coproducts.py` |
 | Extraction–contraction $\delta$ / $\delta^-$ (and the cointeraction) | `delta_minus`, `delta_minus_group` | `trees/coproducts.py` |
+| Which cuts of $\tau$ produce each term of $\delta\tau$ | `cuts(t, sig)` | `trees/coproducts.py` |
 | Negative twisted antipode $S'_-$ | `twisted_antipode(t, sig)` | `trees/coproducts.py` |
 | Renormalization structure + symbolic **BHZ character** $k = h \circ S'_-$ | `build_renormalization(spde)` → `.bhz_character`, `.canonical_character` | `structures.py` |
 | The renormalization **group** $G^-$ (convolution, antipode inverse) | `build_renormalization_group(spde)` | `structures.py` |
