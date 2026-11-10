@@ -95,7 +95,7 @@ Modules: `trees/coproducts.py`, `structures.py`, `core/hopf.py` (the basis-agnos
       would be unsound (CLAUDE.md warning), so it is deferred to the model layer.
 
 **Acceptance:** coassociativities + cointeraction (incl. singular β₀=−3/2) green as property
-tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **218 tests pass (~10s).**
+tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **220 tests pass (~10s).**
 
 ---
 

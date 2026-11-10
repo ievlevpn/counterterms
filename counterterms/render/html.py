@@ -162,6 +162,7 @@ _JS = """
   });
   document.addEventListener('keydown',function(e){
     if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+    if(e.altKey||e.metaKey||e.ctrlKey)return;   // browser navigation, not ours
     var k=cards.findIndex(function(c){return c.classList.contains('sel');});
     k=Math.max(0,Math.min(cards.length-1,k+(e.key==='ArrowRight'?1:-1)));
     select(cards[k].dataset.tree);e.preventDefault();

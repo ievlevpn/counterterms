@@ -169,14 +169,22 @@ def svg(t: DecoratedTree, sig: Signature | None = None, *,
             # a leaf has free space above; an inner node's edges leave upward, so go below
             cv.text(x + _radius(n) + 2, y + 8 if n.children else y - 3, poly)
 
-    # ---- Wick pairings: a dashed arc bulging above the two noise nodes
+    # ---- Wick pairings: a dashed arc — bulging above two side-by-side noises, or out to the
+    # right of two stacked ones (same x), where an upward bulge would lie on the kernel edge
     for (a, b) in pairing:
-        cx, cy = (xs[a] + xs[b]) / 2, min(ys[a], ys[b]) - 16 - abs(xs[a] - xs[b]) * 0.15
-        cv.shapes.append(
-            f'<path class="pair" d="M {xs[a]:.1f} {ys[a] - _R_NOISE - 1:.1f} Q {cx:.1f} {cy:.1f} '
-            f'{xs[b]:.1f} {ys[b] - _R_NOISE - 1:.1f}" fill="none" stroke="{_RED}" '
-            f'stroke-width="1" stroke-dasharray="3 2"/>')
-        cv.grow(min(xs[a], xs[b]), cy, max(xs[a], xs[b]), max(ys[a], ys[b]))
+        off = _R_NOISE + 1
+        if abs(xs[a] - xs[b]) < 1:
+            x = xs[a] + off
+            cx, cy = x + 20 + abs(ys[a] - ys[b]) * 0.15, (ys[a] + ys[b]) / 2
+            d = f"M {x:.1f} {ys[a]:.1f} Q {cx:.1f} {cy:.1f} {x:.1f} {ys[b]:.1f}"
+        else:
+            cx, cy = (xs[a] + xs[b]) / 2, min(ys[a], ys[b]) - 16 - abs(xs[a] - xs[b]) * 0.15
+            d = (f"M {xs[a]:.1f} {ys[a] - off:.1f} Q {cx:.1f} {cy:.1f} "
+                 f"{xs[b]:.1f} {ys[b] - off:.1f}")
+        cv.shapes.append(f'<path class="pair" d="{d}" fill="none" stroke="{_RED}" '
+                         f'stroke-width="1" stroke-dasharray="3 2"/>')
+        cv.grow(min(xs[a], xs[b], cx), min(ys[a], ys[b], cy), max(xs[a], xs[b], cx),
+                max(ys[a], ys[b], cy))
 
     vx, vy = cv.x0 - _MARGIN, cv.y0 - _MARGIN
     vw, vh = cv.x1 - cv.x0 + 2 * _MARGIN, cv.y1 - cv.y0 + 2 * _MARGIN

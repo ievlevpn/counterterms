@@ -131,3 +131,11 @@ def test_canonical_section_and_pairing_diagrams():
 def test_canonical_reduced_kpz_renders():
     doc = kpz().renormalize().render("html", reduced=True)
     assert len(_tags(doc, "div", "canonical")) == 8
+
+
+def test_arrow_keys_leave_browser_shortcuts_alone():
+    # Alt/Cmd/Ctrl + arrow is browser navigation; the gallery handler must not swallow it.
+    doc = gkpz().renormalize().render("html")
+    handler = doc[doc.index("addEventListener('keydown'"):]
+    guard, prevent = handler.index("e.altKey||e.metaKey||e.ctrlKey"), handler.index("preventDefault")
+    assert guard < prevent

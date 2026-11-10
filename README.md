@@ -60,7 +60,7 @@ satisfy $|p|_\mathfrak{s} \le 1$.
 
 ```sh
 uv sync
-uv run pytest          # 218 tests, ~10s
+uv run pytest          # 220 tests, ~10s
 ```
 
 ## Quickstart

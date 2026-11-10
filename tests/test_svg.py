@@ -106,3 +106,15 @@ def test_tree_repr_html_is_the_svg():
     eq, trees = _by_shorthand(gkpz())
     t = trees["●·𝓘ₓ[Ξ]²"]
     assert t._repr_html_() == svg(t) and t._repr_latex_().startswith("$")
+
+
+def test_svg_pairing_arc_bulges_sideways_when_nodes_are_stacked():
+    # Ξ·𝓘[Ξ]: the two noises share an x, so an upward bulge would lie on the kernel edge.
+    eq, trees = _by_shorthand(gkpz())
+    s = svg(trees["Ξ·𝓘[Ξ]"], eq.sig, pairing=((0, 1),))
+    (arc,) = _els(s, "pair")
+    nums = [float(v) for v in arc.get("d").replace("M", "").replace("Q", "").split()]
+    (x1, _y1, cx, _cy, x2, _y2) = nums
+    assert abs(cx - x1) > 10 and abs(cx - x2) > 10
+    x0, _, w, _ = map(float, ET.fromstring(s).get("viewBox").split())
+    assert x0 <= cx <= x0 + w
