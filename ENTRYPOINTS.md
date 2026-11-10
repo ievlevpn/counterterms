@@ -118,6 +118,8 @@ layer (Phase 3) sits on top of the same `Signature`/`DecoratedTree` core:
   SymPy objects (the report renders *from* it); `Counterterm.divergence` is the ε-rate.
 - `render/svg.py` — one tree → one inline `<svg>` (the notebook display); `render/html.py` — the
   single-file explorer `eq.render("html")`, assembled entirely in Python from the objects above.
+- `render/display.py` — notebook display: `TreeSum` (a coproduct/antipode result that draws
+  itself), the equation summary, `eq.show` / `eq.explore`.
 - `playground.py` — hand-built trees over a rule-free `Signature`; the quickest way to poke at
   the coproducts, the antipode and the character without writing an SPDE.
 - `Signature.require_gaussian` — the one guard that keeps the Gaussian-only paths off

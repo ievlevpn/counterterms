@@ -86,6 +86,14 @@ each *bare* \(\sigma_i\)).
 | `html_document(eq, canonical=False, reduced=False, symmetric=True)` | `str` | the single-file explorer (= `eq.render("html", …)`) |
 | `renorm.scheme.pairings(tree, sig)` | `list[tuple[tuple[int, int], ...]]` | every global Wick pairing of a bare tree — the terms of `expectation` |
 
+Notebook display (`counterterms.render.display`): the results of `Playground.delta_minus` /
+`delta_plus` / `antipode`, `RenormalizationStructure.coaction` / `coproduct` /
+`twisted_antipode` and `RegularityStructure.recentering` / `structure_coproduct` are `TreeSum`
+— the same `dict`, with `str()` as a formal sum and an HTML display. `RenormalizedEquation`
+and `CanonicalFamily` have HTML displays too; `eq.show(t)` / `pg.show(t)` draw a tree with the
+right signature, and `eq.explore(canonical=False, reduced=False, symmetric=True, height=640)`
+embeds the explorer in a cell.
+
 `DecoratedTree._repr_html_` returns `svg(self)`, so a tree displays as its picture in a
 notebook. See [Seeing the trees](guide/seeing-trees.md).
 

@@ -24,6 +24,7 @@ from .trees.tree import DecoratedTree, Edge, tree
 if TYPE_CHECKING:
     import sympy
 
+    from .render.display import Picture
     from .renorm.scheme import Expectation
     from .structures import RenormalizationStructure
     from .trees.coproducts import ForestSum, PlusSum, TensorSum
@@ -84,23 +85,31 @@ class Playground:
             self._rs = RenormalizationStructure(self.sig, ())
         return self._rs
 
+    def show(self, t: DecoratedTree) -> Picture:
+        """``t`` drawn with this playground's signature (so several noises stay distinct)."""
+        from .render.display import tree_picture
+        return tree_picture(t, self.sig)
+
     def homogeneity(self, t: DecoratedTree) -> Homogeneity:
         return t.homogeneity(self.sig)
 
     def delta_minus(self, t: DecoratedTree) -> TensorSum:
         """The coaction δ⁻ : U → U⁻ ⊗ U."""
+        from .render.display import TreeSum
         from .trees.coproducts import delta_minus
-        return delta_minus(t, self.sig)
+        return TreeSum(delta_minus(t, self.sig), self.sig, ("forest", "tree"))
 
     def delta_plus(self, t: DecoratedTree) -> PlusSum:
         """The T⁺ coproduct Δ⁺."""
+        from .render.display import TreeSum
         from .trees.coproducts import delta_plus
-        return delta_plus(t, self.sig)
+        return TreeSum(delta_plus(t, self.sig), self.sig, ("tree", "tree"))
 
     def antipode(self, t: DecoratedTree) -> ForestSum:
         """The negative twisted antipode S'₋ : U⁻ → ℝ[U]."""
+        from .render.display import TreeSum
         from .trees.coproducts import twisted_antipode
-        return twisted_antipode(t, self.sig)
+        return TreeSum(twisted_antipode(t, self.sig), self.sig, ("forest",))
 
     def character(self, t: DecoratedTree) -> sympy.Expr:
         """The canonical (BPHZ, centered-Gaussian) constant ``k(τ) = h(S'₋τ)``, symbolic

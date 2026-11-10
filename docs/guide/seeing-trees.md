@@ -33,8 +33,30 @@ the root at the bottom:
 
 Black elements use the surrounding text colour, so the pictures follow a dark theme.
 
-**In a notebook** a tree displays as its picture with no extra call: `DecoratedTree` has an
-HTML representation that returns the SVG.
+## In a notebook
+
+Leave any of these as the last expression of a cell and it draws itself:
+
+| Expression | Shows |
+|---|---|
+| a tree `t` | its picture |
+| `eq` (a `RenormalizedEquation`) | the family and every divergent tree with its constant |
+| `eq.canonical()`, `eq.bphz()` | each tree beside its canonical constant, then the trees \(\sigma_i\) of the \(h_i\) |
+| `pg.delta_minus(t)`, `pg.delta_plus(t)`, `pg.antipode(t)` | the sum, term by term, as drawn trees |
+| `rn.coaction(t)`, `rn.coproduct(t)`, `rn.twisted_antipode(t)`, `rs.recentering(t)`, `rs.structure_coproduct(t)` | the same |
+| `eq.explore()`, `eq.explore(reduced=True)` | the interactive explorer below, embedded in the cell |
+| `eq.show(t)`, `pg.show(t)` | `t` drawn with that equation's signature |
+
+The coproduct and antipode results are still ordinary dicts, equal to what the functions in
+`counterterms.trees.coproducts` return; they only gained a display. `print(...)` gives the same
+sum as text, for example `Ξ ⊗ ●·𝓘ₓ[▪(o=-3/2 - κ)]·𝓘ₓ[Ξ]`. A sum longer than 40 terms draws
+the first 40 and says how many are left.
+
+Use `eq.show(t)` rather than a bare `t` when the equation has several noises or components. A
+tree on its own does not know them, so `Ξ_eta` alone draws exactly like `Ξ_xi`.
+
+A notebook saved and reopened without being run may show these outputs blank, because
+notebooks strip drawings from output they do not trust; re-run the cell.
 
 `svg(t, sig, pairing=((i, j), …))` adds a dashed arc between noise nodes `i` and `j`. Node
 numbers are the pre-order index over the tree's children (root = 0); they are the same

@@ -14,6 +14,9 @@ All notable changes to this project are documented here. The format follows
   the renormalized family, every divergent tree drawn and linked to its counterterm, and per
   tree the extraction coproduct `δτ` and (with `canonical`/`reduced`) the canonical value with
   its Wick-pairing diagrams. No new dependency; formulas are MathML.
+- **Notebook display** (`render.display`): coproduct and antipode results (`TreeSum`, still a
+  plain `dict`), `RenormalizedEquation` and `CanonicalFamily` draw themselves; `eq.show(t)` /
+  `pg.show(t)` draw a tree with its equation's signature; `eq.explore()` embeds the explorer.
 - **`renorm.scheme.pairings(tree, sig)`**: the global Wick pairings as node-id pairs;
   `expectation` builds its terms from it.
 

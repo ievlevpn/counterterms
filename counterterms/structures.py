@@ -23,6 +23,7 @@ import sympy
 from .core.hopf import antipode, convolve, counit
 from .equation.dsl import build_context
 from .equation.generate import generate_counterterms, generate_trees
+from .render.display import TreeSum
 from .trees.coproducts import (
     ForestSum, GroupSum, PlusSum, TensorSum, _delta_group_forest, delta_minus,
     delta_minus_group, delta_plus, twisted_antipode)
@@ -42,13 +43,13 @@ class RenormalizationStructure:
     _h: dict[DecoratedTree, sympy.Symbol] = field(default_factory=dict)  # tree -> its h-symbol
 
     def coaction(self, t: DecoratedTree) -> TensorSum:   # δ : U → U⁻ ⊗ U
-        return delta_minus(t, self.sig)
+        return TreeSum(delta_minus(t, self.sig), self.sig, ("forest", "tree"))
 
     def coproduct(self, t: DecoratedTree) -> GroupSum:  # δ⁻ : U⁻ → U⁻ ⊗ U⁻
-        return delta_minus_group(t, self.sig)
+        return TreeSum(delta_minus_group(t, self.sig), self.sig, ("forest", "forest"))
 
     def twisted_antipode(self, t: DecoratedTree) -> ForestSum:  # S'₋ : U⁻ → ℝ[U]
-        return twisted_antipode(t, self.sig)
+        return TreeSum(twisted_antipode(t, self.sig), self.sig, ("forest",))
 
     def h_symbol(self, tree: DecoratedTree) -> sympy.Symbol:
         if tree not in self._h:
@@ -128,11 +129,11 @@ class RegularityStructure:
 
     def recentering(self, t: DecoratedTree) -> PlusSum:
         """``Δ τ ∈ T ⊗ T⁺`` (tourist_guide.tex 5613)."""
-        return delta_plus(t, self.sig)
+        return TreeSum(delta_plus(t, self.sig), self.sig, ("tree", "tree"))
 
     def structure_coproduct(self, b: DecoratedTree) -> PlusSum:
         """``Δ⁺ b ∈ T⁺ ⊗ T⁺`` (the structure-group Hopf algebra, tex 5709)."""
-        return delta_plus(b, self.sig, project_left=True)
+        return TreeSum(delta_plus(b, self.sig, project_left=True), self.sig, ("tree", "tree"))
 
     def structure_antipode(self) -> Callable[[DecoratedTree], dict[DecoratedTree, Fraction]]:
         """The structure-group antipode ``S : T⁺ → T⁺`` (the convolution inverse of the

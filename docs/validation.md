@@ -3,7 +3,7 @@
 There is no reference implementation of this pipeline anywhere — the source paper is the only
 oracle. The validation strategy is therefore: **pin the paper’s worked examples as golden tests,
 property-test the algebraic laws, and cross-check the classical equations against the published
-literature.** `uv run pytest` runs all of it (220 tests, ~10 s).
+literature.** `uv run pytest` runs all of it (230 tests, ~10 s).
 
 ## Tier 1 — the paper’s own worked examples (exact)
 

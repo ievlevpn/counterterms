@@ -20,7 +20,7 @@ equations` with free constants (rule → trees → S(τ) → Υ-map → assembly
 decoupled/coupled systems, multi-noise, operator order, scope rejections. A `render/` package
 emits the full report (trees drawn as shorthand / ascii / LaTeX-`forest` / SVG) in
 text/markdown/json/latex, plus a single-file HTML explorer (`eq.render("html")`) — see
-`notes/output.md`, `notes/visual_layer_design.md`. `uv run pytest` (220 tests, ~10s). Phase 3
+`notes/output.md`, `notes/visual_layer_design.md`. `uv run pytest` (230 tests, ~10s). Phase 3
 complete & green: coproducts (cointeraction holds **including β₀=−3/2**), `RegularityStructure
 (T,T⁺)`, the generic `core/hopf` layer, subcriticality check, twisted antipode + BHZ character,
 renormalization group `G⁻`. Phase 4 in progress: `daprato_lift` (da Prato–Debussche) unlocks
@@ -39,7 +39,7 @@ trees (`renorm/scheme.py`, see `notes/elementary_expectations.md`). Still deferr
   `Signature`-parametric design, interfaces, extension cookbook, phasing).
 - `counterterms/` — package: `core/{homogeneity,jets,signature,hopf,symbol}`, `trees/{tree,
   coproducts}`, `equation/{dsl,rule,generate,daprato}`, `renorm/{nonlinearity,equation,scheme}`,
-  `structures.py`, `render/{tree,svg,report,latex,html,export}`, `api`, `playground` (standalone
+  `structures.py`, `render/{tree,svg,display,report,latex,html,export}`, `api`, `playground` (standalone
   tree/algebra sandbox, no SPDE needed). (Phase-3 algebra — `core/hopf`, `trees/coproducts`,
   `structures` — is built and green.) UX layer: objects self-display (shorthand str/repr,
   Jupyter `_repr_latex_`/`_repr_markdown_`); `eq.canonical()/.bphz()` → `CanonicalFamily`

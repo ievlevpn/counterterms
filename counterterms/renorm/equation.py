@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     from ..core.homogeneity import Homogeneity
     from ..core.signature import Signature
     from ..equation.dsl import SPDE, Unknown
+    from ..render.display import Picture
     from ..renorm.scheme import Expectation, NoiseLaw
     from ..structures import RenormalizationStructure
     from ..trees.tree import DecoratedTree
@@ -129,6 +130,10 @@ class CanonicalFamily:
         for sym, tr in self.legend.items():
             lines.append(f"  {sym} = h_ε({shorthand(tr, sig)})")
         return "\n".join(lines)
+
+    def _repr_html_(self) -> str:
+        from ..render.display import canonical_html
+        return canonical_html(self)
 
     def __repr__(self) -> str:
         nz = sum(1 for v in self.constants.values() if v == 0)
@@ -318,3 +323,20 @@ class RenormalizedEquation:
 
     def _repr_markdown_(self) -> str:
         return self.render("markdown")
+
+    def _repr_html_(self) -> str:
+        # what a notebook shows (HTML outranks Markdown): the family and every tree, drawn
+        from ..render.display import summary_html
+        return summary_html(self)
+
+    def show(self, t: DecoratedTree) -> Picture:
+        """``t`` drawn with this equation's signature — a lone tree's own display cannot
+        know the other noise types or that it belongs to a system."""
+        from ..render.display import tree_picture
+        return tree_picture(t, self.sig)
+
+    def explore(self, canonical: bool = False, reduced: bool = False, symmetric: bool = True,
+                height: int = 640) -> Picture:
+        """The interactive explorer (`render("html")`) embedded in a notebook cell."""
+        from ..render.display import explore_html
+        return explore_html(self, canonical, reduced, symmetric, height)
