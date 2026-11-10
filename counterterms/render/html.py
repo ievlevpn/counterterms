@@ -138,7 +138,7 @@ display:flex;flex-direction:column;justify-content:flex-end;align-items:center;g
 .term{display:inline-flex;align-items:center;gap:5px;padding:4px 8px;border:1px solid var(--line);
 border-radius:6px}
 .op{color:var(--mut);padding:0 2px}
-.pairs{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:flex-end;margin:4px 0 10px}
+.pairs{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;margin:4px 0 10px}
 h3{font-size:13px;font-weight:600;margin:0 0 8px;color:var(--mut)}
 details{margin-top:8px}summary{cursor:pointer;color:var(--mut);font-size:13px}
 .note{color:var(--mut);font-size:13px}
@@ -178,7 +178,38 @@ _JS = """
 def _detail_extras(eq: RenormalizedEquation, t: DecoratedTree,
                    fam: CanonicalFamily | None) -> str:
     """Further sections of a tree's detail panel (the coproduct, the canonical value)."""
-    return _coproduct_html(t, eq.sig)
+    canon = _canonical_html(eq, t, fam) if fam is not None and t in fam.constants else ""
+    return canon + _coproduct_html(t, eq.sig)
+
+
+def _canonical_html(eq: RenormalizedEquation, t: DecoratedTree, fam: CanonicalFamily) -> str:
+    """The canonical (BPHZ) value of ``k_τ`` and, for each elementary expectation ``h_i`` in
+    it, the tree ``σ_i`` with one diagram per Wick pairing (`scheme.pairings`) — the terms of
+    the integral ``h_ε(σ_i)``.  Non-bare ``σ_i`` have no such integral here and say so."""
+    from ..renorm.scheme import is_bare, pairings
+
+    sig, value, k = eq.sig, fam.constants[t], fam.free_constants[t]
+    head = ("reduced, symmetric noise" if fam.reduced and fam.symmetric
+            else "reduced" if fam.reduced else "centered Gaussian noise")
+    out = [f'<div class="canonical"><h3>Canonical (BPHZ) value — {head}</h3>'
+           f"<p>{mathml(sympy.Eq(k, value, evaluate=False))}"
+           + (' <span class="note">— vanishes canonically</span>' if value == 0 else "") + "</p>"]
+    for sym, sigma in fam.legend.items():
+        if sym not in value.free_symbols:
+            continue
+        out.append(f'<div class="pairs"><span>{mathml(sym)} = h<sub>ε</sub>( {svg(sigma, sig)} )'
+                   "</span>")
+        if is_bare(sigma):
+            ps = pairings(sigma, sig)
+            out.append(f'<span class="note">= sum over {len(ps)} Wick pairing'
+                       f'{"s" if len(ps) != 1 else ""}:</span>'
+                       + "".join(svg(sigma, sig, pairing=m) for m in ps))
+        else:
+            out.append('<span class="note">left symbolic — needs the full canonical model '
+                       "(polynomial decoration Xⁿ)</span>")
+        out.append("</div>")
+    out.append("</div>")
+    return "".join(out)
 
 
 _SHOWN_TERMS = 12

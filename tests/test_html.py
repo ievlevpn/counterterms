@@ -112,3 +112,22 @@ def test_coproduct_overflow_is_kept():
     doc = eq.render("html")
     assert len(_tags(doc, "span", "term")) == sum(sizes)
     assert doc.count("<details") == sum(1 for n in sizes if n > 12)
+
+
+def test_canonical_section_and_pairing_diagrams():
+    from counterterms.renorm.scheme import is_bare, pairings
+    eq = gkpz().renormalize()
+    assert not _tags(eq.render("html"), "div", "canonical")
+    doc = eq.render("html", canonical=True)
+    fam = eq.canonical()
+    assert len(_tags(doc, "div", "canonical")) == len(fam.constants)
+    arcs = sum(len(p) for sym, tr in fam.legend.items() if is_bare(tr)
+               for v in fam.constants.values() if sym in v.free_symbols
+               for p in pairings(tr, eq.sig))
+    assert arcs > 0 and len(_tags(doc, "path", "pair")) == arcs
+    assert "canonically renormalized" in doc
+
+
+def test_canonical_reduced_kpz_renders():
+    doc = kpz().renormalize().render("html", reduced=True)
+    assert len(_tags(doc, "div", "canonical")) == 8

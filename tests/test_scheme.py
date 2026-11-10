@@ -202,3 +202,22 @@ def test_divergence_rates_match_literature():
     assert eps ** sympy.Rational(-3, 2) in by_rate        # bare Ξ
     assert "log(1/ε)" in eq.summary()                     # summary shows rates
     assert divergence_str(eq.counterterms[0].homogeneity) in str(eq.counterterms[0])
+
+
+def test_pairings_agree_with_expectation():
+    import pytest
+    from counterterms import playground
+    from counterterms.renorm.scheme import expectation, pairings
+    pg = playground("-3/2 - kappa")
+    two = pg.tree(pg.I(pg.Xi, "x"), pg.I(pg.Xi, "x"))
+    four = pg.tree(pg.I(two, "x"), pg.I(two, "x"))
+    for t in (two, four):
+        ps = pairings(t, pg.sig)
+        assert len(ps) == len(expectation(t, pg.sig).terms)
+        assert all(len({i for ij in p for i in ij}) == 2 * len(p) for p in ps)   # a perfect matching
+    assert len(pairings(four, pg.sig)) == 3 and pairings(two, pg.sig) == [((1, 2),)]
+    assert pairings(pg.tree(pg.I(pg.Xi, "x")), pg.sig) == []            # odd ⇒ []
+    odd_nonbare = pg.tree(pg.I(pg.Xi, "x"), X="x")
+    assert pairings(odd_nonbare, pg.sig) == []                           # parity before bareness
+    with pytest.raises(NotImplementedError):
+        pairings(pg.tree(pg.I(pg.Xi, "x"), pg.I(pg.Xi, "x"), X="x"), pg.sig)

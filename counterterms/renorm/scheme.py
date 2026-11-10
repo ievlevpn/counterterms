@@ -202,6 +202,39 @@ def reduction_subs(h_map: dict[DecoratedTree, sympy.Symbol], sig: Signature,
     return subs
 
 
+def pairings(tree: DecoratedTree, sig: Signature) -> list[tuple[tuple[int, int], ...]]:
+    """The global Wick pairings of ``tree``'s noise vertices — exactly the terms of
+    `expectation`, as node-id pairs ``(i, j)`` (pre-order ids, the ``z_i`` of the integral).
+
+    A global pairing is one within-type perfect matching per noise type (independent centered
+    noises: no cross-type covariance), so the result is the Cartesian product of
+    `wick_pairings` over the types.  Same order of checks as `expectation`: a non-Gaussian
+    signature is refused; any type with an odd count gives ``[]`` (𝔼 = 0, always valid); only
+    then is a non-bare tree refused."""
+    from collections import defaultdict
+    from itertools import product
+
+    sig.require_gaussian("the Wick pairing")
+    nodes, _edges = _explode(tree)
+    by_type: dict[str, list[int]] = defaultdict(list)
+    for n in nodes:
+        if n.node_type in sig.noise_homog:
+            by_type[n.node_type].append(n.id)
+    if any(len(ids) % 2 == 1 for ids in by_type.values()):
+        return []                                   # odd count ⇒ E = 0 (always valid)
+
+    if not is_bare(tree):                            # non-zero node decoration ⇒ value ≠ this integral
+        raise NotImplementedError(
+            "expectation() is the naive Wick integral, valid only for bare trees (all node "
+            "decorations 0); this σ has a non-zero X^n node-decoration. By Π(X^n)(y)=y^n "
+            "(tex 1809, 4003) a root X^n gives a 0^n factor (h=0) and internal X^n give "
+            "polynomial factors — the full canonical model (Track B). (Red contraction nodes "
+            "are fine: Π^ζ(●^{n,α}) is α-independent.)")
+
+    return [tuple(pair for matching in combo for pair in matching)
+            for combo in product(*(wick_pairings(ids) for ids in by_type.values()))]
+
+
 def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE) -> Expectation:
     """The Wick expansion of ``h(τ)=𝔼[Π^ζτ](0)`` (symbolic; integrals unevaluated).
 
@@ -222,25 +255,8 @@ def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE
     Order: the parity rule (𝔼 of an odd number of centered Gaussians is 0, whatever the
     deterministic kernel/``x^n`` factors, and red nodes carry no noise) is always valid, so it
     returns 0 first; only a non-zero, *bare* tree reaches the integral."""
-    from collections import defaultdict
-    from itertools import product
-
-    sig.require_gaussian("expectation()")
+    matchings = pairings(tree, sig)                 # parity ⇒ [], non-bare ⇒ raises
     nodes, edges = _explode(tree)
-    by_type: dict[str, list[int]] = defaultdict(list)
-    for n in nodes:
-        if n.node_type in sig.noise_homog:
-            by_type[n.node_type].append(n.id)
-    if any(len(ids) % 2 == 1 for ids in by_type.values()):
-        return Expectation([])                      # odd count ⇒ E = 0 (always valid)
-
-    if not is_bare(tree):                            # non-zero node decoration ⇒ value ≠ this integral
-        raise NotImplementedError(
-            "expectation() is the naive Wick integral, valid only for bare trees (all node "
-            "decorations 0); this σ has a non-zero X^n node-decoration. By Π(X^n)(y)=y^n "
-            "(tex 1809, 4003) a root X^n gives a 0^n factor (h=0) and internal X^n give "
-            "polynomial factors — the full canonical model (Track B). (Red contraction nodes "
-            "are fine: Π^ζ(●^{n,α}) is α-independent.)")
 
     z = {n.id: (sympy.Integer(0) if n.id == 0 else sympy.Symbol(f"z{n.id}")) for n in nodes}
     intvars = tuple(z[n.id] for n in nodes if n.id != 0)
@@ -249,13 +265,11 @@ def expectation(tree: DecoratedTree, sig: Signature, law: NoiseLaw = WHITE_NOISE
         kernels *= sympy.Function("K_" + "_".join(map(str, p)))(z[a] - z[b])
     C = sympy.Function(law.covariance)
 
-    # a global pairing = one within-type matching per noise type (Cartesian product)
     terms = []
-    for combo in product(*(wick_pairings(ids) for ids in by_type.values())):
+    for matching in matchings:                      # one global pairing per term
         cov = sympy.Integer(1)
-        for matching in combo:
-            for (i, j) in matching:
-                cov *= C(z[i] - z[j])
+        for (i, j) in matching:
+            cov *= C(z[i] - z[j])
         terms.append((sympy.expand(kernels * cov), intvars))
     return Expectation(terms)
 
