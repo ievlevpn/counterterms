@@ -25,7 +25,6 @@ def test_playground_matches_pipeline_trees():
 
 
 def test_playground_algebra_one_liners():
-    import sympy
     pg = playground("-3/2 - kappa")
     t = pg.tree(pg.I(pg.Xi, "x"), pg.I(pg.Xi, "x"))
 

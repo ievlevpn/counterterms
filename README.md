@@ -59,7 +59,7 @@ satisfy $|p|_\mathfrak{s} \le 1$.
 
 ```sh
 uv sync
-uv run pytest          # 187 tests, ~10s
+uv run pytest          # 195 tests, ~10s
 ```
 
 ## Quickstart
@@ -94,6 +94,11 @@ rs = build_renormalization(spde)
 for t in rs.divergent:
     print(rs.canonical_character(t))    # exact antipode combination in the h-values
 ```
+
+`eq.canonical()` / `eq.bphz()` return the same constants as a `CanonicalFamily` of SymPy objects,
+and every object prints itself (shorthand in a terminal, LaTeX/Markdown in Jupyter). The canonical
+paths assume independent centered Gaussian noises, so they **refuse a da Prato–Debussche-lifted
+equation** (its Wick-power noises are correlated); the free-constant family is unaffected.
 
 More runnable scripts in [`examples/`](examples/) — start with
 `uv run python -u examples/01_renormalized_equation.py`.
@@ -130,8 +135,11 @@ optionally composed with the renormalization coproducts and characters.
 | You want… | Call | Module |
 |---|---|---|
 | Write the SPDE (DSL) | `Unknown`, `Noise`, `Parabolic`, `SPDE` | `equation/dsl.py` |
+| A white noise without hand-computing $\beta_0$ | `Noise.white(name, dim)`, `Noise.spatial_white(name, dim)`; string regularities (`"-3/2 - kappa"`) | `equation/dsl.py` |
 | Derive the renormalized family | `SPDE(...).renormalize()` → `RenormalizedEquation` | `api.py`, `renorm/equation.py` |
 | Access each counterterm (tree, $\lvert\tau\rvert$, $S(\tau)$, $F(\tau^*)$, $k_\tau$) | `eq.counterterms`, `eq.per_component` | `renorm/equation.py` |
+| The $\varepsilon \to 0$ divergence rate of a constant ($\varepsilon^{\lvert\tau\rvert}$ or $\log(1/\varepsilon)$) | `ct.divergence` | `renorm/equation.py` |
+| The canonical (BPHZ) constants as SymPy objects | `eq.canonical()`, `eq.bphz()` → `CanonicalFamily` (`.constants`, `.legend`, `.rhs()`, `.substitution`, `.expectations()`) | `renorm/equation.py` |
 | Render a report (text / markdown / json / latex; `canonical`, `reduced`) | `eq.summary()`, `eq.render(fmt, …)`, `eq.save(…)` | `render/report.py`, `render/latex.py` |
 | $\Phi^4_2 / \Phi^4_3$ (supercritical, $\beta_0 \le -\text{order}$) | `daprato_lift(spde).renormalize()` | `equation/daprato.py` |
 
@@ -157,6 +165,7 @@ optionally composed with the renormalization coproducts and characters.
 | Generic, basis-agnostic Hopf ops (convolve / antipode / comodule) | `convolve`, `antipode`, `comodule_action` | `core/hopf.py` |
 | Wick-pairing structure of the canonical constants (symbolic) | `expectation`, `NoiseLaw`, `BPHZ`, `FreeConstants` | `renorm/scheme.py` |
 | JSON export of the whole structure | `structure_json(spde)`, `export_structure`, `tree_to_dict` | `render/export.py` |
+| Hand-build trees and run the algebra with no SPDE | `playground(regularity)` → `.Xi`, `.I(...)`, `.tree(...)`, `.delta_minus`, `.antipode`, `.character`, `.expectation` | `playground.py` |
 
 ### Foundations
 | You want… | Call | Module |

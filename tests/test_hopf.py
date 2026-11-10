@@ -79,7 +79,8 @@ def test_antipode_axiom_on_T_plus():
 def test_counit_is_the_convolution_unit():
     # ε⋆f = f for any character f (toy character: integer part of |τ|_std on a forest).
     eps = counit(_UNIT_FOREST)
-    f = lambda forest: sum(int(t.homogeneity(SIG).std) for t in forest)
+    def f(forest):
+        return sum(int(t.homogeneity(SIG).std) for t in forest)
     fstar = convolve(eps, f, _delta_forest)
     for t in TREES:
         assert fstar((t,)) == f((t,))
@@ -87,7 +88,8 @@ def test_counit_is_the_convolution_unit():
 
 def test_comodule_action_with_counit_is_identity():
     # k̃ = (k⊗Id)∘δ with k = ε⁻ recovers the model: (ε⁻⊗Id)δ = Id.
-    eps_minus = lambda left_forest: 1 if left_forest == () else 0
+    def eps_minus(left_forest):
+        return 1 if left_forest == () else 0
     kt = comodule_action(eps_minus, lambda t: delta_minus(t, SIG))
     for t in TREES:
         assert kt(t) == {t: 1}

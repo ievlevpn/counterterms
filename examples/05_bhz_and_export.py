@@ -7,7 +7,8 @@ from sympy import Derivative, Function, Rational
 from counterterms import SPDE, Noise, Parabolic, Unknown, kappa, build_renormalization
 from counterterms.render import shorthand, structure_json
 
-u = Unknown("u", 1); xi = Noise("xi", regularity=Rational(-1) - kappa)
+u = Unknown("u", 1)
+xi = Noise("xi", regularity=Rational(-1) - kappa)
 f, g = Function("f"), Function("g")
 spde = SPDE(operator=Parabolic(dim=1, mass=1), unknown=u, noises=[xi],
             rhs=f(u.field) * xi.symbol + g(u.field) * Derivative(u.field, u.x[0]) ** 2)

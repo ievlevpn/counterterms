@@ -6,7 +6,30 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Planned
+- Numeric BPHZ constant values (Track B2 — evaluating the ε-regularized integrals).
+- The `G⁻_ad` admissible-subgroup reduction (needs the analytic model layer).
+- A multi-index symbol basis (Linares–Otto–Tempelmayr) on the generic-algebra seam.
+- Formal rule completion (BHZ Prop 5.21) for hand-supplied rules.
+- A correlated `NoiseLaw` for the da Prato–Debussche Wick powers (canonical Φ⁴ values).
+
+## [0.3.0] — 2026-11-10
+
+**Phase 3 (the algebra) and the symbolic half of Phase 4**, plus the object-level UX layer.
+
 ### Added
+- **`CanonicalFamily`** (`eq.canonical()`, `eq.bphz()`): the canonical (BPHZ) constants, the
+  `h`-legend, the canonically renormalized RHS and the Wick integrals as SymPy objects; the
+  report renders from it.
+- **`Counterterm.divergence`**: the leading ε→0 rate of each canonical constant
+  (`ε^{|τ|₀}`, or `log(1/ε)` at `|τ|₀ = 0`), shown in `summary()` and the reports.
+- **`playground(...)`**: a standalone tree/algebra sandbox — hand-built trees, `δ⁻`, `Δ⁺`, the
+  twisted antipode, the character and the Wick expectation without an SPDE.
+- **Named noises** `Noise.white(name, dim)` / `Noise.spatial_white(name, dim)`; string
+  regularities (`"-3/2 - kappa"`).
+- **Self-displaying objects**: shorthand `str`/`repr`, Jupyter `_repr_latex_`/`_repr_markdown_`.
+- **`Noise.chaos`** and **`Signature.non_gaussian`**: `daprato_lift` tags each Wick power
+  `:X^k:` with its chaos order.
 - **Phase 3 — the algebraic-renormalization core** (`trees/coproducts.py`, `core/hopf.py`,
   `structures.py`): extraction–contraction `δ`/`δ⁻`, recentering `Δ`/`Δ⁺`, the negative twisted
   antipode `S'₋`, the symbolic BHZ character `k = h∘S'₋`, `RegularityStructure (T, T⁺)`, the
@@ -30,6 +53,14 @@ All notable changes to this project are documented here. The format follows
   pointer in `references/`.
 
 ### Fixed
+- **Canonical constants on a lifted equation were computed under a wrong law.** `canonical()`,
+  `bphz()`, `report(canonical=True)`, `canonical_character` and `expectation` applied the
+  independent-centered-Gaussian parity rule to the correlated, non-Gaussian Wick powers of a
+  `daprato_lift`-ed equation without warning. They now raise `NotImplementedError`
+  (`Signature.require_gaussian`). The free-constant family and the raw `bhz_character` are
+  unchanged.
+- **`CanonicalFamily.__str__` dropped noise names** in multi-noise families (every single-noise
+  tree printed as a bare `Ξ`); it now labels trees with the family's signature, as `summary()` does.
 - **Tree generation: node-decoration cap now scales with `−β₀`** instead of the fixed
   order-2-only `|n|_𝔰 ≤ 2` — at operator order > 2 with `β₀ ≤ −2` genuine counterterms (e.g.
   `Ξ^{(0,3)}` at order 4, β₀ = −3−κ) were silently missing from the family. Pools at order 2 are
@@ -86,12 +117,6 @@ All notable changes to this project are documented here. The format follows
   (`●·𝓘ₓ[Ξ]²`), a 2D terminal drawing, and a LaTeX `forest` snippet (`shorthand` / `ascii_art`
   / `forest`). Reuses SymPy's printers for all formulas; only the tree drawer is new.
 - `RenormalizedEquation.all_trees` (the full `𝓑_<0`) and `.original_rhs(comp)`.
-
-### Planned
-- Numeric BPHZ constant values (Track B2 — evaluating the ε-regularized integrals).
-- The `G⁻_ad` admissible-subgroup reduction (needs the analytic model layer).
-- A multi-index symbol basis (Linares–Otto–Tempelmayr) on the generic-algebra seam.
-- Formal rule completion (BHZ Prop 5.21) for hand-supplied rules.
 
 ## [0.2.0] — 2026-06-22
 

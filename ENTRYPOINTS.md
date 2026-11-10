@@ -114,6 +114,12 @@ layer (Phase 3) sits on top of the same `Signature`/`DecoratedTree` core:
   (BHZ character), and the group `G⁻`.
 - `renorm/scheme.py` — the canonical-character Wick/parity machinery (symbolic; integrals unbuilt).
 - `equation/daprato.py` — the da Prato–Debussche lift; `render/export.py` — JSON export.
+- `renorm/equation.py::CanonicalFamily` — `eq.canonical()` / `eq.bphz()`: the BPHZ constants as
+  SymPy objects (the report renders *from* it); `Counterterm.divergence` is the ε-rate.
+- `playground.py` — hand-built trees over a rule-free `Signature`; the quickest way to poke at
+  the coproducts, the antipode and the character without writing an SPDE.
+- `Signature.require_gaussian` — the one guard that keeps the Gaussian-only paths off
+  lifted (Wick-power) noises.
 
 For *what each does and how to call it*, see the capability map in [`README.md`](README.md).
 What is **not** built: numeric BPHZ constants (Gaussian integrals) and the `G⁻_ad` reduction —

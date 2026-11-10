@@ -11,6 +11,7 @@ from counterterms import (
     SPDE, Unknown, Noise, Operator, Parabolic, FractionalHeat, kappa, jet,
     renormalize, daprato_lift,
     build_renormalization, build_regularity_structure, build_renormalization_group,
+    playground, Playground,
 )
 ```
 
@@ -27,7 +28,9 @@ from counterterms import (
 | Class | Signature | Notes |
 |---|---|---|
 | `Unknown` | `Unknown(name, dim)` | exposes `.field`, `.t`, `.x`, `.coords` |
-| `Noise` | `Noise(name, regularity)` | `regularity` **is** \(\beta_0\) (may carry `- kappa`); exposes `.symbol`, `.homogeneity` |
+| `Noise` | `Noise(name, regularity, chaos=1)` | `regularity` **is** \(\beta_0\) (may carry `- kappa`; a string such as `"-3/2 - kappa"` is accepted); exposes `.symbol`, `.homogeneity`. `chaos=k>1` marks a Wick power \(:\!X^k\!:\) (set by `daprato_lift`) |
+| `Noise.white` | `Noise.white(name, dim, order=2)` | spacetime white noise, \(\beta_0 = -(\text{order}+\text{dim})/2 - \kappa\) |
+| `Noise.spatial_white` | `Noise.spatial_white(name, dim)` | time-independent white noise, \(\beta_0 = -\text{dim}/2 - \kappa\) |
 | `Parabolic` | `Parabolic(dim, mass=0, order=2)` | \(\partial_t - \Delta\ (+\,m)\) |
 | `FractionalHeat` | `FractionalHeat(dim, sigma)` | \(\partial_t + (-\Delta)^\sigma\); order \(2\sigma\) |
 | `Operator` | `Operator(dim, scaling, order, label, symbol, latex)` | base class — the engine reads only `(scaling, order)` |
@@ -50,6 +53,8 @@ nonlinearity base; `check_subcritical(sig)` is the rule-based subcriticality tes
 | `.counterterm_rhs(comp=0)` | `sympy.Expr` | assembled \(\sum k_\tau/S(\tau)\, F(\tau^*)\) |
 | `.original_rhs(comp=0)` | `sympy.Expr` | the parsed input right-hand side |
 | `.summary()` | `str` | one line per counterterm |
+| `.canonical(reduced=False, symmetric=True)` | `CanonicalFamily` | the canonical (BPHZ) constants as SymPy objects |
+| `.bphz(symmetric=True)` | `CanonicalFamily` | sugar for `canonical(reduced=True)` |
 | `.report(canonical=False, reduced=False, symmetric=True)` | `str` | full text report |
 | `.render(fmt="text", canonical=…, reduced=…, symmetric=…)` | `str` | `fmt ∈ {"text","markdown","json","latex"}` |
 | `.to_json(…)` | `str` | machine-readable report |
@@ -57,8 +62,43 @@ nonlinearity base; `check_subcritical(sig)` is the rule-based subcriticality tes
 | `.save(stem="equation", outdir="output", …)` | paths | writes all formats (+ PDF if `latexmk` exists) |
 
 **`Counterterm`** fields: `.tree`, `.homogeneity`, `.symmetry_factor`, `.elem_diff`
-(\(F(\tau^*)\)), `.constant` (\(k_\tau\)); properties `.coefficient` (\(k_\tau/S(\tau)\)) and
-`.term` (the full summand).
+(\(F(\tau^*)\)), `.constant` (\(k_\tau\)); properties `.coefficient` (\(k_\tau/S(\tau)\)),
+`.term` (the full summand) and `.divergence` (the leading \(\varepsilon \to 0\) rate of the
+canonical constant: \(\varepsilon^{|\tau|_0}\), or \(\log(1/\varepsilon)\) at \(|\tau|_0 = 0\)).
+
+**`CanonicalFamily`** (from `eq.canonical()` / `eq.bphz()`): `.constants` (`{τ: value of k_τ}`, a
+polynomial in the elementary expectations \(h_i\)), `.free_constants` (`{τ: k_τ}`), `.legend`
+(`{h_i: σ_i}`), `.substitution` (`{k_τ: value}`, for `.xreplace`), `.rhs(comp=0)` (the canonically
+renormalized right-hand side) and `.expectations()` (`{h_i: Expectation}` — the Wick integral of
+each *bare* \(\sigma_i\)).
+
+!!! warning "Gaussian noises only"
+    The canonical paths (`canonical`, `bphz`, `report(canonical=True)`, `canonical_character`,
+    `expectation`) assume independent centered Gaussian noises. They raise `NotImplementedError`
+    on a `daprato_lift`-ed equation, whose Wick-power noises are correlated and non-Gaussian.
+    The free-constant family and the raw `bhz_character` remain available.
+
+## The playground (`counterterms.playground`)
+
+`playground(regularity="-3/2 - kappa", dim=1, order=2, noises=None)` builds a `Playground`: a
+minimal `Signature` with an empty rule, for hand-built trees (no tree *generation* — that needs
+an `SPDE`). Pass `noises={"xi": …, "eta": …}` for several noises.
+
+| Member | Purpose |
+|---|---|
+| `.Xi`, `.noise(name=None)` | the noise leaf \(\Xi\) |
+| `.I(sub, p="", comp=0)` | an integration edge \(\mathcal{I}_p[\text{sub}]\); `p` as coordinate letters (`"x"`, `"xx"`) or a tuple |
+| `.tree(*edges, X="")` | a \(\bullet\) node with those edges and polynomial decoration `X` |
+| `.homogeneity(t)`, `.delta_minus(t)`, `.delta_plus(t)`, `.antipode(t)` | \(|\tau|\), \(\delta^-\), \(\Delta^+\), \(S'_-\) |
+| `.character(t)`, `.expectation(t)` | the canonical constant \(h(S'_-\tau)\) and the Wick integral \(h_\varepsilon(\tau)\) |
+
+```python
+from counterterms import playground
+
+pg = playground("-3/2 - kappa")                        # KPZ noise, d = 1
+t = pg.tree(pg.I(pg.Xi, "x"), pg.I(pg.Xi, "x"))        # ●·𝓘ₓ[Ξ]²
+pg.homogeneity(t), t.symmetry_factor(), pg.character(t), pg.expectation(t)
+```
 
 ## Trees and the rule
 

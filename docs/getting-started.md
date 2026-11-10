@@ -8,7 +8,7 @@ The project uses [`uv`](https://docs.astral.sh/uv/). SymPy is the only runtime d
 git clone <this repository>
 cd regularity_structures_symbolic
 uv sync
-uv run pytest          # 187 tests, ~10 s — all green means the goldens reproduce
+uv run pytest          # 195 tests, ~10 s — all green means the goldens reproduce
 ```
 
 Always run Python through uv:

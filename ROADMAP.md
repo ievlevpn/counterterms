@@ -95,7 +95,7 @@ Modules: `trees/coproducts.py`, `structures.py`, `core/hopf.py` (the basis-agnos
       would be unsound (CLAUDE.md warning), so it is deferred to the model layer.
 
 **Acceptance:** coassociativities + cointeraction (incl. singular β₀=−3/2) green as property
-tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **187 tests pass (~10s).**
+tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **195 tests pass (~10s).**
 
 ---
 
@@ -108,6 +108,10 @@ tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **187 t
       `RenormalizationStructure.canonical_character` (parity-reduced `h∘S'₋` — odd-noise trees'
       constants vanish; gKPZ: 3 of 5 are canonically 0). **B2 (evaluating the divergent
       integrals) remains** — the analysis wall.
+- [ ] **Correlated `NoiseLaw` for Wick powers** — the lifted `:X^k:` come from one `ξ`, so the
+      canonical character must pair the underlying `X` leaves (chaos orthogonality replacing the
+      per-type parity rule). Until then the Gaussian-only paths **refuse** a lifted equation
+      (`Signature.require_gaussian`; `Noise.chaos` is the tag the law will read).
 - [ ] **`G⁻_ad` reduction** *(moved from Phase 3)* — the admissible subgroup `G⁻_ad ⊂ G⁻`; needs
       K-admissibility (kernel vanishing moments + the Π-map), so it belongs with the model layer.
 - [x] **da Prato–Debussche pre-pass** (`equation/daprato.py`, `daprato_lift`) — lift a
@@ -180,9 +184,11 @@ assert-based `demo()` per renderer is the backbone check.
 
 ## Cross-cutting (ongoing) 🔨
 
-- [x] **Packaging/CI** — `.github/workflows/ci.yml` runs `ruff check counterterms` + `uv run
-      pytest` on push/PR; `ruff` pinned in the dev group (`E741` ignored — `l`/`r` are the
-      left/right tensor legs). Lockfile present.
+- [x] **Packaging/CI** — `.github/workflows/ci.yml` runs `ruff check .` (library, tests and
+      examples) + `uv run pytest` on push/PR; `ruff` pinned in the dev group (`E741` ignored —
+      `l`/`r` are the left/right tensor legs). `uv.lock` is tracked.
+- [ ] **Type checking in CI** — annotations are required in `counterterms/` but nothing
+      enforces them yet (no `mypy`/`pyright` in the dev group).
 - [x] **Generator backstop** — `generate_trees` now **fails fast** with a clear `RuntimeError`
       past `_MAX_POOL=5000` trees (largest legitimate case ≈191), replacing the silent
       `assert guard<50` (stripped under `python -O`). Trips on the fractional/high-order +

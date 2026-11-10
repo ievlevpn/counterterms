@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Lint the library (ruff)
-        run: uv run ruff check counterterms
+      - name: Lint (ruff)
+        run: uv run ruff check .
       - name: Run tests
         run: uv run pytest -q

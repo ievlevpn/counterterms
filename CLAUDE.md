@@ -19,7 +19,7 @@ equations` with free constants (rule → trees → S(τ) → Υ-map → assembly
 **general operator order**. Golden-tested: gKPZ (exact 5 counterterms, tex 6004–6012), KPZ/gPAM,
 decoupled/coupled systems, multi-noise, operator order, scope rejections. A `render/` package
 emits the full report (trees drawn as shorthand / ascii / LaTeX-`forest`) in
-text/markdown/json/latex — see `notes/output.md`. `uv run pytest` (187 tests, ~10s). Phase 3
+text/markdown/json/latex — see `notes/output.md`. `uv run pytest` (195 tests, ~10s). Phase 3
 complete & green: coproducts (cointeraction holds **including β₀=−3/2**), `RegularityStructure
 (T,T⁺)`, the generic `core/hopf` layer, subcriticality check, twisted antipode + BHZ character,
 renormalization group `G⁻`. Phase 4 in progress: `daprato_lift` (da Prato–Debussche) unlocks
@@ -91,6 +91,8 @@ In scope: scalar **or systems**, single **or multiple** noises, 2nd-order parabo
 quadratic in `∂u` (Assumption D2), `|n|_𝔰 ≤ 1`. Covers gKPZ, KPZ, gPAM, PAM, coupled systems,
 multi-noise. **Supercritical `β₀ ≤ −order` polynomial additive-noise equations (Φ⁴₂, Φ⁴₃) are
 handled via `daprato_lift` (the da Prato–Debussche change of variables) → subcritical remainder.**
+Lifted noises carry `Noise.chaos = k`; the Gaussian-only canonical paths refuse them
+(`Signature.require_gaussian`) — Wick powers are correlated, so parity/Isserlis-per-type is wrong.
 
 Reject (with clear messages): supercritical rules not liftable here (sine-Gordon /
 non-polynomial — needs Wick exponentials); noise nonlinearities not affine in the noise; `g`

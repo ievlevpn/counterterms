@@ -6,7 +6,8 @@ from sympy import Rational
 from counterterms import SPDE, Noise, Parabolic, Unknown, daprato_lift, kappa
 
 # Φ⁴₃ :  (∂_t − Δ)u = −u³ + ξ,  d=3,  β₀ = −5/2 − κ  (supercritical → rejected directly)
-u = Unknown("u", 3); xi = Noise("xi", regularity=Rational(-5, 2) - kappa)
+u = Unknown("u", 3)
+xi = Noise("xi", regularity=Rational(-5, 2) - kappa)
 phi43 = SPDE(noises=[xi], operator=Parabolic(dim=3), unknown=u, rhs=xi.symbol - u.field ** 3)
 
 try:
