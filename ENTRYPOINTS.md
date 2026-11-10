@@ -116,6 +116,8 @@ layer (Phase 3) sits on top of the same `Signature`/`DecoratedTree` core:
 - `equation/daprato.py` — the da Prato–Debussche lift; `render/export.py` — JSON export.
 - `renorm/equation.py::CanonicalFamily` — `eq.canonical()` / `eq.bphz()`: the BPHZ constants as
   SymPy objects (the report renders *from* it); `Counterterm.divergence` is the ε-rate.
+- `render/svg.py` — one tree → one inline `<svg>` (the notebook display); `render/html.py` — the
+  single-file explorer `eq.render("html")`, assembled entirely in Python from the objects above.
 - `playground.py` — hand-built trees over a rule-free `Signature`; the quickest way to poke at
   the coproducts, the antipode and the character without writing an SPDE.
 - `Signature.require_gaussian` — the one guard that keeps the Gaussian-only paths off

@@ -46,6 +46,7 @@ nav:
   - User guide:
       - Writing an SPDE: guide/writing-spdes.md
       - Reports & output: guide/reports.md
+      - Seeing the trees: guide/seeing-trees.md
       - The da Prato–Debussche lift: guide/daprato.md
       - The algebraic layer: guide/algebra.md
   - Scope & limitations: scope.md

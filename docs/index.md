@@ -67,7 +67,8 @@ run with a warning — [read this first](scope.md#operator-order-2)).
   \(G^-\), and a JSON export of the whole structure.
 
 Example output: [KPZ, canonical view (PDF)](kpz_canonical.pdf) ·
-[KPZ, reduced view (PDF)](kpz_reduced.pdf).
+[KPZ, reduced view (PDF)](kpz_reduced.pdf) ·
+[KPZ, interactive explorer (HTML)](kpz_explorer.html).
 
 ## Where to go next
 

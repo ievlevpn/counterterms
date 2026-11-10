@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **SVG tree drawer** (`render.svg`): a `DecoratedTree` as a standalone inline `<svg>` in the
+  paper's convention, with optional Wick-pairing arcs. Trees display as pictures in Jupyter
+  (`DecoratedTree._repr_html_`).
+- **HTML explorer** (`eq.render("html")`, `eq.save(formats=("html",))`): one offline page with
+  the renormalized family, every divergent tree drawn and linked to its counterterm, and per
+  tree the extraction coproduct `δτ` and (with `canonical`/`reduced`) the canonical value with
+  its Wick-pairing diagrams. No new dependency; formulas are MathML.
+- **`renorm.scheme.pairings(tree, sig)`**: the global Wick pairings as node-id pairs;
+  `expectation` builds its terms from it.
+
 ### Planned
 - Numeric BPHZ constant values (Track B2 — evaluating the ε-regularized integrals).
 - The `G⁻_ad` admissible-subgroup reduction (needs the analytic model layer).

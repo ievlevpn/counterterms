@@ -95,7 +95,7 @@ Modules: `trees/coproducts.py`, `structures.py`, `core/hopf.py` (the basis-agnos
       would be unsound (CLAUDE.md warning), so it is deferred to the model layer.
 
 **Acceptance:** coassociativities + cointeraction (incl. singular β₀=−3/2) green as property
-tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **195 tests pass (~10s).**
+tests over the SPDE corpus; `S'₋` validated; Hopf group axioms tested. **218 tests pass (~10s).**
 
 ---
 
@@ -173,6 +173,13 @@ dep (`forest` is a `.tex` concern; ANSI colour is `isatty`-gated; `rich` only if
       refuses non-bare σ (after the always-valid parity rule: odd noise count ⇒ 0), and the
       render leaves them symbolic. So `S'₋(τ)∈ℝ[U]` (tex 5028) and `k^ζ=h^ζ∘S'₋` (tex 5060) stay
       correct symbolically; only the *bare* h's get an explicit integral.
+- [x] **O5 (the visual layer):** `render/svg.py` — a tree as inline SVG (no LaTeX; the notebook
+      display) — and `render/html.py` — a single offline HTML explorer per equation: the family
+      with each counterterm linked to its tree, the gallery of all of `𝓑_<0` by homogeneity, and
+      per tree the drawn extraction coproduct `δτ` and the Wick-pairing diagrams of its canonical
+      value. This is where the raw `δτ` expansion O3 kept out of the text reports is shown.
+      Not built: a `β₀` slider, an in-browser (Pyodide) playground. See
+      `notes/visual_layer_design.md`.
 - [ ] **O4 (with Phase 4):** the numeric column — substitute the `h(σ)` values from a `NoiseLaw`
       (Wick) so `k_τ` becomes a number, not a symbol. **Needs Track B2** (evaluating the O3.5
       integrals).

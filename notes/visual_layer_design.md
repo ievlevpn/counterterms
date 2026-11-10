@@ -1,6 +1,6 @@
 # Visual layer — design
 
-Status: **proposed, not built.** Written 2026-11-10. Decisions marked *(call)* were made by the
+Status: **built 2026-11-10** (plan: `notes/visual_layer_plan.md`). Written 2026-11-10. Decisions marked *(call)* were made by the
 designer, not requested by the user; they are open to veto.
 
 ## Intent

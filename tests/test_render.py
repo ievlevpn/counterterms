@@ -124,6 +124,7 @@ def test_save_writes_exports(tmp_path):
 
 if __name__ == "__main__":
     print(_build().report())
+    print("wrote", *_build().save(stem="gkpz", formats=("html",), pdf=False))
 
 
 def test_canonical_legend_marks_zeros_and_duplicates_display_only():

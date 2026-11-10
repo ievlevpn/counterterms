@@ -56,7 +56,7 @@ nonlinearity base; `check_subcritical(sig)` is the rule-based subcriticality tes
 | `.canonical(reduced=False, symmetric=True)` | `CanonicalFamily` | the canonical (BPHZ) constants as SymPy objects |
 | `.bphz(symmetric=True)` | `CanonicalFamily` | sugar for `canonical(reduced=True)` |
 | `.report(canonical=False, reduced=False, symmetric=True)` | `str` | full text report |
-| `.render(fmt="text", canonical=…, reduced=…, symmetric=…)` | `str` | `fmt ∈ {"text","markdown","json","latex"}` |
+| `.render(fmt="text", canonical=…, reduced=…, symmetric=…)` | `str` | `fmt ∈ {"text","markdown","json","latex","html"}` |
 | `.to_json(…)` | `str` | machine-readable report |
 | `.latex_document(…)` | `str` | standalone LaTeX |
 | `.save(stem="equation", outdir="output", …)` | paths | writes all formats (+ PDF if `latexmk` exists) |
@@ -77,6 +77,17 @@ each *bare* \(\sigma_i\)).
     `expectation`) assume independent centered Gaussian noises. They raise `NotImplementedError`
     on a `daprato_lift`-ed equation, whose Wick-power noises are correlated and non-Gaussian.
     The free-constant family and the raw `bhz_character` remain available.
+
+## Pictures (`counterterms.render`)
+
+| Callable | Returns | Purpose |
+|---|---|---|
+| `svg(t, sig=None, *, pairing=(), scale=1.0)` | `str` | one tree as a standalone inline `<svg>`; `pairing=((i, j), …)` adds Wick arcs between noise nodes (pre-order ids) |
+| `html_document(eq, canonical=False, reduced=False, symmetric=True)` | `str` | the single-file explorer (= `eq.render("html", …)`) |
+| `renorm.scheme.pairings(tree, sig)` | `list[tuple[tuple[int, int], ...]]` | every global Wick pairing of a bare tree — the terms of `expectation` |
+
+`DecoratedTree._repr_html_` returns `svg(self)`, so a tree displays as its picture in a
+notebook. See [Seeing the trees](guide/seeing-trees.md).
 
 ## The playground (`counterterms.playground`)
 

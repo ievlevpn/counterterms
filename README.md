@@ -49,6 +49,7 @@ satisfy $|p|_\mathfrak{s} \le 1$.
 - a **reduced** view that folds in the exact identities (vanishing & duplicate constants, and — for a
   spatially-symmetric noise — the reflection identity);
 - typeset **reports** in text / Markdown / JSON / LaTeX→PDF, with the trees drawn;
+- a single-file **HTML explorer** and **SVG tree drawings** (also the notebook display of a tree);
 - the underlying **algebra**: the regularity structure $(T, T^+)$, the extraction/recentering
   coproducts, the twisted antipode, the BHZ character, the renormalization group $G^-$, and a JSON
   export of the whole structure.
@@ -59,7 +60,7 @@ satisfy $|p|_\mathfrak{s} \le 1$.
 
 ```sh
 uv sync
-uv run pytest          # 195 tests, ~10s
+uv run pytest          # 218 tests, ~10s
 ```
 
 ## Quickstart
@@ -122,6 +123,10 @@ renormalized family, and the canonical (BPHZ) constants $k_\tau = h(S'_-\tau)$.
   **plus** the spatial-reflection identity $x\to-x$, collapsing KPZ to a **single diverging
   constant**, $\partial_t u = \Delta u + (\partial_x u)^2 - C + \xi$ (Hairer's result). The reduction
   states its symmetric-noise assumption and is never claimed for an anisotropic noise.
+- **[`docs/kpz_explorer.html`](docs/kpz_explorer.html)** (`eq.render("html", reduced=True)`) — the
+  same reduced view as one interactive page: every tree drawn, each counterterm linked to its tree,
+  the extraction coproduct and the Wick pairings as pictures. Download it and open it in a browser
+  (GitHub shows HTML files as source).
 
 ---
 
@@ -141,6 +146,7 @@ optionally composed with the renormalization coproducts and characters.
 | The $\varepsilon \to 0$ divergence rate of a constant ($\varepsilon^{\lvert\tau\rvert}$ or $\log(1/\varepsilon)$) | `ct.divergence` | `renorm/equation.py` |
 | The canonical (BPHZ) constants as SymPy objects | `eq.canonical()`, `eq.bphz()` → `CanonicalFamily` (`.constants`, `.legend`, `.rhs()`, `.substitution`, `.expectations()`) | `renorm/equation.py` |
 | Render a report (text / markdown / json / latex; `canonical`, `reduced`) | `eq.summary()`, `eq.render(fmt, …)`, `eq.save(…)` | `render/report.py`, `render/latex.py` |
+| Explore an equation in the browser (one offline HTML file) | `eq.render("html", …)`, `eq.save(stem, formats=("html",))` | `render/html.py` |
 | $\Phi^4_2 / \Phi^4_3$ (supercritical, $\beta_0 \le -\text{order}$) | `daprato_lift(spde).renormalize()` | `equation/daprato.py` |
 
 ### The trees and the rule
@@ -151,7 +157,7 @@ optionally composed with the renormalization coproducts and characters.
 | Subcriticality check ($\beta_0 > -\text{order}$) | `check_subcritical(sig)` (auto in `build_context`) | `equation/rule.py` |
 | Decorated trees: canonical form, $S(\tau)$, homogeneity | `DecoratedTree`, `tree`, `red_node` | `trees/tree.py` |
 | The elementary differential $F(\tau^*)$ ($\Upsilon$-map) | `elem_diff(t, comp, base, sig)` | `renorm/nonlinearity.py` |
-| Draw a single tree (shorthand / ascii / `forest`) | `shorthand`, `ascii_art`, `forest` | `render/tree.py` |
+| Draw a single tree (shorthand / ascii / `forest` / SVG) | `shorthand`, `ascii_art`, `forest`, `svg` | `render/tree.py`, `render/svg.py` |
 
 ### The algebraic structure (regularity & renormalization)
 | You want… | Call | Module |
@@ -163,7 +169,7 @@ optionally composed with the renormalization coproducts and characters.
 | Renormalization structure + symbolic **BHZ character** $k = h \circ S'_-$ | `build_renormalization(spde)` → `.bhz_character`, `.canonical_character` | `structures.py` |
 | The renormalization **group** $G^-$ (convolution, antipode inverse) | `build_renormalization_group(spde)` | `structures.py` |
 | Generic, basis-agnostic Hopf ops (convolve / antipode / comodule) | `convolve`, `antipode`, `comodule_action` | `core/hopf.py` |
-| Wick-pairing structure of the canonical constants (symbolic) | `expectation`, `NoiseLaw`, `BPHZ`, `FreeConstants` | `renorm/scheme.py` |
+| Wick-pairing structure of the canonical constants (symbolic) | `expectation`, `pairings`, `NoiseLaw`, `BPHZ`, `FreeConstants` | `renorm/scheme.py` |
 | JSON export of the whole structure | `structure_json(spde)`, `export_structure`, `tree_to_dict` | `render/export.py` |
 | Hand-build trees and run the algebra with no SPDE | `playground(regularity)` → `.Xi`, `.I(...)`, `.tree(...)`, `.delta_minus`, `.antipode`, `.character`, `.expectation` | `playground.py` |
 

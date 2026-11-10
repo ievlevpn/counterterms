@@ -7,6 +7,10 @@ inventory*, the *tree notation*, the *output channels*, and the *full-report
 layout*. **Status: the `render/` package implementing this spec is built and
 green** (O1–O3.5 in `ROADMAP.md`); this note remains the design reference.
 
+**Added since (O5):** two further renderers, specified in `notes/visual_layer_design.md` rather
+than here — `render/svg.py` (a tree as inline SVG, §3's fourth rendering; the notebook display)
+and `render/html.py` (a single offline HTML explorer, a fifth output channel for §2).
+
 Guiding principle (ponytail): **reuse the printers we already have.** SymPy
 ships a 2D-unicode pretty-printer (`sympy.pretty`) and a LaTeX printer
 (`sympy.latex`); we own only (a) the *tree* drawing, which SymPy can't do, and

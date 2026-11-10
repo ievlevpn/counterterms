@@ -1,6 +1,7 @@
 # Reports & output
 
-A `RenormalizedEquation` renders itself in four formats, with three orthogonal views.
+A `RenormalizedEquation` renders itself in four text formats, with three orthogonal views — and
+as an interactive HTML page, described in [Seeing the trees](seeing-trees.md).
 
 ## Quick access
 
